@@ -38,6 +38,13 @@ export const metadata: Metadata = {
     type: "website",
     url: "http://t-cloudeats.com/",
   },
+  icons: {
+    icon: [
+      { url: "/Round Logo.png", type: "image/png" },
+    ],
+    shortcut: "/Round Logo.png",
+    apple: "/Round Logo.png",
+  },
 };
 
 export default function RootLayout({

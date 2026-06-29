@@ -1,0 +1,19 @@
+# AI Assistant Rules & Token Optimization Guide
+
+## 1. Output Style & Token Preservation
+- **No Fluff**: Eliminate all conversational filler, greetings, polite closings, introductions, and summaries. Start responses directly with the solution or code.
+- **Partial Code Diffs Only**: NEVER output entire files. Provide only the modified lines or functions. Use `// ... existing code ...` or `/* ... existing code ... */` to indicate unchanged sections.
+- **No Redundant Explanations**: Do not explain what the code does unless explicitly requested. If explanation is requested, use ultra-concise, bulleted technical notes.
+- **Minimize Markup**: Avoid unnecessary markdown formatting, long blockquotes, or repeated headings.
+
+## 2. Code Implementation Principles
+- **Strict DRY**: Refactor common logic into reusable utilities. No copy-pasting.
+- **Modular & Atomic**: Write single-responsibility, highly modular functions and components.
+- **Self-Documenting Code**: Avoid excessive inline comments. Write clean variable names, descriptive function signatures, and explicit TypeScript types instead.
+- **TypeScript Strictness**: Always use explicit types. Avoid `any`. Use interfaces for component props and data models.
+
+## 3. Tech Stack & Architecture (Next.js & React)
+- **Next.js App Router**: Use Server Components (`page.tsx`, `layout.tsx`) by default. Use `"use client"` only when interactive state or client hooks (`useState`, `useEffect`) are required.
+- **State Management**: Keep state local and lifted only as high as necessary. Use standard React hooks.
+- **Styling**: Use native CSS variables (`globals.css`) for design tokens (colors, spacing, fonts). Do not inline large utility class chains if Tailwind is not configured.
+- **Performance**: Optimize images with `next/image`. Use lazy loading for heavy components if needed.
