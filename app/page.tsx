@@ -111,114 +111,96 @@ const ChevronDownIcon = () => (
 );
 
 /* ── Menu Data ──────────────────────────────────────────────────── */
-const MENU_ITEMS = [
+const TOP_10_MENU = [
   {
     id: 1,
     title: "Signature Chicken Fried Rice",
-    price: "LKR 1,200",
-    portion: "Regular",
-    tags: ["Popular", "Chef Special"],
-    description: "Wok-fired Basmati rice with tender chicken, fresh garden vegetables, and our signature blend of aromatic spices.",
+    price: "LKR 1,000",
+    portion: "Full Portion",
+    tags: ["Popular"],
+    description: "Basmati Rice, Fried Chicken Strip, Vegetable serve with Sunny side up, Onion Pickles, Homemade Chili Paste.",
     category: "Rice"
   },
   {
     id: 2,
-    title: "Spicy Seafood Kottu",
-    price: "LKR 1,400",
-    portion: "Regular",
-    tags: ["Spicy", "Popular"],
-    description: "Finely shredded parotta chopped with fresh seafood, eggs, aromatic spices, and a fiery Sri Lankan gravy.",
-    category: "Kottu"
-  },
-  {
-    id: 3,
-    title: "Wok-Fried Egg Noodles",
-    price: "LKR 950",
-    portion: "Regular",
-    tags: ["Popular"],
-    description: "Classic stir-fried noodles tossed with farm-fresh eggs, crisp seasonal vegetables, and savory house sauces.",
-    category: "Noodles"
-  },
-  {
-    id: 4,
-    title: "Cheese & Chicken Kottu",
-    price: "LKR 1,650",
-    portion: "Large",
-    tags: ["Chef Special"],
-    description: "Creamy, rich, and indulgent kottu loaded with tender seasoned chicken and melted mozzarella cheese.",
-    category: "Kottu"
-  },
-  {
-    id: 5,
-    title: "Spicy Nasi Goreng",
-    price: "LKR 1,350",
-    portion: "Regular",
-    tags: ["Spicy"],
-    description: "Indonesian-style spicy fried rice served with seasoned chicken, fried egg, and authentic chili paste.",
-    category: "Rice"
-  },
-  {
-    id: 6,
-    title: "Crispy Hot Butter Cuttlefish",
-    price: "LKR 1,800",
-    portion: "Regular",
-    tags: ["Spicy", "Chef Special"],
-    description: "Crispy-fried cuttlefish tossed in rich butter, spring onions, and dry red chilies. A Sri Lankan favorite.",
-    category: "Sides"
-  },
-  {
-    id: 7,
-    title: "Beef Palandi Kottu",
-    price: "LKR 1,750",
-    portion: "Regular",
-    tags: ["Popular"],
-    description: "A rich and delicious Sri Lankan style kottu with tender beef chopped with Palandi gravy.",
-    category: "Kottu"
-  },
-  {
-    id: 8,
-    title: "Devilled Chicken (Side)",
-    price: "LKR 1,100",
-    portion: "Regular",
-    tags: ["Spicy"],
-    description: "Classic Sri Lankan devilled chicken - sweet, spicy, and tangy, tossed with banana peppers and onions.",
-    category: "Sides"
-  },
-  {
-    id: 9,
     title: "Mix Fried Rice",
     price: "LKR 1,600",
-    portion: "Large",
+    portion: "Full Portion",
     tags: ["Popular", "Chef Special"],
     description: "Premium wok-fried Basmati rice loaded with a mix of chicken, beef, fresh seafood, and farm eggs.",
     category: "Rice"
   },
   {
-    id: 10,
-    title: "Classic Egg Kottu",
-    price: "LKR 850",
-    portion: "Regular",
-    tags: [],
-    description: "Traditional Sri Lankan street-style kottu chopped with fresh eggs, onions, and crisp vegetables.",
+    id: 3,
+    title: "Spicy Seafood Kottu",
+    price: "LKR 1,300",
+    portion: "Full Portion",
+    tags: ["Spicy"],
+    description: "Chopped Roti, Prawns, Cuttlefish, Fish, Vegetables, Aromatic Spices, Serve With Sunny Side Up, Onion Pickle, Spicy Gravy.",
     category: "Kottu"
   },
   {
-    id: 11,
-    title: "Devilled Cuttlefish",
-    price: "LKR 1,950",
-    portion: "Regular",
+    id: 4,
+    title: "Cheese Chicken Kottu",
+    price: "LKR 1,500",
+    portion: "Full Portion",
+    tags: ["Popular"],
+    description: "Street Food Favorite Fried Chicken, Cheese, Milk With Sunny Side Up, Onion Pickle, Spicy Gravy.",
+    category: "Kottu"
+  },
+  {
+    id: 5,
+    title: "Nasi Goreng",
+    price: "LKR 1,300",
+    portion: "Full Portion",
+    tags: ["Popular", "Spicy"],
+    description: "Tender Chicken, Prawns, Beef, Basmati Rice, Vegetable Served With Fried Egg And Served With Crispy Crackers.",
+    category: "Rice"
+  },
+  {
+    id: 6,
+    title: "Chicken Chopsuey Rice",
+    price: "LKR 1,250",
+    portion: "Full Portion",
+    tags: [],
+    description: "Aromatic Fried Rice And Colorful Stir-Fried Vegetables With Tender Chicken Finished In A Rich Savory Sauce.",
+    category: "Rice"
+  },
+  {
+    id: 7,
+    title: "Devilled Chicken",
+    price: "LKR 1,100",
+    portion: "250g",
     tags: ["Spicy"],
-    description: "Fiery Sri Lankan style devilled cuttlefish tossed with capsicum, onions, and a thick spicy sauce.",
+    description: "Classic Sri Lankan devilled chicken - sweet, spicy, and tangy, tossed with banana peppers and onions.",
     category: "Sides"
   },
   {
-    id: 12,
-    title: "Garlic Bread (3 Pcs)",
-    price: "LKR 450",
-    portion: "Regular",
-    tags: [],
-    description: "Crispy toasted French bread slices spread generously with our homemade garlic butter.",
+    id: 8,
+    title: "Devilled Beef",
+    price: "LKR 1,400",
+    portion: "250g",
+    tags: ["Spicy"],
+    description: "Spicy beef curry style devilled, stir-fried in a rich, spicy devilled gravy.",
     category: "Sides"
+  },
+  {
+    id: 9,
+    title: "Traditional Sri Lankan Chicken Rice & Curry",
+    price: "LKR 750",
+    portion: "Regular",
+    tags: ["Popular"],
+    description: "Red or White Basmati Rice, Traditional Sri Lankan Chicken Curry, served with three seasonal vegetable curries and crispy papadum.",
+    category: "Rice"
+  },
+  {
+    id: 10,
+    title: "Chicken Biriyani",
+    price: "LKR 1,150",
+    portion: "Regular",
+    tags: ["Chef Special"],
+    description: "Fragrant basmati rice cooked with aromatic spices, served with a spiced chicken leg, boiled egg, malay pickle, and mint sambol.",
+    category: "Rice"
   }
 ];
 
@@ -229,15 +211,6 @@ export default function Home() {
   useFadeIn();
 
   const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-
-  const filteredItems = MENU_ITEMS.filter((item) => {
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
 
   useEffect(() => {
     // Grand Launch: July 2nd, 2026 at 00:00:00 (Sri Lanka Time: UTC+05:30)
@@ -285,32 +258,19 @@ export default function Home() {
               </span>
             </div>
 
-            {/* Big Countdown (Days Only, Glowing Orange) */}
+            {/* Hero Section Countdown */}
             {daysRemaining !== null && (
-              <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '8px 0 24px' }}>
-                <span style={{
-                  fontFamily: "var(--font-heading)",
-                  fontSize: "clamp(6rem, 15vw, 9rem)",
-                  fontWeight: 900,
-                  color: "#F26F21",
-                  lineHeight: 0.9,
-                  letterSpacing: "-0.03em",
-                  textShadow: "0 0 40px rgba(242, 111, 33, 0.6), 0 0 80px rgba(242, 111, 33, 0.3)"
-                }}>
-                  {daysRemaining}
-                </span>
-                <span style={{
-                  fontFamily: "var(--font-heading)",
-                  fontSize: "clamp(1.5rem, 3vw, 2.2rem)",
-                  fontWeight: 900,
-                  color: "#F26F21",
-                  letterSpacing: "0.1em",
-                  marginTop: "8px",
-                  textShadow: "0 0 20px rgba(242, 111, 33, 0.4)"
-                }}>
-                  DAYS LEFT
-                </span>
-              </div>
+              <h2 className="fade-in" style={{
+                color: '#F26F21',
+                fontFamily: 'var(--font-heading)',
+                fontWeight: 'bold',
+                fontSize: 'clamp(2.2rem, 6vw, 3.2rem)',
+                marginBottom: '16px',
+                textAlign: 'center',
+                textShadow: '0 0 20px rgba(242, 111, 33, 0.3)'
+              }}>
+                {daysRemaining} DAYS LEFT
+              </h2>
             )}
 
             {/* Grand Launching Subheading */}
@@ -423,180 +383,93 @@ export default function Home() {
 
         {/* ── Menu Section ────────────────────────────────────────── */}
         <section id="menu" className="menu-section relative overflow-hidden" style={{ padding: '96px 0' }}>
-              {/* Background glow */}
-              <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:'700px', height:'700px', background:'radial-gradient(circle at center, rgba(242,111,33,0.05) 0%, transparent 70%)', pointerEvents:'none', zIndex:0 }} />
+          {/* Background glow */}
+          <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:'700px', height:'700px', background:'radial-gradient(circle at center, rgba(242,111,33,0.05) 0%, transparent 70%)', pointerEvents:'none', zIndex:0 }} />
 
-              <div className="menu-inner" style={{ padding: '0 40px', position: 'relative', zIndex: 1 }}>
-                {/* Section Header */}
-                <div className="menu-header">
-                  <span style={{ display:'inline-block', fontSize:'0.72rem', fontWeight:900, letterSpacing:'0.18em', textTransform:'uppercase', color:'#F26F21', background:'rgba(242,111,33,0.1)', padding:'5px 16px', borderRadius:'999px', marginBottom:'18px' }}>
-                    Our Menu
-                  </span>
-                  <h2 style={{ fontFamily:'var(--font-heading)', fontSize:'clamp(2.2rem,5vw,3.2rem)', fontWeight:900, color:'#FAF3E0', lineHeight:1.05, letterSpacing:'-0.02em', margin:'0 0 16px' }}>
-                    Explore Aromatic Flavors
-                  </h2>
-                  <p style={{ fontSize:'1.05rem', color:'rgba(250,243,224,0.65)', maxWidth:'480px', margin:'0 auto', lineHeight:1.6 }}>
-                    Freshly prepared street-style favorites made with premium ingredients. Custom orders welcome.
-                  </p>
-                </div>
-
-                {/* Search Bar */}
-                <div className="menu-search-wrapper">
-                  <div className="search-input-container">
-                    <input
-                      type="text"
-                      placeholder="Search for your favorite dish..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="menu-search-input"
-                    />
-                    <svg className="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    {searchQuery && (
-                      <button onClick={() => setSearchQuery("")} className="menu-search-clear" aria-label="Clear search">
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Category Tabs */}
-                <div className="category-tabs-container">
-                  <div className="category-tabs">
-                    {CATEGORIES.map((category) => (
-                      <button
-                        key={category}
-                        onClick={() => setSelectedCategory(category)}
-                        className={`category-tab ${selectedCategory === category ? "active" : ""}`}
-                      >
-                        {category}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Menu Grid */}
-                {filteredItems.length > 0 ? (
-                  <div className="menu-grid">
-                    {filteredItems.map((item) => (
-                      <div key={item.id} className="menu-card">
-                        <div className="menu-card-header">
-                          <h3 className="menu-card-title">{item.title}</h3>
-                          <span className="menu-card-price">{item.price}</span>
-                        </div>
-                        <div className="menu-card-meta">
-                          <span className="menu-card-portion">{item.portion}</span>
-                          <div className="menu-card-tags">
-                            {item.tags.map((tag) => (
-                              <span key={tag} className={`menu-tag ${tag.toLowerCase().replace(" & ", "-").replace(" ", "-")}`}>
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <p className="menu-card-desc">{item.description}</p>
-                        <div className="menu-card-actions">
-                          <a
-                            href={`https://wa.me/94706288109?text=Hi%20t-cloud%20eats!%20I%20would%20like%20to%20order%20the%20${encodeURIComponent(item.title)}.`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="menu-order-btn"
-                          >
-                            <WhatsAppIcon />
-                            Order on WhatsApp
-                          </a>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="menu-no-results">
-                    <p>No dishes found matching "{searchQuery}"</p>
-                    <button
-                      onClick={() => {
-                        setSearchQuery("");
-                        setSelectedCategory("All");
-                      }}
-                      className="menu-reset-btn"
-                    >
-                      Reset Filters
-                    </button>
-                  </div>
-                )}
-
-            {/* Category Tabs */}
-            <div className="category-tabs-container">
-              <div className="category-tabs">
-                {CATEGORIES.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`category-tab ${selectedCategory === category ? "active" : ""}`}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
+          <div className="menu-inner" style={{ padding: '0 40px', position: 'relative', zIndex: 1 }}>
+            {/* Section Header */}
+            <div className="menu-header">
+              <span style={{ display:'inline-block', fontSize:'0.72rem', fontWeight:900, letterSpacing:'0.18em', textTransform:'uppercase', color:'#F26F21', background:'rgba(242,111,33,0.1)', padding:'5px 16px', borderRadius:'999px', marginBottom:'18px' }}>
+                Our Menu
+              </span>
+              <h2 style={{ fontFamily:'var(--font-heading)', fontSize:'clamp(2.2rem,5vw,3.2rem)', fontWeight:900, color:'#FAF3E0', lineHeight:1.05, letterSpacing:'-0.02em', margin:'0 0 16px' }}>
+                Explore Aromatic Flavors
+              </h2>
+              <p style={{ fontSize:'1.05rem', color:'rgba(250,243,224,0.65)', maxWidth:'480px', margin:'0 auto', lineHeight:1.6 }}>
+                Freshly prepared street-style favorites made with premium ingredients. Custom orders welcome.
+              </p>
             </div>
 
-            {/* Menu Grid */}
-            {filteredItems.length > 0 ? (
-              <div className="menu-grid">
-                {filteredItems.map((item) => (
-                  <div key={item.id} className="menu-card">
-                    <div className="menu-card-header">
-                      <h3 className="menu-card-title">{item.title}</h3>
-                      <span className="menu-card-price">{item.price}</span>
-                    </div>
-                    <div className="menu-card-meta">
-                      <span className="menu-card-portion">{item.portion}</span>
-                      <div className="menu-card-tags">
-                        {item.tags.map((tag) => (
-                          <span key={tag} className={`menu-tag ${tag.toLowerCase().replace(" & ", "-").replace(" ", "-")}`}>
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="menu-card-desc">{item.description}</p>
-                    <div className="menu-card-actions">
-                      <a
-                        href={`https://wa.me/94706288109?text=Hi%20t-cloud%20eats!%20I%20would%20like%20to%20order%20the%20${encodeURIComponent(item.title)}.`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="menu-order-btn"
-                      >
-                        <WhatsAppIcon />
-                        Order on WhatsApp
-                      </a>
+            {/* Menu Grid - Curated Top 10 Static Cards */}
+            <div className="menu-grid">
+              {TOP_10_MENU.map((item) => (
+                <div key={item.id} className="menu-card">
+                  <div className="menu-card-header">
+                    <h3 className="menu-card-title">{item.title}</h3>
+                    <span className="menu-card-price">{item.price}</span>
+                  </div>
+                  <div className="menu-card-meta">
+                    <span className="menu-card-portion">{item.portion}</span>
+                    <div className="menu-card-tags">
+                      {item.tags.map((tag) => (
+                        <span key={tag} className={`menu-tag ${tag.toLowerCase().replace(" & ", "-").replace(" ", "-")}`}>
+                          {tag}
+                        </span>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="menu-no-results">
-                <p>No dishes found matching "{searchQuery}"</p>
-                <button
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSelectedCategory("All");
-                  }}
-                  className="menu-reset-btn"
-                >
-                  Reset Filters
-                </button>
-              </div>
-            )}
+                  <p className="menu-card-desc">{item.description}</p>
+                  <div className="menu-card-actions">
+                    <a
+                      href={`https://wa.me/94706288109?text=Hi%20t-cloud%20eats!%20I%20would%20like%20to%20order%20the%20${encodeURIComponent(item.title)}.`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="menu-order-btn"
+                    >
+                      <WhatsAppIcon />
+                      Order on WhatsApp
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* View Full Menu Button */}
             <div style={{ textAlign: 'center', marginTop: '48px', position: 'relative', zIndex: 2 }}>
-              <Link href="/order" className="menu-reset-btn" style={{ textDecoration: 'none', display: 'inline-block', padding: '12px 32px' }}>
-                View Full Menu & Order Online
+              <Link
+                href="/order"
+                style={{
+                  textDecoration: 'none',
+                  display: 'inline-block',
+                  padding: '14px 36px',
+                  borderRadius: '100px',
+                  fontFamily: 'var(--font-heading)',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  background: '#0D1B35',
+                  border: '2.5px solid #F26F21',
+                  color: '#F26F21',
+                  transition: 'all 0.25s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.background = '#F26F21';
+                  (e.currentTarget as HTMLAnchorElement).style.color = '#ffffff';
+                  (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 6px 20px rgba(242, 111, 33, 0.4)';
+                  (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.background = '#0D1B35';
+                  (e.currentTarget as HTMLAnchorElement).style.color = '#F26F21';
+                  (e.currentTarget as HTMLAnchorElement).style.boxShadow = 'none';
+                  (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)';
+                }}
+              >
+                View Full Menu
               </Link>
             </div>
           </div>
         </section>
-
 
         {/* ── Reviews Section ───────────────────────────────────── */}
         <section id="reviews" aria-label="Customer Reviews" className="bg-[#0D1B35] relative overflow-hidden" style={{ padding: '96px 0' }}>
@@ -670,13 +543,14 @@ export default function Home() {
               </div>
 
               {/* Right: Review Cards stacked — flex:1 makes each card fill equal vertical space */}
-              <div style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
+              <div className="reviews-carousel-wrapper" style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
                 {[
-                  { initial:'T', name:'Thanuja Welagedara', text:'"Rated 5/5 stars on Google. Highly recommended for excellent quality, taste, and service!"', href:'https://maps.app.goo.gl/L9bkZQkbxQrdRhZe9' },
-                  { initial:'M', name:'madusanka bandara', text:'"Rolling out soon"', href:'https://maps.app.goo.gl/CqrB5p4k61Tofjcq6' },
+                  { initial:'T', name:'Thanuja Welagedara', text:'"Highly recommended for excellent food quality, taste, and service!"', href:'https://maps.app.goo.gl/L9bkZQkbxQrdRhZe9' },
+                  { initial:'M', name:'madusanka bandara', text:'"Absolutely delicious street-style food and extremely fast service!"', href:'https://maps.app.goo.gl/CqrB5p4k61Tofjcq6' },
                 ].map((review, idx) => (
                   <div
                     key={idx}
+                    className="review-card"
                     style={{ background:'linear-gradient(160deg, #162447 0%, #0f1a35 100%)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'24px', padding:'28px 28px 24px', display:'flex', flexDirection:'column', gap:'14px', position:'relative', overflow:'hidden', transition:'transform 0.3s, border-color 0.3s, box-shadow 0.3s', cursor:'default', flex:1 }}
                     onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform='translateY(-4px)'; el.style.borderColor='rgba(242,111,33,0.35)'; el.style.boxShadow='0 16px 40px rgba(0,0,0,0.35)'; }}
                     onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform='translateY(0)'; el.style.borderColor='rgba(255,255,255,0.08)'; el.style.boxShadow='none'; }}
@@ -685,7 +559,7 @@ export default function Home() {
                     <span style={{ position:'absolute', right:'24px', top:'45px', fontFamily:'var(--font-heading)', fontSize:'7rem', fontWeight:900, color:'rgba(242,111,33,0.06)', lineHeight:1, pointerEvents:'none', userSelect:'none', zIndex:0 }}>"</span>
 
                     {/* Reviewer row */}
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', zIndex:1 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
                         <div style={{ padding:'2.5px', background:'linear-gradient(135deg, #F26F21, #ff9e67)', borderRadius:'50%', flexShrink:0 }}>
                           <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:'#162447', color:'#FAF3E0', fontFamily:'var(--font-heading)', fontWeight:900, fontSize:'1.1rem', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -711,12 +585,12 @@ export default function Home() {
                     </div>
 
                     {/* Review text */}
-                    <p style={{ fontSize:'0.93rem', color:'rgba(250,243,224,0.85)', lineHeight:1.65, fontStyle:'italic', margin:0 }}>
+                    <p style={{ fontSize:'0.93rem', color:'rgba(250,243,224,0.85)', lineHeight:1.65, fontStyle:'italic', margin:0, zIndex:1 }}>
                       {review.text}
                     </p>
 
                     {/* Footer link — marginTop:auto pushes it to the bottom */}
-                    <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', paddingTop:'12px', marginTop:'auto' }}>
+                    <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', paddingTop:'12px', marginTop:'auto', zIndex:1 }}>
                       <a
                         href={review.href}
                         target="_blank"
@@ -866,13 +740,13 @@ export default function Home() {
           </div>
 
           {/* Embedded map */}
-          <div className="map-embed-wrapper fade-in fade-in-delay-2">
+          <div className="map-embed-wrapper fade-in fade-in-delay-2" style={{ padding: 0, margin: 0, overflow: 'hidden' }}>
             <iframe
               title="t-cloud eats location on Google Maps"
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d990.161254038916!2d79.92902197881799!3d6.932962699999993!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae257fcc5fb0da5%3A0x254afb02a157e1c1!2st-cloud%20eats!5e0!3m2!1sen!2sus!4v1782627430513!5m2!1sen!2sus"
               width="100%"
               height="100%"
-              style={{ border: 0, display: 'block', width: '100%', height: '100%' }}
+              style={{ width: '100%', height: '100%', minHeight: '250px', border: 0, display: 'block' }}
               allowFullScreen
               loading="lazy"
               referrerPolicy="strict-origin-when-cross-origin"
