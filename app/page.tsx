@@ -246,7 +246,7 @@ export default function Home() {
     const calculateTime = () => {
       const now = new Date();
       const diff = launchDate.getTime() - now.getTime();
-      const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       setDaysRemaining(days > 0 ? days : 0);
     };
 
@@ -257,13 +257,6 @@ export default function Home() {
 
   return (
     <>
-      {/* ── Announcement Bar ───────────────────────────────────── */}
-      <div className="announce-bar" role="banner">
-        <span className="announce-dot" aria-hidden="true" />
-        🎉 Grand Launching on July 2nd! Get Ready for Bold Flavors.
-        <span className="announce-dot" aria-hidden="true" />
-      </div>
-
       <main>
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section className="hero" aria-label="Hero">
@@ -626,7 +619,7 @@ export default function Home() {
             </div>
 
             {/* ── Two-column layout ── */}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'28px', alignItems:'stretch' }}>
+            <div className="reviews-grid" style={{ alignItems:'stretch' }}>
 
               {/* Left: Google Rating Card — justify-content:space-between distributes items evenly */}
               <div
@@ -879,7 +872,7 @@ export default function Home() {
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d990.161254038916!2d79.92902197881799!3d6.932962699999993!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae257fcc5fb0da5%3A0x254afb02a157e1c1!2st-cloud%20eats!5e0!3m2!1sen!2sus!4v1782627430513!5m2!1sen!2sus"
               width="100%"
               height="100%"
-              style={{ border: 0 }}
+              style={{ border: 0, display: 'block', width: '100%', height: '100%' }}
               allowFullScreen
               loading="lazy"
               referrerPolicy="strict-origin-when-cross-origin"

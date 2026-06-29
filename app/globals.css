@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* ── Global Interactive Resets ───────────────────────────────────── */
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus, button:active, button:focus-visible,
+a:focus, a:active, a:focus-visible,
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* ── Brand Design Tokens ─────────────────────────────────────────── */
 :root {
   --navy:   #0D1B35;
@@ -725,7 +736,15 @@ footer {
   gap: 10px;
   justify-content: flex-start;
   width: max-content;
-  margin: 0 auto;
+}
+
+@media (max-width: 767px) {
+  .category-tabs {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 
 @media (min-width: 768px) {
@@ -733,6 +752,7 @@ footer {
     justify-content: center;
     width: 100%;
     flex-wrap: wrap;
+    margin: 0 auto;
   }
 }
 
