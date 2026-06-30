@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { 
   Plus, 
   Minus, 
@@ -520,8 +521,14 @@ export default function PosPage() {
         {/* Left Thin Navigation Sidebar */}
         <aside className="w-[7%] bg-[#080D1A] border-r border-[#1B253F] flex flex-col justify-between items-center py-8 hidden md:flex shrink-0">
           <div className="flex flex-col items-center gap-12 w-full">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/25 cursor-pointer">
-              <span className="text-xl font-black text-white italic">T</span>
+            <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center shadow-lg shadow-orange-500/10 cursor-pointer">
+              <Image 
+                src="/Classic Logo.png" 
+                alt="T-Cloud Eats Logo" 
+                width={40} 
+                height={40} 
+                className="object-cover"
+              />
             </div>
 
             <nav className="flex flex-col gap-5.5 w-full px-2.5">
