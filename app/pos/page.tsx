@@ -387,6 +387,29 @@ export default function PosPage() {
     }, 3000);
   };
 
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handlePullFromGoogle = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    triggerToast("Pulling prices from Google...", "info");
+
+    try {
+      const res = await fetch("/api/google/sync-menu");
+      if (res.ok) {
+        const data = await res.json();
+        triggerToast(data.message || "Menu synced from Google successfully!", "success");
+      } else {
+        const err = await res.json();
+        triggerToast(`Sync failed: ${err.error || "Unknown error"}`, "error");
+      }
+    } catch (error) {
+      triggerToast("Network error syncing from Google", "error");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
@@ -1043,6 +1066,25 @@ export default function PosPage() {
                         className="bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
                       >
                         Lock Admin Session
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Google Menu Integration Section */}
+                  <div className="border-t border-[#222E4E] pt-6 space-y-4">
+                    <h3 className="font-extrabold text-xs text-orange-400 uppercase tracking-wider">Google Menu Integration</h3>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-300">Synchronize Prices</h4>
+                        <p className="text-[10px] text-slate-500 mt-1">Pull the latest menu prices from your Google Business Profile and update the website and POS</p>
+                      </div>
+                      <button
+                        onClick={handlePullFromGoogle}
+                        disabled={isSyncing}
+                        className="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-orange-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1.5"
+                      >
+                        <RotateCw size={12} className={isSyncing ? "animate-spin" : ""} />
+                        {isSyncing ? "Syncing..." : "Pull from Google"}
                       </button>
                     </div>
                   </div>
