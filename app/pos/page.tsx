@@ -36,6 +36,7 @@ interface MenuItem {
   price: number;
   category: string;
   portion: string;
+  image?: string;
 }
 
 interface CartItem {
@@ -126,27 +127,39 @@ function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
   return (
     <div
       onClick={() => onAdd(item)}
-      className="bg-[#111625] border border-[#222E4E] hover:border-[#FF6B35]/60 rounded-xl p-3 flex flex-col justify-between h-[95px] cursor-pointer transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 select-none"
+      className="bg-[#111625] border border-[#222E4E] hover:border-[#FF6B35]/60 rounded-xl p-3 flex justify-between gap-2.5 h-[95px] cursor-pointer transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 select-none"
     >
-      {/* Top: Title & Portion */}
-      <div>
-        <h3 className="font-extrabold text-xs text-slate-100 leading-tight tracking-wide line-clamp-2">
-          {item.title}
-        </h3>
-        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-1 block">
-          {item.portion}
-        </span>
+      {/* Left side: Text Details */}
+      <div className="flex flex-col justify-between flex-1 min-w-0">
+        <div>
+          <h3 className="font-extrabold text-xs text-slate-100 leading-tight tracking-wide line-clamp-2">
+            {item.title}
+          </h3>
+          <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-1 block">
+            {item.portion}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center mt-1">
+          <span className="text-xs font-black text-[#FF6B35] font-mono">
+            LKR {item.price.toLocaleString()}
+          </span>
+          <span className="text-[9px] font-mono font-bold text-slate-600">
+            #{item.id}
+          </span>
+        </div>
       </div>
 
-      {/* Bottom: Price & Database Index */}
-      <div className="flex justify-between items-center mt-1">
-        <span className="text-xs font-black text-[#FF6B35] font-mono">
-          LKR {item.price.toLocaleString()}
-        </span>
-        <span className="text-[9px] font-mono font-bold text-slate-600">
-          #{item.id}
-        </span>
-      </div>
+      {/* Right side: Optional Thumbnail */}
+      {item.image && (
+        <div className="w-14 h-14 rounded-xl border border-[#222E4E] overflow-hidden shrink-0 self-center">
+          <img
+            src={item.image}
+            alt={item.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -390,6 +403,21 @@ export default function PosPage() {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (isEdit) {
+          setEditingItem(prev => prev ? { ...prev, image: reader.result as string } : null);
+        } else {
+          setNewItemData(prev => ({ ...prev, image: reader.result as string }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // CRUD Operations
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
@@ -399,11 +427,12 @@ export default function PosPage() {
       title: newItemData.title,
       price: Number(newItemData.price),
       category: newItemData.category || "Fried Rice",
-      portion: newItemData.portion || "Full Portion"
+      portion: newItemData.portion || "Full Portion",
+      image: newItemData.image
     };
     setMenuItems(prev => [...prev, newItem]);
     setIsAddingItem(false);
-    setNewItemData({ title: "", price: 0, category: "Fried Rice", portion: "Full Portion" });
+    setNewItemData({ title: "", price: 0, category: "Fried Rice", portion: "Full Portion", image: undefined });
     triggerToast("Item added to database", "success");
   };
 
@@ -651,7 +680,7 @@ export default function PosPage() {
 
                 {isAddingItem && (
                   <form onSubmit={handleAddItem} className="bg-[#111625] border border-[#222E4E] p-5 rounded-2xl space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                       <input
                         type="text"
                         placeholder="Item Title"
@@ -684,8 +713,93 @@ export default function PosPage() {
                         onChange={e => setNewItemData(prev => ({ ...prev, portion: e.target.value }))}
                         className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35]"
                       />
+                      <div className="relative bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-slate-400 flex items-center justify-between">
+                        <span className="truncate">{newItemData.image ? "Photo Loaded" : "Upload Photo"}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={e => handleImageChange(e, false)}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                        />
+                      </div>
                     </div>
-                    <button type="submit" className="bg-emerald-500 text-white font-bold text-xs py-2 px-4 rounded-lg">Save</button>
+                    <div className="flex gap-2">
+                      <button type="submit" className="bg-emerald-500 text-white font-bold text-xs py-2 px-4 rounded-lg">Save</button>
+                      {newItemData.image && (
+                        <button
+                          type="button"
+                          onClick={() => setNewItemData(prev => ({ ...prev, image: undefined }))}
+                          className="bg-red-500/10 text-red-400 border border-red-500/20 font-bold text-xs py-2 px-4 rounded-lg hover:bg-red-500/20 cursor-pointer"
+                        >
+                          Remove Photo
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                )}
+
+                {/* Edit Form with Photo Option */}
+                {editingItem && (
+                  <form onSubmit={handleEditItem} className="bg-[#111625] border border-blue-500/25 p-5 rounded-2xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-[#222E4E] pb-2">
+                      <h4 className="font-bold text-xs text-blue-400 uppercase tracking-wider">Edit Menu Item</h4>
+                      <button type="button" onClick={() => setEditingItem(null)} className="text-xs text-slate-400 hover:text-white cursor-pointer">Cancel</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <input
+                        type="text"
+                        placeholder="Item Title"
+                        value={editingItem.title}
+                        onChange={e => setEditingItem(prev => prev ? { ...prev, title: e.target.value } : null)}
+                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
+                        required
+                      />
+                      <input
+                        type="number"
+                        placeholder="Price"
+                        value={editingItem.price}
+                        onChange={e => setEditingItem(prev => prev ? { ...prev, price: Number(e.target.value) } : null)}
+                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
+                        required
+                      />
+                      <select
+                        value={editingItem.category}
+                        onChange={e => setEditingItem(prev => prev ? { ...prev, category: e.target.value } : null)}
+                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+                      >
+                        {CATEGORIES.filter(c => c !== "All Categories").map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Portion"
+                        value={editingItem.portion}
+                        onChange={e => setEditingItem(prev => prev ? { ...prev, portion: e.target.value } : null)}
+                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
+                      />
+                      <div className="relative bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-slate-400 flex items-center justify-between">
+                        <span className="truncate">{editingItem.image ? "Photo Loaded" : "Upload Photo"}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={e => handleImageChange(e, true)}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="submit" className="bg-blue-500 text-white font-bold text-xs py-2 px-4 rounded-lg">Update</button>
+                      {editingItem.image && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingItem(prev => prev ? { ...prev, image: undefined } : null)}
+                          className="bg-red-500/10 text-red-400 border border-red-500/20 font-bold text-xs py-2 px-4 rounded-lg hover:bg-red-500/20 cursor-pointer"
+                        >
+                          Remove Photo
+                        </button>
+                      )}
+                    </div>
                   </form>
                 )}
 
