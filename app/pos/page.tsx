@@ -513,6 +513,12 @@ export default function PosPage() {
     <div className="h-screen w-screen bg-[#050814] p-3 text-[#F8F9FA] font-sans antialiased selection:bg-[#FF6B35] selection:text-white flex overflow-hidden relative">
       
       <style dangerouslySetInnerHTML={{__html: `
+        html, body {
+          overflow: hidden !important;
+          height: 100vh !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
         ::-webkit-scrollbar {
           display: none !important;
         }
@@ -705,7 +711,7 @@ export default function PosPage() {
           <div className="flex-1 overflow-y-auto p-6">
             
             {activeSidebar === "new_order" && (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pb-16">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4.5 pb-16">
                 {filteredMenuItems.map(item => (
                   <MinimalMenuCard
                     key={item.id}
