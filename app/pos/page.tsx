@@ -150,10 +150,10 @@ function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
   return (
     <div
       onClick={() => onAdd(item)}
-      className="group bg-[#111625]/60 border border-[#222E4E] hover:border-[#FF6B35]/60 hover:shadow-[0_0_15px_rgba(255,107,53,0.12)] rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-1 select-none h-full"
+      className="group bg-[#111625]/40 backdrop-blur-md border border-[#222E4E] hover:border-[#FF6B35]/60 hover:shadow-[0_10px_30px_rgba(255,107,53,0.15)] rounded-[24px] overflow-hidden flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-1 select-none h-full"
     >
       {/* Image / Gradient Placeholder Container */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-950 shrink-0">
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-950 shrink-0 rounded-t-[24px]">
         {item.image ? (
           <img
             src={item.image}
@@ -161,26 +161,26 @@ function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-tr ${gradient} opacity-80 flex items-center justify-center relative`}>
-            <span className="text-[9px] font-black tracking-widest text-white/40 uppercase font-mono">
+          <div className={`w-full h-full bg-gradient-to-tr ${gradient} opacity-85 flex items-center justify-center relative`}>
+            <span className="text-[10px] font-black tracking-widest text-white/55 uppercase font-mono">
               {item.category}
             </span>
           </div>
         )}
         {/* Portion Badge */}
-        <div className="absolute top-2.5 right-2.5 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/5 text-[8px] font-extrabold text-slate-300 tracking-wide uppercase">
+        <div className="absolute top-3.5 right-3.5 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-xl border border-white/5 text-[9px] font-extrabold text-slate-200 tracking-wide uppercase">
           {item.portion}
         </div>
       </div>
 
       {/* Text Details */}
-      <div className="p-4 flex flex-col justify-between flex-1 space-y-3">
+      <div className="p-5 flex flex-col justify-between flex-1 space-y-4">
         <h3 className="font-extrabold text-xs text-slate-100 leading-snug tracking-wide line-clamp-2 group-hover:text-[#FF6B35] transition-colors duration-150">
           {item.title}
         </h3>
 
         <div className="flex justify-between items-baseline pt-1">
-          <span className="text-xs font-black text-[#FF6B35] font-mono tracking-wider">
+          <span className="text-sm font-black text-[#FF6B35] font-mono tracking-wider">
             LKR {item.price.toLocaleString()}
           </span>
           <span className="text-[9px] font-mono font-bold text-slate-600">
@@ -510,7 +510,7 @@ export default function PosPage() {
   });
 
   return (
-    <div className="h-screen w-screen bg-[#050814] p-3 text-[#F8F9FA] font-sans antialiased selection:bg-[#FF6B35] selection:text-white flex overflow-hidden relative">
+    <div className="h-screen w-screen bg-[#050814] p-5 text-[#F8F9FA] font-sans antialiased selection:bg-[#FF6B35] selection:text-white flex overflow-hidden relative">
       
       <style dangerouslySetInnerHTML={{__html: `
         html, body {
@@ -550,7 +550,7 @@ export default function PosPage() {
       </div>
 
       {/* Inner Floating Console Container */}
-      <div className="flex-1 h-full flex bg-[#0A0F1D] rounded-[24px] border border-[#1B253F] overflow-hidden">
+      <div className="flex-1 h-full flex bg-[#0A0F1D] rounded-[32px] border border-[#1B253F] overflow-hidden">
         
         {/* Left Thin Navigation Sidebar */}
         <aside className="w-[75px] bg-[#080D1A] border-r border-[#1B253F] flex flex-col justify-between items-center py-8 hidden md:flex shrink-0">
