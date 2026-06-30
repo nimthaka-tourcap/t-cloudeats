@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Plus, 
@@ -16,10 +16,11 @@ import {
   Check, 
   Printer, 
   TrendingUp, 
-  User, 
-  DollarSign, 
-  Clock,
+  X,
+  ChevronLeft,
   ChevronRight,
+  AlertTriangle,
+  Info,
   Soup, 
   Coffee, 
   Flame, 
@@ -27,7 +28,10 @@ import {
   Award
 } from "lucide-react";
 
-// --- Types ---
+// ============================================================================
+// --- DESIGN SYSTEM & TYPES ---
+// ============================================================================
+
 interface MenuItem {
   id: number;
   title: string;
@@ -52,44 +56,273 @@ interface Order {
   status: "Completed" | "Pending";
 }
 
-// --- Card Visual Helpers ---
+type ToastType = "success" | "error" | "info" | "warning";
+
+interface ToastMessage {
+  id: string;
+  message: string;
+  type: ToastType;
+}
+
+const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Noodles", "Kottu", "Ultimate Bites", "Beverages"];
+
+// ============================================================================
+// --- REUSABLE SUB-COMPONENTS ---
+// ============================================================================
+
+/**
+ * 1. Reusable FormInput Component with Floating Label Pattern
+ */
+interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+  error?: string;
+}
+
+function FormInput({ label, error, id, value, onChange, ...props }: FormInputProps) {
+  const [focused, setFocused] = useState(false);
+  const isFilled = value !== undefined && value !== null && value !== "" && String(value).length > 0;
+
+  return (
+    <div className="relative w-full mb-5">
+      <div className={`relative rounded-2xl transition-all duration-200 bg-[#0D1224] border ${
+        error 
+          ? "border-red-500/50 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500/20" 
+          : focused 
+            ? "border-[#FF6B35] ring-1 ring-[#FF6B35]/20" 
+            : "border-slate-800 hover:border-slate-700"
+      }`}>
+        <input
+          id={id}
+          value={value}
+          onChange={onChange}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          className="w-full px-4 pt-6 pb-2 text-sm text-[#F8F9FA] bg-transparent outline-none transition-all placeholder-transparent"
+          {...props}
+        />
+        <label
+          htmlFor={id}
+          className={`absolute left-4 top-4 text-xs font-semibold text-slate-500 transition-all duration-200 pointer-events-none origin-left ${
+            focused || isFilled 
+              ? "transform -translate-y-2.5 scale-90 text-[#FF6B35]" 
+              : ""
+          }`}
+        >
+          {label}
+        </label>
+      </div>
+      {error && (
+        <span className="text-[10px] font-bold text-red-400 mt-1 block pl-2 uppercase tracking-wider">
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 2. Reusable MenuCard Component for Ordering Catalog
+ */
+interface MenuCardProps {
+  item: MenuItem;
+  onAdd: (item: MenuItem) => void;
+}
+
 const getCategoryIcon = (category: string) => {
   switch (category) {
     case "Fried Rice":
-      return <Utensils className="text-orange-400 w-7 h-7 drop-shadow-[0_0_8px_rgba(251,146,60,0.45)]" />;
+      return <Utensils className="text-orange-400 w-8 h-8 drop-shadow-[0_0_8px_rgba(251,146,60,0.5)]" />;
     case "Chopsuey":
-      return <Soup className="text-amber-400 w-7 h-7 drop-shadow-[0_0_8px_rgba(251,191,36,0.45)]" />;
+      return <Soup className="text-amber-400 w-8 h-8 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />;
     case "Noodles":
-      return <Utensils className="text-yellow-400 w-7 h-7 drop-shadow-[0_0_8px_rgba(250,204,21,0.45)]" />;
+      return <Utensils className="text-yellow-400 w-8 h-8 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" />;
     case "Kottu":
-      return <Flame className="text-red-400 w-7 h-7 drop-shadow-[0_0_8px_rgba(248,113,113,0.45)]" />;
+      return <Flame className="text-red-400 w-8 h-8 drop-shadow-[0_0_8px_rgba(248,113,113,0.5)]" />;
     case "Ultimate Bites":
-      return <Flame className="text-rose-400 w-7 h-7 drop-shadow-[0_0_8px_rgba(251,113,133,0.45)]" />;
+      return <Flame className="text-rose-400 w-8 h-8 drop-shadow-[0_0_8px_rgba(251,113,133,0.5)]" />;
     case "Beverages":
-      return <Coffee className="text-cyan-400 w-7 h-7 drop-shadow-[0_0_8px_rgba(34,211,238,0.45)]" />;
+      return <Coffee className="text-cyan-400 w-8 h-8 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]" />;
     default:
-      return <Award className="text-slate-400 w-7 h-7" />;
+      return <Award className="text-slate-400 w-8 h-8" />;
   }
 };
 
 const getCategoryGradient = (category: string) => {
   switch (category) {
     case "Fried Rice":
-      return "from-orange-950/30 via-slate-900/90 to-slate-900";
+      return "from-orange-950/25 via-slate-900/95 to-slate-900";
     case "Chopsuey":
-      return "from-amber-950/30 via-slate-900/90 to-slate-900";
+      return "from-amber-950/25 via-slate-900/95 to-slate-900";
     case "Noodles":
-      return "from-yellow-950/30 via-slate-900/90 to-slate-900";
+      return "from-yellow-950/25 via-slate-900/95 to-slate-900";
     case "Kottu":
-      return "from-red-950/30 via-slate-900/90 to-slate-900";
+      return "from-red-950/25 via-slate-900/95 to-slate-900";
     case "Ultimate Bites":
-      return "from-rose-950/30 via-slate-900/90 to-slate-900";
+      return "from-rose-950/25 via-slate-900/95 to-slate-900";
     case "Beverages":
-      return "from-cyan-950/30 via-slate-900/90 to-slate-900";
+      return "from-cyan-950/25 via-slate-900/95 to-slate-900";
     default:
-      return "from-slate-950 via-slate-900/90 to-slate-900";
+      return "from-slate-950 via-slate-900/95 to-slate-900";
   }
 };
+
+function MenuCard({ item, onAdd }: MenuCardProps) {
+  return (
+    <div
+      onClick={() => onAdd(item)}
+      className="glass-card rounded-[24px] p-3.5 flex flex-col h-60 cursor-pointer hover:scale-[1.02] active:scale-95 group"
+    >
+      {/* Category Gradient Visual Container */}
+      <div className={`h-32 w-full rounded-[18px] bg-gradient-to-tr ${getCategoryGradient(item.category)} relative overflow-hidden flex items-center justify-center shrink-0 border border-white/5 shadow-inner`}>
+        <div className="group-hover:scale-110 transition-transform duration-350">
+          {getCategoryIcon(item.category)}
+        </div>
+        <span className="absolute bottom-2.5 right-2.5 text-[9px] font-black bg-[#050814]/95 text-slate-200 px-2.5 py-0.5 rounded-md border border-white/5 backdrop-blur-md tracking-wider uppercase">
+          {item.portion}
+        </span>
+      </div>
+
+      {/* Title & Pricing Block */}
+      <div className="pt-3 flex flex-col justify-between flex-1 min-h-0">
+        <div className="flex justify-between items-start gap-2 h-full">
+          <div className="min-w-0 flex flex-col justify-between h-full pb-0.5">
+            <div>
+              <h3 className="font-extrabold text-xs line-clamp-2 leading-snug text-slate-100 group-hover:text-[#FF6B35] transition-colors">
+                {item.title}
+              </h3>
+              <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mt-1.5 block">
+                {item.category}
+              </span>
+            </div>
+          </div>
+          <span className="text-[11px] font-black text-[#FF6B35] glow-orange shrink-0 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20 font-mono">
+            LKR {item.price.toLocaleString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 3. Reusable DataTable Component with Card-Table Hybrid & Pagination
+ */
+interface DataTableProps {
+  items: MenuItem[];
+  onEdit: (item: MenuItem) => void;
+  onDelete: (id: number) => void;
+}
+
+function DataTable({ items, onEdit, onDelete }: DataTableProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  const totalPages = Math.ceil(items.length / itemsPerPage);
+  
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return items.slice(start, start + itemsPerPage);
+  }, [items, currentPage]);
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="bg-[#0D1224]/40 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500">
+        <FolderKanban className="mx-auto text-slate-600 mb-3" size={32} />
+        <p className="text-xs font-bold text-slate-400">No Menu Items Found</p>
+        <p className="text-[10px] text-slate-500 mt-1">Try adjusting your search criteria or add a new item.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-[#0D1224]/40 border border-slate-800/80 rounded-[24px] overflow-hidden shadow-2xl backdrop-blur-md">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-white/5 text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-950/40 sticky top-0 z-10 backdrop-blur-md">
+                <th className="px-6 py-4">ID</th>
+                <th className="px-6 py-4">Item Name</th>
+                <th className="px-6 py-4">Category</th>
+                <th className="px-6 py-4">Portion</th>
+                <th className="px-6 py-4">Price</th>
+                <th className="px-6 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5 text-xs">
+              {paginatedItems.map(item => (
+                <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
+                  <td className="px-6 py-4 font-mono text-[10px] text-slate-500">{item.id}</td>
+                  <td className="px-6 py-4 font-extrabold text-slate-200">{item.title}</td>
+                  <td className="px-6 py-4">
+                    <span className="bg-white/5 text-slate-400 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase border border-white/5">
+                      {item.category}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-slate-400">{item.portion}</td>
+                  <td className="px-6 py-4 font-bold text-[#FF6B35] glow-orange">LKR {item.price.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => onEdit(item)}
+                        className="text-orange-400 hover:text-orange-300 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-xl transition-all font-bold text-[10px] uppercase cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => onDelete(item.id)}
+                        className="text-red-400 hover:text-red-300 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl transition-all font-bold text-[10px] uppercase cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Pagination Bar */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center px-2">
+          <span className="text-[10px] font-mono text-slate-500 uppercase">
+            Showing Page {currentPage} of {totalPages} ({items.length} total)
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage === 1}
+              className="p-2 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className="p-2 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// --- MAIN PAGE COMPONENT ---
+// ============================================================================
 
 // --- Demo Menu Data ---
 const INITIAL_MENU_ITEMS: MenuItem[] = [
@@ -142,8 +375,6 @@ const INITIAL_MENU_ITEMS: MenuItem[] = [
   { id: 36, title: "Mineral Water", price: 100, category: "Beverages", imageColor: "bg-slate-800/80", portion: "1 Liter" }
 ];
 
-const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Noodles", "Kottu", "Ultimate Bites", "Beverages"];
-
 export default function PosPage() {
   const router = useRouter();
 
@@ -160,9 +391,9 @@ export default function PosPage() {
   const [newItemData, setNewItemData] = useState<Partial<MenuItem>>({
     title: "",
     price: 0,
-    category: "Rice",
-    portion: "Regular",
-    imageColor: "bg-slate-800/80"
+    category: "Fried Rice",
+    portion: "Full Portion",
+    imageColor: "bg-slate-805"
   });
 
   // Admin PIN Security State
@@ -176,15 +407,22 @@ export default function PosPage() {
   const [latestOrder, setLatestOrder] = useState<Order | null>(null);
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
 
-  // Feedback Notification
-  const [feedbackMsg, setFeedbackMsg] = useState("");
+  // Toast System State
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const triggerFeedback = (msg: string) => {
-    setFeedbackMsg(msg);
-    setTimeout(() => setFeedbackMsg(""), 2000);
+  const triggerToast = (message: string, type: ToastType = "success") => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
   };
 
-  // Handle Logout (Redirects back to login page)
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  // Handle Logout
   const handleLogout = () => {
     router.push("/login");
   };
@@ -198,7 +436,7 @@ export default function PosPage() {
       }
       return [...prev, { menuItem: item, quantity: 1 }];
     });
-    triggerFeedback(`Added ${item.title}`);
+    triggerToast(`Added ${item.title} to cart`, "success");
   };
 
   const updateQuantity = (itemId: number, delta: number) => {
@@ -214,7 +452,11 @@ export default function PosPage() {
   };
 
   const removeFromCart = (itemId: number) => {
+    const item = cart.find(i => i.menuItem.id === itemId);
     setCart(prev => prev.filter(item => item.menuItem.id !== itemId));
+    if (item) {
+      triggerToast(`Removed ${item.menuItem.title}`, "info");
+    }
   };
 
   // Financial Calculations
@@ -225,7 +467,7 @@ export default function PosPage() {
   // Checkout & Invoice
   const handleCheckout = () => {
     if (cart.length === 0) {
-      alert("Your cart is empty!");
+      triggerToast("Your cart is empty!", "warning");
       return;
     }
     const newOrder: Order = {
@@ -248,7 +490,7 @@ export default function PosPage() {
     setCart([]);
     setShowReceiptModal(false);
     setLatestOrder(null);
-    triggerFeedback("Order processed and receipt printed!");
+    triggerToast("Order processed and invoice printed!", "success");
   };
 
   // Sidebar navigation handler with PIN check
@@ -276,10 +518,11 @@ export default function PosPage() {
             setIsAdminUnlocked(true);
             setShowPinModal(false);
             setActiveSidebar("menu_management");
-            triggerFeedback("Admin access granted");
+            triggerToast("Admin access granted", "success");
           } else {
             setPinError("Incorrect PIN. Please try again.");
             setPinInput("");
+            triggerToast("Invalid passcode", "error");
           }
         }, 300);
       }
@@ -289,19 +532,22 @@ export default function PosPage() {
   // CRUD Operations
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItemData.title || !newItemData.price) return;
+    if (!newItemData.title || !newItemData.price) {
+      triggerToast("Title and price are required", "warning");
+      return;
+    }
     const newItem: MenuItem = {
       id: Math.max(...menuItems.map(i => i.id)) + 1,
       title: newItemData.title,
       price: Number(newItemData.price),
-      category: newItemData.category || "Rice",
-      portion: newItemData.portion || "Regular",
-      imageColor: newItemData.imageColor || "bg-slate-800/80"
+      category: newItemData.category || "Fried Rice",
+      portion: newItemData.portion || "Full Portion",
+      imageColor: newItemData.imageColor || "bg-slate-805"
     };
     setMenuItems(prev => [...prev, newItem]);
     setIsAddingItem(false);
-    setNewItemData({ title: "", price: 0, category: "Rice", portion: "Regular", imageColor: "bg-slate-800/80" });
-    triggerFeedback("Menu item added");
+    setNewItemData({ title: "", price: 0, category: "Fried Rice", portion: "Full Portion", imageColor: "bg-slate-805" });
+    triggerToast("Menu item added successfully", "success");
   };
 
   const handleEditItem = (e: React.FormEvent) => {
@@ -309,13 +555,13 @@ export default function PosPage() {
     if (!editingItem) return;
     setMenuItems(prev => prev.map(item => item.id === editingItem.id ? editingItem : item));
     setEditingItem(null);
-    triggerFeedback("Menu item updated");
+    triggerToast("Menu item updated successfully", "success");
   };
 
   const handleDeleteItem = (id: number) => {
     if (confirm("Are you sure you want to delete this item?")) {
       setMenuItems(prev => prev.filter(item => item.id !== id));
-      triggerFeedback("Menu item deleted");
+      triggerToast("Menu item deleted", "info");
     }
   };
 
@@ -368,13 +614,37 @@ export default function PosPage() {
         }
       `}} />
 
-      {/* Toast Feedback Notification */}
-      {feedbackMsg && (
-        <div className="fixed top-6 right-6 z-50 bg-gradient-to-r from-orange-500 to-red-500 text-white px-5 py-3.5 rounded-2xl shadow-2xl shadow-orange-500/20 border border-orange-400/30 flex items-center gap-2.5 animate-pulse">
-          <Check size={18} />
-          <span className="font-bold text-xs uppercase tracking-wider">{feedbackMsg}</span>
-        </div>
-      )}
+      {/* Non-blocking Toast Notifications Stack */}
+      <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`px-5 py-4 rounded-2xl shadow-2xl flex items-center justify-between gap-3 border transition-all duration-300 transform translate-y-0 opacity-100 ${
+              toast.type === "success" 
+                ? "bg-emerald-950/80 border-emerald-500/30 text-emerald-200" 
+                : toast.type === "error" 
+                  ? "bg-red-950/80 border-red-500/30 text-red-200" 
+                  : toast.type === "warning" 
+                    ? "bg-amber-950/80 border-amber-500/30 text-amber-200" 
+                    : "bg-slate-900/95 border-slate-800 text-slate-200"
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              {toast.type === "success" && <Check size={16} className="text-emerald-400" />}
+              {toast.type === "error" && <X size={16} className="text-red-400" />}
+              {toast.type === "warning" && <AlertTriangle size={16} className="text-amber-400" />}
+              {toast.type === "info" && <Info size={16} className="text-blue-400" />}
+              <span className="text-xs font-bold tracking-wide leading-relaxed">{toast.message}</span>
+            </div>
+            <button
+              onClick={() => removeToast(toast.id)}
+              className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
 
       <div className="h-screen w-screen flex overflow-hidden mesh-bg">
         
@@ -576,39 +846,11 @@ export default function PosPage() {
                 {/* Menu Items Grid */}
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
                   {filteredMenuItems.map(item => (
-                    <div
+                    <MenuCard
                       key={item.id}
-                      onClick={() => addToCart(item)}
-                      className="glass-card rounded-[24px] p-3.5 flex flex-col h-60 cursor-pointer hover:scale-[1.02] active:scale-95 group"
-                    >
-                      {/* Rich styled category gradient card (Dynamic food photography placeholder area) */}
-                      <div className={`h-32 w-full rounded-[18px] bg-gradient-to-tr ${getCategoryGradient(item.category)} relative overflow-hidden flex items-center justify-center shrink-0 border border-white/5 shadow-inner`}>
-                        {/* Dynamic category icon with neon glow */}
-                        <div className="group-hover:scale-110 transition-transform duration-300">
-                          {getCategoryIcon(item.category)}
-                        </div>
-                        <span className="absolute bottom-2.5 right-2.5 text-[9px] font-black bg-[#050814]/90 text-slate-300 px-2.5 py-0.5 rounded-md border border-white/5 backdrop-blur-md tracking-wider uppercase">
-                          {item.portion}
-                        </span>
-                      </div>
-
-                      {/* Title and price */}
-                      <div className="pt-3 flex flex-col justify-between flex-1 min-h-0">
-                        <div className="flex justify-between items-start gap-2 h-full">
-                          <div className="min-w-0 flex flex-col justify-between h-full pb-0.5">
-                            <div>
-                              <h3 className="font-extrabold text-xs line-clamp-2 leading-snug text-slate-100 group-hover:text-[#FF6B35] transition-colors">
-                                {item.title}
-                              </h3>
-                              <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mt-1.5 block">{item.category}</span>
-                            </div>
-                          </div>
-                          <span className="text-[11px] font-black text-[#FF6B35] glow-orange shrink-0 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20 font-mono">
-                            LKR {item.price.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                      item={item}
+                      onAdd={addToCart}
+                    />
                   ))}
 
                   {filteredMenuItems.length === 0 && (
@@ -623,92 +865,92 @@ export default function PosPage() {
             {/* --- VIEW: Order History --- */}
             {activeSidebar === "order_history" && (
               <div className="space-y-6">
-                <div className="bg-[#1C2541] rounded-2xl border border-slate-800 p-5">
-                  <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
-                    <TrendingUp size={16} className="text-[#FF6B35]" />
+                <div className="bg-[#0D1224]/40 border border-slate-800/80 rounded-[24px] p-5 backdrop-blur-md">
+                  <h3 className="font-extrabold text-xs uppercase tracking-wider mb-4 flex items-center gap-2 text-slate-300">
+                    <TrendingUp size={14} className="text-[#FF6B35]" />
                     Today's Sales Summary
                   </h3>
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-[#0B132B] p-4 rounded-xl border border-slate-800">
-                      <p className="text-[10px] text-slate-500 uppercase font-semibold">Total Orders</p>
-                      <p className="text-xl font-black mt-1">{orderHistory.length + 3}</p>
+                    <div className="bg-[#050814]/60 p-4 rounded-2xl border border-white/5">
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Total Orders</p>
+                      <p className="text-xl font-black mt-1.5 text-slate-200">{orderHistory.length + 3}</p>
                     </div>
-                    <div className="bg-[#0B132B] p-4 rounded-xl border border-slate-800">
-                      <p className="text-[10px] text-slate-500 uppercase font-semibold">Gross Revenue</p>
-                      <p className="text-xl font-black mt-1 text-emerald-400">
-                        LKR {(orderHistory.reduce((sum, o) => sum + o.total, 0) + 9500).toLocaleString()}
+                    <div className="bg-[#050814]/60 p-4 rounded-2xl border border-white/5">
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Gross Revenue</p>
+                      <p className="text-xl font-black mt-1.5 text-emerald-400 font-mono">
+                        LKR {(orderHistory.reduce((sum, o) => sum + o.total, 0) + 4140).toLocaleString()}
                       </p>
                     </div>
-                    <div className="bg-[#0B132B] p-4 rounded-xl border border-slate-800">
-                      <p className="text-[10px] text-slate-500 uppercase font-semibold">Average Ticket</p>
-                      <p className="text-xl font-black mt-1">
-                        LKR {Math.round((orderHistory.reduce((sum, o) => sum + o.total, 0) + 9500) / (orderHistory.length + 3)).toLocaleString()}
+                    <div className="bg-[#050814]/60 p-4 rounded-2xl border border-white/5">
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Average Ticket</p>
+                      <p className="text-xl font-black mt-1.5 text-slate-200 font-mono">
+                        LKR {Math.round((orderHistory.reduce((sum, o) => sum + o.total, 0) + 4140) / (orderHistory.length + 3)).toLocaleString()}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-[#1C2541] rounded-2xl border border-slate-800 overflow-hidden">
-                  <div className="p-4 border-b border-slate-800">
-                    <h3 className="font-bold text-sm">Recent Transactions</h3>
+                <div className="bg-[#0D1224]/40 border border-slate-800/80 rounded-[24px] overflow-hidden backdrop-blur-md">
+                  <div className="p-4 border-b border-white/5 bg-slate-950/20">
+                    <h3 className="font-extrabold text-xs uppercase tracking-wider text-slate-300">Recent Transactions</h3>
                   </div>
-                  <div className="divide-y divide-slate-800/80">
-                    <div className="p-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
+                  <div className="divide-y divide-white/5">
+                    <div className="p-4 flex items-center justify-between hover:bg-white/[0.01] transition-colors">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-slate-200">TCE-921473</span>
-                          <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">Completed</span>
+                          <span className="font-extrabold text-xs text-slate-200">TCE-921473</span>
+                          <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Completed</span>
                         </div>
-                        <p className="text-[10px] text-slate-500 mt-1">10:42 AM • 2 Items (Cheese Chicken Kottu, Fresh Lime Juice)</p>
+                        <p className="text-[10px] text-slate-500 mt-1.5">10:42 AM • 2 Items (Egg Kottu, Ice Milo)</p>
                       </div>
                       <div className="text-right">
-                        <span className="font-black text-xs">LKR 1,925</span>
-                        <p className="text-[9px] text-slate-500 mt-0.5">Paid via Cash</p>
+                        <span className="font-bold text-xs text-slate-200 font-mono">LKR 1,000</span>
+                        <p className="text-[9px] text-slate-500 mt-1">Paid via Cash</p>
                       </div>
                     </div>
 
-                    <div className="p-4 flex items-center justify-between hover:bg-slate-855 transition-colors">
+                    <div className="p-4 flex items-center justify-between hover:bg-white/[0.01] transition-colors">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-slate-200">TCE-847291</span>
-                          <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">Completed</span>
+                          <span className="font-extrabold text-xs text-slate-200">TCE-847291</span>
+                          <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Completed</span>
                         </div>
-                        <p className="text-[10px] text-slate-500 mt-1">11:15 AM • 4 Items (Mix Fried Rice x2, Devilled Chicken, Ginger Beer)</p>
+                        <p className="text-[10px] text-slate-500 mt-1.5">11:15 AM • 2 Items (Classic Chicken Fried Rice, Mineral Water)</p>
                       </div>
                       <div className="text-right">
-                        <span className="font-black text-xs">LKR 4,950</span>
-                        <p className="text-[9px] text-slate-500 mt-0.5">Paid via Card</p>
+                        <span className="font-bold text-xs text-slate-200 font-mono">LKR 1,100</span>
+                        <p className="text-[9px] text-slate-500 mt-1">Paid via Card</p>
                       </div>
                     </div>
 
-                    <div className="p-4 flex items-center justify-between hover:bg-slate-855 transition-colors">
+                    <div className="p-4 flex items-center justify-between hover:bg-white/[0.01] transition-colors">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-slate-200">TCE-631029</span>
-                          <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">Completed</span>
+                          <span className="font-extrabold text-xs text-slate-200">TCE-631029</span>
+                          <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Completed</span>
                         </div>
-                        <p className="text-[10px] text-slate-500 mt-1">12:30 PM • 1 Item (Chicken Biriyani)</p>
+                        <p className="text-[10px] text-slate-500 mt-1.5">12:30 PM • 2 Items (Surf & Turf Kottu, Milk Shake)</p>
                       </div>
                       <div className="text-right">
-                        <span className="font-black text-xs">LKR 1,265</span>
-                        <p className="text-[9px] text-slate-500 mt-0.5">Paid via Card</p>
+                        <span className="font-bold text-xs text-slate-200 font-mono">LKR 1,750</span>
+                        <p className="text-[9px] text-slate-500 mt-1">Paid via Card</p>
                       </div>
                     </div>
 
                     {orderHistory.map((order) => (
-                      <div key={order.id} className="p-4 flex items-center justify-between hover:bg-slate-855 transition-colors">
+                      <div key={order.id} className="p-4 flex items-center justify-between hover:bg-white/[0.01] transition-colors">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-xs text-slate-200">{order.id}</span>
-                            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">{order.status}</span>
+                            <span className="font-extrabold text-xs text-slate-200">{order.id}</span>
+                            <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">{order.status}</span>
                           </div>
-                          <p className="text-[10px] text-slate-500 mt-1">
+                          <p className="text-[10px] text-slate-500 mt-1.5">
                             {order.timestamp} • {order.items.reduce((sum, i) => sum + i.quantity, 0)} Items
                           </p>
                         </div>
                         <div className="text-right">
-                          <span className="font-black text-xs">LKR {order.total.toLocaleString()}</span>
-                          <p className="text-[9px] text-slate-500 mt-0.5">Cashier #01</p>
+                          <span className="font-bold text-xs text-slate-200 font-mono">LKR {order.total.toLocaleString()}</span>
+                          <p className="text-[9px] text-slate-500 mt-1">Cashier #01</p>
                         </div>
                       </div>
                     ))}
@@ -717,197 +959,142 @@ export default function PosPage() {
               </div>
             )}
 
-            {/* --- VIEW: Menu Management CRUD Table --- */}
+            {/* --- VIEW: Menu Management CRUD --- */}
             {activeSidebar === "menu_management" && isAdminUnlocked && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-sm text-slate-200">System Menu Database</h3>
-                  <button
-                    onClick={() => setIsAddingItem(true)}
-                    className="bg-[#FF6B35] hover:bg-orange-600 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Plus size={14} /> Add New Item
-                  </button>
+                  <h3 className="font-extrabold text-xs uppercase tracking-wider text-slate-300">System Menu Database</h3>
+                  {!isAddingItem && (
+                    <button
+                      onClick={() => setIsAddingItem(true)}
+                      className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-lg shadow-orange-500/10"
+                    >
+                      <Plus size={14} /> Add New Item
+                    </button>
+                  )}
                 </div>
 
+                {/* Add Form with Floating Labels */}
                 {isAddingItem && (
-                  <form onSubmit={handleAddItem} className="bg-[#1C2541] border border-orange-500/30 p-5 rounded-2xl space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                      <h4 className="font-bold text-xs text-orange-400 uppercase tracking-wider">Add New Menu Item</h4>
-                      <button type="button" onClick={() => setIsAddingItem(false)} className="text-xs text-slate-400 hover:text-white">Cancel</button>
+                  <form onSubmit={handleAddItem} className="bg-[#0D1224]/40 border border-orange-500/20 p-6 rounded-[24px] space-y-4 backdrop-blur-md">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                      <h4 className="font-extrabold text-xs text-orange-400 uppercase tracking-wider">Add New Menu Item</h4>
+                      <button type="button" onClick={() => setIsAddingItem(false)} className="text-xs text-slate-400 hover:text-white cursor-pointer">Cancel</button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1.5">Item Title</label>
-                        <input
-                          type="text"
-                          required
-                          value={newItemData.title}
-                          onChange={e => setNewItemData(prev => ({ ...prev, title: e.target.value }))}
-                          className="w-full bg-[#0B132B] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF6B35]"
-                          placeholder="e.g. Cheese Kottu"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1.5">Price (LKR)</label>
-                        <input
-                          type="number"
-                          required
-                          value={newItemData.price || ""}
-                          onChange={e => setNewItemData(prev => ({ ...prev, price: Number(e.target.value) }))}
-                          className="w-full bg-[#0B132B] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF6B35]"
-                          placeholder="e.g. 1200"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1.5">Category</label>
+                      <FormInput
+                        id="new-title"
+                        label="Item Title"
+                        value={newItemData.title}
+                        onChange={e => setNewItemData(prev => ({ ...prev, title: e.target.value }))}
+                        required
+                      />
+                      <FormInput
+                        id="new-price"
+                        label="Price (LKR)"
+                        type="number"
+                        value={newItemData.price || ""}
+                        onChange={e => setNewItemData(prev => ({ ...prev, price: Number(e.target.value) }))}
+                        required
+                      />
+                      <div className="relative rounded-2xl bg-[#0D1224] border border-slate-800 px-4 pt-5 pb-1.5">
+                        <label className="absolute left-4 top-2 text-[9px] font-bold text-slate-500 uppercase">Category</label>
                         <select
                           value={newItemData.category}
                           onChange={e => setNewItemData(prev => ({ ...prev, category: e.target.value }))}
-                          className="w-full bg-[#0B132B] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF6B35]"
+                          className="w-full text-xs text-white bg-transparent outline-none border-none cursor-pointer pt-1"
                         >
                           {CATEGORIES.filter(c => c !== "All").map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
+                            <option key={cat} value={cat} className="bg-[#0D1224] text-white">{cat}</option>
                           ))}
                         </select>
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1.5">Portion / Volume</label>
-                        <input
-                          type="text"
-                          value={newItemData.portion}
-                          onChange={e => setNewItemData(prev => ({ ...prev, portion: e.target.value }))}
-                          className="w-full bg-[#0B132B] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF6B35]"
-                          placeholder="e.g. Full Portion, 300ml"
-                        />
-                      </div>
+                      <FormInput
+                        id="new-portion"
+                        label="Portion / Volume"
+                        value={newItemData.portion}
+                        onChange={e => setNewItemData(prev => ({ ...prev, portion: e.target.value }))}
+                      />
                     </div>
                     <button
                       type="submit"
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs py-2 px-4 rounded-lg transition-colors cursor-pointer"
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs py-3 px-5 rounded-xl transition-all cursor-pointer shadow-lg shadow-emerald-500/15"
                     >
                       Save New Item
                     </button>
                   </form>
                 )}
 
+                {/* Edit Form with Floating Labels */}
                 {editingItem && (
-                  <form onSubmit={handleEditItem} className="bg-[#1C2541] border border-blue-500/30 p-5 rounded-2xl space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                      <h4 className="font-bold text-xs text-blue-400 uppercase tracking-wider">Edit Menu Item</h4>
-                      <button type="button" onClick={() => setEditingItem(null)} className="text-xs text-slate-400 hover:text-white">Cancel</button>
+                  <form onSubmit={handleEditItem} className="bg-[#0D1224]/40 border border-blue-500/20 p-6 rounded-[24px] space-y-4 backdrop-blur-md">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                      <h4 className="font-extrabold text-xs text-blue-400 uppercase tracking-wider">Edit Menu Item</h4>
+                      <button type="button" onClick={() => setEditingItem(null)} className="text-xs text-slate-400 hover:text-white cursor-pointer">Cancel</button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1.5">Item Title</label>
-                        <input
-                          type="text"
-                          required
-                          value={editingItem.title}
-                          onChange={e => setEditingItem(prev => ({ ...prev!, title: e.target.value }))}
-                          className="w-full bg-[#0B132B] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1.5">Price (LKR)</label>
-                        <input
-                          type="number"
-                          required
-                          value={editingItem.price}
-                          onChange={e => setEditingItem(prev => ({ ...prev!, price: Number(e.target.value) }))}
-                          className="w-full bg-[#0B132B] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1.5">Category</label>
+                      <FormInput
+                        id="edit-title"
+                        label="Item Title"
+                        value={editingItem.title}
+                        onChange={e => setEditingItem(prev => ({ ...prev!, title: e.target.value }))}
+                        required
+                      />
+                      <FormInput
+                        id="edit-price"
+                        label="Price (LKR)"
+                        type="number"
+                        value={editingItem.price}
+                        onChange={e => setEditingItem(prev => ({ ...prev!, price: Number(e.target.value) }))}
+                        required
+                      />
+                      <div className="relative rounded-2xl bg-[#0D1224] border border-slate-800 px-4 pt-5 pb-1.5">
+                        <label className="absolute left-4 top-2 text-[9px] font-bold text-slate-500 uppercase">Category</label>
                         <select
                           value={editingItem.category}
                           onChange={e => setEditingItem(prev => ({ ...prev!, category: e.target.value }))}
-                          className="w-full bg-[#0B132B] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                          className="w-full text-xs text-white bg-transparent outline-none border-none cursor-pointer pt-1"
                         >
                           {CATEGORIES.filter(c => c !== "All").map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
+                            <option key={cat} value={cat} className="bg-[#0D1224] text-white">{cat}</option>
                           ))}
                         </select>
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1.5">Portion / Volume</label>
-                        <input
-                          type="text"
-                          value={editingItem.portion}
-                          onChange={e => setEditingItem(prev => ({ ...prev!, portion: e.target.value }))}
-                          className="w-full bg-[#0B132B] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                        />
-                      </div>
+                      <FormInput
+                        id="edit-portion"
+                        label="Portion / Volume"
+                        value={editingItem.portion}
+                        onChange={e => setEditingItem(prev => ({ ...prev!, portion: e.target.value }))}
+                      />
                     </div>
                     <button
                       type="submit"
-                      className="bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs py-2 px-4 rounded-lg transition-colors cursor-pointer"
+                      className="bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs py-3 px-5 rounded-xl transition-all cursor-pointer shadow-lg shadow-blue-500/15"
                     >
                       Update Item
                     </button>
                   </form>
                 )}
 
-                {/* Data Table */}
-                <div className="bg-[#1C2541] border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-slate-800 text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-900/40">
-                          <th className="px-6 py-4">ID</th>
-                          <th className="px-6 py-4">Item Name</th>
-                          <th className="px-6 py-4">Category</th>
-                          <th className="px-6 py-4">Portion</th>
-                          <th className="px-6 py-4">Price</th>
-                          <th className="px-6 py-4 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800/60 text-xs">
-                        {menuItems.map(item => (
-                          <tr key={item.id} className="hover:bg-slate-850 transition-colors">
-                            <td className="px-6 py-4 font-mono text-[11px] text-slate-500">{item.id}</td>
-                            <td className="px-6 py-4 font-bold text-slate-200">{item.title}</td>
-                            <td className="px-6 py-4">
-                              <span className="bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase">
-                                {item.category}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-slate-400">{item.portion}</td>
-                            <td className="px-6 py-4 font-bold text-[#FF6B35]">LKR {item.price.toLocaleString()}</td>
-                            <td className="px-6 py-4 text-right space-x-2">
-                              <button
-                                onClick={() => setEditingItem(item)}
-                                className="text-blue-400 hover:text-blue-300 bg-blue-500/10 p-2 rounded-lg transition-colors cursor-pointer"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteItem(item.id)}
-                                className="text-red-400 hover:text-red-300 bg-red-500/10 p-2 rounded-lg transition-colors cursor-pointer"
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                {/* Card-Table Hybrid View with Pagination */}
+                <DataTable
+                  items={menuItems}
+                  onEdit={setEditingItem}
+                  onDelete={handleDeleteItem}
+                />
               </div>
             )}
 
             {/* --- VIEW: Settings --- */}
             {activeSidebar === "settings" && (
               <div className="space-y-6 max-w-3xl">
-                <div className="bg-[#1C2541] rounded-2xl border border-slate-800 p-6 space-y-5">
-                  <h3 className="font-bold text-sm border-b border-slate-800 pb-3">POS Configuration</h3>
+                <div className="bg-[#0D1224]/40 border border-slate-800/80 rounded-[24px] p-6 space-y-5 backdrop-blur-md">
+                  <h3 className="font-extrabold text-xs uppercase tracking-wider border-b border-white/5 pb-3 text-slate-300">POS Configuration</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-400 uppercase">Printer Connection</label>
-                      <select className="w-full bg-[#0B132B] border border-slate-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Printer Connection</label>
+                      <select className="w-full bg-[#0D1224] border border-slate-800 rounded-2xl px-4 py-3.5 text-xs text-white focus:outline-none focus:border-[#FF6B35]/40 cursor-pointer">
                         <option>PRINTER-USB-01 (Default Receipt)</option>
                         <option>PRINTER-WIFI-02 (Kitchen Display)</option>
                         <option>Virtual PDF Printer</option>
@@ -915,26 +1102,26 @@ export default function PosPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-400 uppercase">Tax Rate (%)</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tax Rate (%)</label>
                       <input
                         type="number"
                         defaultValue="10"
-                        className="w-full bg-[#0B132B] border border-slate-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none"
+                        className="w-full bg-[#0D1224] border border-slate-800 rounded-2xl px-4 py-3.5 text-xs text-white focus:outline-none focus:border-[#FF6B35]/40"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-400 uppercase">Currency Unit</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Currency Unit</label>
                       <input
                         type="text"
                         defaultValue="LKR"
-                        className="w-full bg-[#0B132B] border border-slate-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none"
+                        className="w-full bg-[#0D1224] border border-slate-800 rounded-2xl px-4 py-3.5 text-xs text-white focus:outline-none focus:border-[#FF6B35]/40"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-400 uppercase">Kitchen Mode</label>
-                      <select className="w-full bg-[#0B132B] border border-slate-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Kitchen Mode</label>
+                      <select className="w-full bg-[#0D1224] border border-slate-800 rounded-2xl px-4 py-3.5 text-xs text-white focus:outline-none focus:border-[#FF6B35]/40 cursor-pointer">
                         <option>Auto-print on checkout</option>
                         <option>Manual confirmation</option>
                       </select>
@@ -942,20 +1129,20 @@ export default function PosPage() {
                   </div>
                 </div>
 
-                <div className="bg-[#1C2541] rounded-2xl border border-slate-800 p-6">
-                  <h3 className="font-bold text-sm border-b border-slate-800 pb-3 text-red-400">Security Settings</h3>
+                <div className="bg-[#0D1224]/40 border border-slate-800/80 rounded-[24px] p-6 backdrop-blur-md">
+                  <h3 className="font-extrabold text-xs uppercase tracking-wider border-b border-white/5 pb-3 text-red-400">Security Settings</h3>
                   <div className="mt-4 flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-semibold">Admin Panel Access</p>
-                      <p className="text-[10px] text-slate-500 mt-1">Requires 4-digit security PIN passcode to unlock menu database</p>
+                      <p className="text-xs font-bold text-slate-300">Admin Panel Access</p>
+                      <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Requires a 4-digit security PIN passcode to unlock the menu database</p>
                     </div>
                     <button
                       onClick={() => {
                         setIsAdminUnlocked(false);
-                        triggerFeedback("Admin session locked");
+                        triggerToast("Admin session locked", "info");
                       }}
                       disabled={!isAdminUnlocked}
-                      className="bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-500/20 disabled:opacity-50 cursor-pointer"
+                      className="bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
                     >
                       Lock Admin Session
                     </button>
@@ -1068,14 +1255,14 @@ export default function PosPage() {
 
       {/* --- MODAL: Admin Security PIN Entry --- */}
       {showPinModal && (
-        <div className="fixed inset-0 bg-[#0B132B]/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1C2541] border border-slate-800 rounded-3xl p-7 max-w-sm w-full text-center shadow-2xl space-y-6">
+        <div className="fixed inset-0 bg-[#050814]/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0D1224]/90 border border-white/5 rounded-3xl p-7 max-w-sm w-full text-center shadow-2xl space-y-6 backdrop-blur-xl">
             <div className="w-12 h-12 bg-orange-500/10 text-[#FF6B35] rounded-2xl flex items-center justify-center mx-auto border border-orange-500/20">
               <Lock size={20} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-100">Enter Admin Security PIN</h3>
-              <p className="text-[11px] text-slate-500 mt-1">Access to Menu Management requires a 4-digit code</p>
+              <h3 className="text-base font-extrabold uppercase tracking-wider text-slate-100">Enter Security PIN</h3>
+              <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">Access to the Menu Manager requires a 4-digit code</p>
             </div>
 
             {/* Simulated PIN Display */}
@@ -1085,8 +1272,8 @@ export default function PosPage() {
                   key={i} 
                   className={`w-10 h-10 rounded-xl border flex items-center justify-center font-bold font-mono text-lg transition-all ${
                     pinInput.length > i 
-                      ? "border-[#FF6B35] bg-[#FF6B35]/10 text-white" 
-                      : "border-slate-700 bg-[#0B132B] text-slate-600"
+                      ? "border-[#FF6B35] bg-[#FF6B35]/10 text-white shadow-[0_0_8px_rgba(255,107,53,0.25)]" 
+                      : "border-white/5 bg-[#050814] text-slate-600"
                   }`}
                 >
                   {pinInput.length > i ? "•" : ""}
@@ -1095,7 +1282,7 @@ export default function PosPage() {
             </div>
 
             {pinError && (
-              <p className="text-red-400 text-xs font-semibold bg-red-900/10 p-2 rounded-lg border border-red-900/30">
+              <p className="text-red-400 text-xs font-semibold bg-red-950/20 p-2.5 rounded-xl border border-red-500/15">
                 {pinError}
               </p>
             )}
@@ -1107,7 +1294,7 @@ export default function PosPage() {
                   key={num}
                   type="button"
                   onClick={() => handlePinKeyPress(num)}
-                  className="bg-[#0B132B] hover:bg-[#FF6B35] hover:text-white border border-slate-800 text-slate-300 font-bold py-3 rounded-xl transition-all text-sm cursor-pointer"
+                  className="bg-white/5 hover:bg-[#FF6B35] hover:text-white border border-white/5 text-slate-300 font-bold py-3 rounded-xl transition-all text-sm cursor-pointer"
                 >
                   {num}
                 </button>
@@ -1115,21 +1302,21 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => setPinInput("")}
-                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold py-3 rounded-xl text-xs cursor-pointer"
+                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold py-3 rounded-xl text-xs cursor-pointer border border-red-500/10"
               >
                 Clear
               </button>
               <button
                 type="button"
                 onClick={() => handlePinKeyPress("0")}
-                className="bg-[#0B132B] hover:bg-[#FF6B35] hover:text-white border border-slate-800 text-slate-300 font-bold py-3 rounded-xl transition-all text-sm cursor-pointer"
+                className="bg-white/5 hover:bg-[#FF6B35] hover:text-white border border-white/5 text-slate-300 font-bold py-3 rounded-xl transition-all text-sm cursor-pointer"
               >
                 0
               </button>
               <button
                 type="button"
                 onClick={() => setShowPinModal(false)}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl text-xs cursor-pointer"
+                className="bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-3 rounded-xl text-xs cursor-pointer border border-white/5"
               >
                 Close
               </button>
@@ -1142,8 +1329,8 @@ export default function PosPage() {
 
       {/* --- MODAL: Receipt Invoice Overlay --- */}
       {showReceiptModal && latestOrder && (
-        <div className="fixed inset-0 bg-[#0B132B]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white text-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5 flex flex-col justify-between max-h-[90vh]">
+        <div className="fixed inset-0 bg-[#050814]/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white text-slate-900 rounded-[32px] p-6 max-w-sm w-full shadow-2xl space-y-5 flex flex-col justify-between max-h-[90vh]">
             
             {/* Receipt Content Scroll Area */}
             <div className="overflow-y-auto flex-1 pr-1 space-y-4 font-mono text-xs">
@@ -1206,7 +1393,7 @@ export default function PosPage() {
             <div className="space-y-2 pt-2 border-t border-slate-200 shrink-0">
               <button
                 onClick={confirmAndPrintInvoice}
-                className="w-full bg-[#FF6B35] hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2 text-xs cursor-pointer"
+                className="w-full bg-[#FF6B35] hover:bg-orange-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2 text-xs cursor-pointer"
               >
                 <Printer size={16} />
                 <span>Confirm &amp; Print Invoice</span>
