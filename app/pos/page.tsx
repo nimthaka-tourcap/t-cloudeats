@@ -495,13 +495,13 @@ export default function PosPage() {
       <div className="h-screen w-screen flex overflow-hidden">
         
         {/* Left Thin Navigation Sidebar */}
-        <aside className="w-[7%] bg-[#080D1A] border-r border-[#1B253F] flex flex-col justify-between items-center py-6 hidden md:flex shrink-0">
-          <div className="flex flex-col items-center gap-10 w-full">
+        <aside className="w-[7%] bg-[#080D1A] border-r border-[#1B253F] flex flex-col justify-between items-center py-8 hidden md:flex shrink-0">
+          <div className="flex flex-col items-center gap-12 w-full">
             <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/25 cursor-pointer">
               <span className="text-xl font-black text-white italic">T</span>
             </div>
 
-            <nav className="flex flex-col gap-4 w-full px-2.5">
+            <nav className="flex flex-col gap-5.5 w-full px-2.5">
               <button
                 onClick={() => handleSidebarClick("new_order")}
                 className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer ${
@@ -511,7 +511,7 @@ export default function PosPage() {
                 }`}
               >
                 <ShoppingBag size={20} />
-                <span className="text-[8px] font-bold mt-1 uppercase tracking-wider">POS</span>
+                <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">POS</span>
               </button>
 
               <button
@@ -523,7 +523,7 @@ export default function PosPage() {
                 }`}
               >
                 <History size={20} />
-                <span className="text-[8px] font-bold mt-1 uppercase tracking-wider">Logs</span>
+                <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">Logs</span>
               </button>
 
               <button
@@ -535,7 +535,7 @@ export default function PosPage() {
                 }`}
               >
                 <FolderKanban size={20} />
-                <span className="text-[8px] font-bold mt-1 uppercase tracking-wider">Menu</span>
+                <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">Menu</span>
               </button>
 
               <button
@@ -547,7 +547,7 @@ export default function PosPage() {
                 }`}
               >
                 <SettingsIcon size={20} />
-                <span className="text-[8px] font-bold mt-1 uppercase tracking-wider">Conf</span>
+                <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">Conf</span>
               </button>
             </nav>
           </div>
@@ -562,27 +562,19 @@ export default function PosPage() {
         {/* Main Content Pane (Center - 63% width) */}
         <main className="w-[63%] h-full overflow-hidden flex flex-col pb-16 md:pb-0 bg-[#0A0F1D]">
           
-          {/* Header Layout matching the screenshot exactly */}
-          <header className="px-6 py-4 border-b border-[#1B253F] bg-[#0A0F1D] flex flex-wrap items-center justify-between gap-4 shrink-0">
-            {/* Left side: Category grid wraps neatly */}
-            <div className="flex flex-wrap gap-2 max-w-[70%]">
-              {CATEGORIES.map(category => (
-                <button
-                  key={category}
-                  onClick={() => setActiveCategory(category)}
-                  className={`px-4 py-2 rounded-xl font-bold text-[11px] tracking-wide transition-all border ${
-                    activeCategory === category 
-                      ? "bg-slate-100 text-slate-900 border-transparent" 
-                      : "bg-[#111625] text-slate-400 border-[#222E4E] hover:text-white"
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
+          {/* Header Layout: Brand status, Search, Clock, Actions */}
+          <header className="px-6 py-4.5 border-b border-[#1B253F] bg-[#0A0F1D] flex items-center justify-between gap-4 shrink-0">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xs font-black tracking-wider uppercase text-slate-200">
+                {activeSidebar === "new_order" && "POS Terminal"}
+                {activeSidebar === "order_history" && "Order Logs"}
+                {activeSidebar === "menu_management" && "Menu Database"}
+                {activeSidebar === "settings" && "Settings"}
+              </h1>
             </div>
 
             {/* Right side: Search, Clock, Refresh, Fullscreen */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {activeSidebar === "new_order" && (
                 <div className="relative w-44">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={13} />
@@ -597,14 +589,14 @@ export default function PosPage() {
               )}
 
               {/* Minimal Colombo Time widget */}
-              <div className="bg-[#111625] text-[#FF6B35] font-mono text-[10px] font-bold px-3 py-2 rounded-full border border-[#222E4E] tracking-wider whitespace-nowrap">
+              <div className="bg-[#111625] text-[#FF6B35] font-mono text-[10px] font-bold px-3.5 py-2 rounded-full border border-[#222E4E] tracking-wider whitespace-nowrap">
                 {new Date().toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' })} • COLOMBO
               </div>
 
               {/* Refresh Action */}
               <button 
                 onClick={() => triggerToast("Dashboard refreshed", "info")}
-                className="w-9 h-9 rounded-full border border-[#222E4E] hover:border-slate-500 flex items-center justify-center text-slate-400 hover:text-white transition-all bg-[#111625]/20 cursor-pointer"
+                className="w-9 h-9 rounded-full border border-[#222E4E] hover:border-slate-500 flex items-center justify-center text-slate-400 hover:text-white transition-all bg-[#111625] cursor-pointer"
               >
                 <RotateCw size={14} />
               </button>
@@ -612,13 +604,32 @@ export default function PosPage() {
               {/* Exit FS Button */}
               <button 
                 onClick={() => triggerToast("Exited Fullscreen", "info")}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-slate-200 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#222E4E] bg-[#111625] hover:bg-white/5 text-xs font-bold text-slate-200 transition-all cursor-pointer"
               >
                 <Maximize2 size={13} />
                 <span>Exit FS</span>
               </button>
             </div>
           </header>
+
+          {/* Category Bar: Separate row with breathing space */}
+          {activeSidebar === "new_order" && (
+            <div className="px-6 py-3.5 border-b border-[#1B253F] bg-[#090D1A]/40 flex gap-3 overflow-x-auto scrollbar-none shrink-0">
+              {CATEGORIES.map(category => (
+                <button
+                  key={category}
+                  onClick={() => setActiveCategory(category)}
+                  className={`px-5 py-2 rounded-xl font-bold text-[11px] tracking-wide transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
+                    activeCategory === category 
+                      ? "bg-white text-slate-950 border-transparent shadow-md" 
+                      : "bg-[#1C233D] text-slate-200 border-[#2E3B5E] hover:text-white hover:bg-[#252E4E]"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Grid Content */}
           <div className="flex-1 overflow-y-auto p-6">
