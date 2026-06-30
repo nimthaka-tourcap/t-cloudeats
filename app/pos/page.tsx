@@ -26,6 +26,7 @@ import {
   Maximize2,
   Image as ImageIcon
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 // ============================================================================
 // --- TYPES & DATA ---
@@ -329,7 +330,7 @@ export default function PosPage() {
     portion: "Full Portion"
   });
 
-  // Load menu items from database on mount
+  // Load menu items from database on mount and subscribe to Realtime updates
   useEffect(() => {
     async function loadMenu() {
       try {
@@ -345,6 +346,23 @@ export default function PosPage() {
       }
     }
     loadMenu();
+
+    // Subscribe to Realtime changes on menu_items table
+    const channel = supabase
+      .channel("pos-menu-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "menu_items" },
+        (payload) => {
+          console.log("[Realtime] Menu change detected:", payload);
+          loadMenu();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Security Admin PIN State

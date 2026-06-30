@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 /* ── SVG Icons ─────────────────────────────────────────────────── */
 const WhatsAppIcon = () => (
@@ -43,6 +44,23 @@ export default function OrderPage() {
       }
     }
     loadMenu();
+
+    // Subscribe to Realtime changes on menu_items table
+    const channel = supabase
+      .channel("customer-menu-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "menu_items" },
+        (payload) => {
+          console.log("[Realtime] Customer menu update detected:", payload);
+          loadMenu();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const filteredItems = menuItems.filter((item) => {
