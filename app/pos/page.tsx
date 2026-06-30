@@ -519,15 +519,15 @@ export default function PosPage() {
       <div className="h-screen w-screen flex overflow-hidden">
         
         {/* Left Thin Navigation Sidebar */}
-        <aside className="w-[7%] bg-[#080D1A] border-r border-[#1B253F] flex flex-col justify-between items-center py-8 hidden md:flex shrink-0">
+        <aside className="w-[75px] bg-[#080D1A] border-r border-[#1B253F] flex flex-col justify-between items-center py-8 hidden md:flex shrink-0">
           <div className="flex flex-col items-center gap-12 w-full">
-            <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center shadow-lg shadow-orange-500/10 cursor-pointer">
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer">
               <Image 
                 src="/Classic Logo.png" 
                 alt="T-Cloud Eats Logo" 
-                width={40} 
-                height={40} 
-                className="object-cover"
+                width={48} 
+                height={48} 
+                className="object-contain"
               />
             </div>
 
@@ -601,8 +601,8 @@ export default function PosPage() {
           </div>
         </aside>
 
-        {/* Main Content Pane (Center - 63% width) */}
-        <main className="w-[63%] h-full overflow-hidden flex flex-col pb-16 md:pb-0 bg-[#0A0F1D]">
+        {/* Main Content Pane (Center - Fits to remaining width) */}
+        <main className="flex-1 h-full overflow-hidden flex flex-col pb-16 md:pb-0 bg-[#0A0F1D]">
           
           {/* Header Layout: Brand status, Search, Clock, Actions */}
           <header className="px-6 py-4.5 border-b border-[#1B253F] bg-[#0A0F1D] flex items-center justify-between gap-4 shrink-0">
@@ -939,8 +939,8 @@ export default function PosPage() {
           </div>
         </main>
 
-        {/* Right Active Ticket / Cart Panel (Right - 30% width) */}
-        <aside className="w-[30%] bg-[#090D1A] border-l border-[#1B253F] flex flex-col justify-between h-full shrink-0">
+        {/* Right Active Ticket / Cart Panel (Right - Fixed 360px width) */}
+        <aside className="w-[360px] bg-[#090D1A] border-l border-[#1B253F] flex flex-col justify-between h-full shrink-0">
           <div className="flex flex-col h-full w-full justify-between">
             
             {/* Ticket Header */}
