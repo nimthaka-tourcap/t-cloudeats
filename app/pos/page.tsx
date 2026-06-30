@@ -125,24 +125,62 @@ interface MinimalMenuCardProps {
 }
 
 function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
+  // Category-specific gradient placeholders
+  const getCategoryGradient = (category: string) => {
+    switch (category) {
+      case "Kottu":
+        return "from-red-600 to-rose-400";
+      case "Ultimate Bites":
+        return "from-violet-600 to-purple-400";
+      case "Fried Rice":
+        return "from-amber-500 to-yellow-300";
+      case "Noodles":
+        return "from-orange-500 to-amber-300";
+      case "Chopsuey":
+        return "from-cyan-600 to-blue-400";
+      case "Beverages":
+        return "from-blue-600 to-indigo-400";
+      default: // e.g., Salads, Vegetables, etc.
+        return "from-emerald-600 to-teal-400";
+    }
+  };
+
+  const gradient = getCategoryGradient(item.category);
+
   return (
     <div
       onClick={() => onAdd(item)}
-      className="bg-[#111625] border border-[#222E4E] hover:border-[#FF6B35]/60 rounded-xl p-3 flex justify-between gap-2.5 h-[95px] cursor-pointer transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 select-none"
+      className="group bg-[#111625]/60 border border-[#222E4E] hover:border-[#FF6B35]/60 hover:shadow-[0_0_15px_rgba(255,107,53,0.12)] rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-1 select-none h-full"
     >
-      {/* Left side: Text Details */}
-      <div className="flex flex-col justify-between flex-1 min-w-0">
-        <div>
-          <h3 className="font-extrabold text-xs text-slate-100 leading-tight tracking-wide line-clamp-2">
-            {item.title}
-          </h3>
-          <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-1 block">
-            {item.portion}
-          </span>
+      {/* Image / Gradient Placeholder Container */}
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-950 shrink-0">
+        {item.image ? (
+          <img
+            src={item.image}
+            alt={item.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className={`w-full h-full bg-gradient-to-tr ${gradient} opacity-80 flex items-center justify-center relative`}>
+            <span className="text-[9px] font-black tracking-widest text-white/40 uppercase font-mono">
+              {item.category}
+            </span>
+          </div>
+        )}
+        {/* Portion Badge */}
+        <div className="absolute top-2.5 right-2.5 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/5 text-[8px] font-extrabold text-slate-300 tracking-wide uppercase">
+          {item.portion}
         </div>
+      </div>
 
-        <div className="flex justify-between items-center mt-1">
-          <span className="text-xs font-black text-[#FF6B35] font-mono">
+      {/* Text Details */}
+      <div className="p-4 flex flex-col justify-between flex-1 space-y-3">
+        <h3 className="font-extrabold text-xs text-slate-100 leading-snug tracking-wide line-clamp-2 group-hover:text-[#FF6B35] transition-colors duration-150">
+          {item.title}
+        </h3>
+
+        <div className="flex justify-between items-baseline pt-1">
+          <span className="text-xs font-black text-[#FF6B35] font-mono tracking-wider">
             LKR {item.price.toLocaleString()}
           </span>
           <span className="text-[9px] font-mono font-bold text-slate-600">
@@ -150,17 +188,6 @@ function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
           </span>
         </div>
       </div>
-
-      {/* Right side: Optional Thumbnail */}
-      {item.image && (
-        <div className="w-14 h-14 rounded-xl border border-[#222E4E] overflow-hidden shrink-0 self-center">
-          <img
-            src={item.image}
-            alt={item.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
     </div>
   );
 }
@@ -618,14 +645,14 @@ export default function PosPage() {
             {/* Right side: Search, Clock, Refresh, Fullscreen */}
             <div className="flex items-center gap-3">
               {activeSidebar === "new_order" && (
-                <div className="relative w-44">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={13} />
+                <div className="relative w-64 group">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#FF6B35] transition-colors duration-200" size={14} />
                   <input
                     type="text"
-                    placeholder="Search..."
+                    placeholder="Search dishes..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-[#111625] border border-[#222E4E] rounded-xl pl-8 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF6B35]/60 placeholder:text-slate-600"
+                    className="w-full bg-[#111625] border border-[#222E4E] focus:border-[#FF6B35]/60 focus:shadow-[0_0_15px_rgba(255,107,53,0.1)] rounded-2xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none placeholder:text-slate-500 transition-all duration-300"
                   />
                 </div>
               )}
@@ -656,15 +683,15 @@ export default function PosPage() {
 
           {/* Category Bar: Separate row with breathing space */}
           {activeSidebar === "new_order" && (
-            <div className="px-6 py-3.5 border-b border-[#1B253F] bg-[#090D1A]/40 flex gap-3 overflow-x-auto scrollbar-none shrink-0">
+            <div className="px-6 py-4 border-b border-[#1B253F] bg-[#090D1A]/20 flex gap-3 overflow-x-auto scrollbar-none shrink-0">
               {CATEGORIES.map(category => (
                 <button
                   key={category}
                   onClick={() => setActiveCategory(category)}
-                  className={`px-5 py-2 rounded-xl font-bold text-[11px] tracking-wide transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
+                  className={`px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all duration-300 border whitespace-nowrap cursor-pointer shrink-0 ${
                     activeCategory === category 
-                      ? "bg-white text-slate-950 border-transparent shadow-md" 
-                      : "bg-[#1C233D] text-slate-200 border-[#2E3B5E] hover:text-white hover:bg-[#252E4E]"
+                      ? "bg-gradient-to-r from-orange-500 to-red-500 text-white border-transparent shadow-lg shadow-orange-500/20 scale-[1.02]" 
+                      : "bg-[#111625]/60 text-slate-400 border-[#222E4E]/60 hover:text-white hover:bg-[#1C233D]/80 hover:border-slate-500/50"
                   }`}
                 >
                   {category}
@@ -939,12 +966,12 @@ export default function PosPage() {
           </div>
         </main>
 
-        {/* Right Active Ticket / Cart Panel (Right - Fixed 360px width) */}
-        <aside className="w-[360px] bg-[#090D1A] border-l border-[#1B253F] flex flex-col justify-between h-full shrink-0">
+        {/* Right Active Ticket / Cart Panel (Right - Fixed 360px width, Glassmorphic) */}
+        <aside className="w-[360px] bg-[#0B1224]/85 backdrop-blur-xl border-l border-[#1F2C4E] flex flex-col justify-between h-full shrink-0 shadow-2xl z-10">
           <div className="flex flex-col h-full w-full justify-between">
             
             {/* Ticket Header */}
-            <div className="h-20 border-b border-[#1B253F] px-5 flex items-center justify-between shrink-0 bg-[#090D1A]">
+            <div className="h-20 border-b border-[#1F2C4E] px-5 flex items-center justify-between shrink-0 bg-[#090D1A]/40">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-extrabold text-slate-100 uppercase tracking-wider">Active Ticket</span>
                 <span className="text-[10px] bg-[#111625] border border-[#222E4E] px-2 py-0.5 rounded text-slate-300 font-mono font-bold">R1</span>
@@ -1003,27 +1030,27 @@ export default function PosPage() {
               )}
             </div>
 
-            {/* Calculations & settle button exactly matching the screenshot */}
-            <div className="border-t border-[#1B253F] p-5 bg-[#090D1A] space-y-4 shrink-0">
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between items-center text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+            {/* Calculations & settle button - Standout CTA Area */}
+            <div className="p-5 border-t border-[#1F2C4E] bg-[#080E1C]/90 space-y-4 shrink-0">
+              <div className="bg-[#111625]/80 border border-[#222E4E]/80 p-4.5 rounded-2xl space-y-3.5 shadow-inner">
+                <div className="flex justify-between items-center text-slate-400 font-bold uppercase tracking-widest text-[9px]">
                   <span>Subtotal</span>
-                  <span className="font-mono text-slate-300">Rs {subtotal.toLocaleString()}</span>
+                  <span className="font-mono text-slate-200">Rs {subtotal.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                <div className="flex justify-between items-center text-slate-400 font-bold uppercase tracking-widest text-[9px]">
                   <span>Srv. Chg (10%)</span>
-                  <span className="font-mono text-slate-300">Rs {tax.toLocaleString()}</span>
+                  <span className="font-mono text-slate-200">Rs {tax.toLocaleString()}</span>
                 </div>
-                <div className="border-t border-[#1B253F] pt-3 flex justify-between items-center font-black text-white">
-                  <span className="text-sm">Total</span>
-                  <span className="text-lg font-bold font-mono">Rs {total.toLocaleString()}</span>
+                <div className="border-t border-[#1F2C4E] pt-3.5 flex justify-between items-center font-black text-slate-100">
+                  <span className="text-xs uppercase tracking-wider">Total Amount</span>
+                  <span className="text-xl font-black font-mono text-[#FF6B35]">Rs {total.toLocaleString()}</span>
                 </div>
               </div>
 
               <button
                 onClick={handleCheckout}
                 disabled={cart.length === 0}
-                className="w-full bg-[#00A86B] hover:bg-emerald-600 text-white font-black py-3.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 text-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
+                className="w-full bg-[#00A86B] hover:bg-emerald-600 text-white font-black py-4 px-4 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_4px_20px_rgba(0,168,107,0.2)] hover:shadow-[0_4px_25px_rgba(0,168,107,0.4)]"
               >
                 <span>Pay Bill / Settle</span>
               </button>
