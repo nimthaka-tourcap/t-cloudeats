@@ -327,9 +327,9 @@ export default function PosPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#0B132B] text-[#F8F9FA] font-sans antialiased selection:bg-[#FF6B35] selection:text-white">
+    <div className="min-h-screen bg-[#050814] text-[#F8F9FA] font-sans antialiased selection:bg-[#FF6B35] selection:text-white">
       
-      {/* Global CSS style injection to hide scrollbars */}
+      {/* Global CSS style injection to hide scrollbars and add rich animations */}
       <style dangerouslySetInnerHTML={{__html: `
         ::-webkit-scrollbar {
           display: none !important;
@@ -338,110 +338,142 @@ export default function PosPage() {
           -ms-overflow-style: none !important;
           scrollbar-width: none !important;
         }
+        .mesh-bg {
+          background-color: #050814;
+          background-image: 
+            radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, rgba(255, 107, 53, 0.1) 0px, transparent 50%),
+            radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.08) 0px, transparent 50%);
+        }
+        .glass-panel {
+          background: rgba(13, 20, 38, 0.45);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .glass-card {
+          background: rgba(20, 26, 48, 0.35);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.03);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+          background: rgba(28, 37, 68, 0.45);
+          border-color: rgba(255, 107, 53, 0.35);
+          box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5), 0 0 15px 1px rgba(255, 107, 53, 0.05);
+        }
+        .glow-orange {
+          text-shadow: 0 0 10px rgba(255, 107, 53, 0.55);
+        }
       `}} />
 
       {/* Toast Feedback Notification */}
       {feedbackMsg && (
-        <div className="fixed top-4 right-4 z-50 bg-[#FF6B35] text-white px-4 py-3 rounded-xl shadow-2xl border border-orange-400 flex items-center gap-2 animate-bounce">
+        <div className="fixed top-6 right-6 z-50 bg-gradient-to-r from-orange-500 to-red-500 text-white px-5 py-3.5 rounded-2xl shadow-2xl shadow-orange-500/20 border border-orange-400/30 flex items-center gap-2.5 animate-pulse">
           <Check size={18} />
-          <span className="font-semibold text-sm">{feedbackMsg}</span>
+          <span className="font-bold text-xs uppercase tracking-wider">{feedbackMsg}</span>
         </div>
       )}
 
-      <div className="h-screen w-screen flex overflow-hidden bg-[#070C1E]">
+      <div className="h-screen w-screen flex overflow-hidden mesh-bg">
         
-        {/* 1. Sidebar Navigation (Left - 15% width) */}
-        <aside className="w-[15%] bg-[#080D1A] border-r border-slate-800/80 flex flex-col justify-between p-5 hidden md:flex shrink-0">
+        {/* 1. Sidebar Navigation (Left - Sleek, Thin Icon-Only - 7% width) */}
+        <aside className="w-[7%] bg-[#060A17]/80 border-r border-white/5 flex flex-col justify-between items-center py-6 hidden md:flex shrink-0 z-10">
           
-          {/* Top Brand Block */}
-          <div className="space-y-8">
-            <div className="flex items-center gap-2.5 px-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
-                <span className="text-xl font-black text-white italic">T</span>
-              </div>
-              <div>
-                <h2 className="font-extrabold text-sm leading-tight text-slate-100">T-Cloud <span className="text-[#FF6B35]">Eats</span></h2>
-                <span className="text-[10px] text-slate-500 tracking-wider font-mono">POS v1.0</span>
-              </div>
+          {/* Top Brand Logo */}
+          <div className="flex flex-col items-center gap-10 w-full">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/25 cursor-pointer hover:scale-105 transition-transform">
+              <span className="text-xl font-black text-white italic">T</span>
             </div>
 
             {/* Navigation Menu */}
-            <nav className="space-y-2">
+            <nav className="flex flex-col gap-5 w-full px-3">
               <button
                 onClick={() => handleSidebarClick("new_order")}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-xs tracking-wider uppercase transition-all duration-200 cursor-pointer ${
+                title="New Order"
+                className={`w-full aspect-square flex flex-col items-center justify-center rounded-2xl transition-all duration-300 cursor-pointer relative group ${
                   activeSidebar === "new_order" 
-                    ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/20" 
-                    : "text-slate-500 hover:bg-slate-900/50 hover:text-[#F8F9FA]"
+                    ? "bg-gradient-to-br from-orange-500/15 to-red-500/5 text-[#FF6B35] border border-orange-500/20 shadow-[0_0_15px_rgba(255,107,53,0.1)]" 
+                    : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
                 }`}
               >
-                <ShoppingBag size={16} />
-                <span>New Order</span>
+                <ShoppingBag size={20} className={activeSidebar === "new_order" ? "drop-shadow-[0_0_8px_rgba(255,107,53,0.5)]" : ""} />
+                <span className="text-[9px] font-bold mt-1 tracking-wider scale-90 group-hover:scale-95 transition-transform">POS</span>
+                {activeSidebar === "new_order" && (
+                  <div className="absolute right-0 top-1/4 bottom-1/4 w-0.5 bg-[#FF6B35] rounded-l-full shadow-[0_0_8px_#FF6B35]" />
+                )}
               </button>
 
               <button
                 onClick={() => handleSidebarClick("order_history")}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-xs tracking-wider uppercase transition-all duration-200 cursor-pointer ${
+                title="Order History"
+                className={`w-full aspect-square flex flex-col items-center justify-center rounded-2xl transition-all duration-300 cursor-pointer relative group ${
                   activeSidebar === "order_history" 
-                    ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/20" 
-                    : "text-slate-500 hover:bg-slate-900/50 hover:text-[#F8F9FA]"
+                    ? "bg-gradient-to-br from-orange-500/15 to-red-500/5 text-[#FF6B35] border border-orange-500/20 shadow-[0_0_15px_rgba(255,107,53,0.1)]" 
+                    : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
                 }`}
               >
-                <History size={16} />
-                <span>History</span>
+                <History size={20} className={activeSidebar === "order_history" ? "drop-shadow-[0_0_8px_rgba(255,107,53,0.5)]" : ""} />
+                <span className="text-[9px] font-bold mt-1 tracking-wider scale-90 group-hover:scale-95 transition-transform">LOGS</span>
+                {activeSidebar === "order_history" && (
+                  <div className="absolute right-0 top-1/4 bottom-1/4 w-0.5 bg-[#FF6B35] rounded-l-full shadow-[0_0_8px_#FF6B35]" />
+                )}
               </button>
 
               <button
                 onClick={() => handleSidebarClick("menu_management")}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-xs tracking-wider uppercase transition-all duration-200 cursor-pointer ${
+                title="Menu Manager"
+                className={`w-full aspect-square flex flex-col items-center justify-center rounded-2xl transition-all duration-300 cursor-pointer relative group ${
                   activeSidebar === "menu_management" 
-                    ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/20" 
-                    : "text-slate-500 hover:bg-slate-900/50 hover:text-[#F8F9FA]"
+                    ? "bg-gradient-to-br from-orange-500/15 to-red-500/5 text-[#FF6B35] border border-orange-500/20 shadow-[0_0_15px_rgba(255,107,53,0.1)]" 
+                    : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
                 }`}
               >
-                <FolderKanban size={16} />
-                <span className="flex-1">Menu Manager</span>
-                {!isAdminUnlocked && <Lock size={12} className="text-slate-600 ml-auto" />}
+                <FolderKanban size={20} className={activeSidebar === "menu_management" ? "drop-shadow-[0_0_8px_rgba(255,107,53,0.5)]" : ""} />
+                <span className="text-[9px] font-bold mt-1 tracking-wider scale-90 group-hover:scale-95 transition-transform">MENU</span>
+                {!isAdminUnlocked && <Lock size={10} className="absolute top-2 right-2 text-slate-600" />}
+                {activeSidebar === "menu_management" && (
+                  <div className="absolute right-0 top-1/4 bottom-1/4 w-0.5 bg-[#FF6B35] rounded-l-full shadow-[0_0_8px_#FF6B35]" />
+                )}
               </button>
 
               <button
                 onClick={() => handleSidebarClick("settings")}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-xs tracking-wider uppercase transition-all duration-200 cursor-pointer ${
+                title="Settings"
+                className={`w-full aspect-square flex flex-col items-center justify-center rounded-2xl transition-all duration-300 cursor-pointer relative group ${
                   activeSidebar === "settings" 
-                    ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/20" 
-                    : "text-slate-500 hover:bg-slate-900/50 hover:text-[#F8F9FA]"
+                    ? "bg-gradient-to-br from-orange-500/15 to-red-500/5 text-[#FF6B35] border border-orange-500/20 shadow-[0_0_15px_rgba(255,107,53,0.1)]" 
+                    : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
                 }`}
               >
-                <SettingsIcon size={16} />
-                <span>Settings</span>
+                <SettingsIcon size={20} className={activeSidebar === "settings" ? "drop-shadow-[0_0_8px_rgba(255,107,53,0.5)]" : ""} />
+                <span className="text-[9px] font-bold mt-1 tracking-wider scale-90 group-hover:scale-95 transition-transform">CONF</span>
+                {activeSidebar === "settings" && (
+                  <div className="absolute right-0 top-1/4 bottom-1/4 w-0.5 bg-[#FF6B35] rounded-l-full shadow-[0_0_8px_#FF6B35]" />
+                )}
               </button>
             </nav>
           </div>
 
           {/* Bottom Cashier Info & Logout */}
-          <div className="space-y-4 pb-6">
-            <div className="bg-[#0B132B]/60 rounded-xl p-3 border border-slate-900/55 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-slate-800/80 flex items-center justify-center text-xs font-bold text-[#FF6B35] border border-slate-700/50">
-                C
-              </div>
-              <div className="overflow-hidden">
-                <p className="text-xs font-bold truncate text-slate-300">Cashier 01</p>
-                <p className="text-[9px] text-slate-500 truncate font-mono">Terminal #03</p>
-              </div>
+          <div className="flex flex-col gap-4 items-center w-full px-2">
+            <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-xs font-bold text-[#FF6B35] border border-white/5 cursor-pointer" title="Cashier 01 • Terminal #03">
+              C1
             </div>
 
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-xs tracking-wider uppercase text-red-400 hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
+              title="Logout"
+              className="w-10 h-10 flex items-center justify-center rounded-2xl text-red-500/70 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 cursor-pointer"
             >
-              <LogOut size={16} />
-              <span>Logout</span>
+              <LogOut size={18} />
             </button>
           </div>
         </aside>
 
         {/* Mobile bottom navigation bar */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#080D1A] border-t border-slate-800/65 z-30 flex items-center justify-around px-2">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#060A17]/95 border-t border-white/5 z-30 flex items-center justify-around px-2 backdrop-blur-lg">
           <button 
             onClick={() => handleSidebarClick("new_order")}
             className={`flex flex-col items-center justify-center gap-0.5 text-[10px] ${activeSidebar === "new_order" ? "text-[#FF6B35]" : "text-slate-500"}`}
@@ -479,20 +511,20 @@ export default function PosPage() {
           </button>
         </div>
 
-        {/* 2. Main Content Area (Center - 55% width) */}
-        <main className="w-[55%] h-full overflow-hidden flex flex-col pb-16 md:pb-0 border-r border-slate-800/80 bg-[#0B122B]">
+        {/* 2. Main Content Area (Center - 63% width since sidebar is thinner) */}
+        <main className="w-[63%] h-full overflow-hidden flex flex-col pb-16 md:pb-0">
           
           {/* Top Navigation / Search Header */}
-          <header className="h-20 border-b border-slate-800/80 px-6 py-4 flex items-center justify-between gap-4 bg-[#0B122B]/50 backdrop-blur-md shrink-0">
+          <header className="h-20 border-b border-white/5 px-6 py-4 flex items-center justify-between gap-4 bg-transparent shrink-0">
             <div className="flex items-center gap-3">
-              <h1 className="text-lg font-extrabold tracking-tight hidden sm:inline text-slate-100">
+              <h1 className="text-base font-extrabold tracking-wider uppercase text-slate-100">
                 {activeSidebar === "new_order" && "Create New Order"}
                 {activeSidebar === "order_history" && "Order History & Logs"}
                 {activeSidebar === "menu_management" && "Menu Management Database"}
                 {activeSidebar === "settings" && "System Settings"}
               </h1>
               {activeSidebar === "new_order" && (
-                <span className="text-xs font-mono bg-[#FF6B35]/10 text-[#FF6B35] px-2.5 py-1 rounded-full font-bold border border-[#FF6B35]/20">
+                <span className="text-[10px] font-mono font-bold bg-[#FF6B35]/10 text-[#FF6B35] px-2.5 py-1 rounded-full border border-orange-500/20">
                   {filteredMenuItems.length} Items
                 </span>
               )}
@@ -508,7 +540,7 @@ export default function PosPage() {
                     placeholder="Search dishes..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-[#0E1528] border border-slate-800 rounded-full pl-10 pr-4 py-2 text-xs text-[#F8F9FA] focus:outline-none focus:border-[#FF6B35] transition-colors placeholder:text-slate-600"
+                    className="w-full bg-white/5 border border-white/5 rounded-full pl-10 pr-4 py-2 text-xs text-[#F8F9FA] focus:outline-none focus:border-[#FF6B35]/40 focus:ring-1 focus:ring-[#FF6B35]/15 transition-all placeholder:text-slate-600"
                   />
                 </div>
               )}
@@ -530,10 +562,10 @@ export default function PosPage() {
                     <button
                       key={category}
                       onClick={() => setActiveCategory(category)}
-                      className={`px-5 py-2.5 rounded-full font-bold text-xs tracking-wide transition-all duration-200 cursor-pointer whitespace-nowrap border ${
+                      className={`px-5 py-2.5 rounded-full font-bold text-xs tracking-wide transition-all duration-350 cursor-pointer whitespace-nowrap border ${
                         activeCategory === category 
-                          ? "bg-gradient-to-r from-orange-500 to-red-500 text-white border-transparent shadow-lg shadow-orange-500/10" 
-                          : "bg-[#12192C]/80 text-slate-400 border-slate-800/80 hover:text-white hover:border-slate-700"
+                          ? "bg-gradient-to-r from-orange-500 to-red-500 text-white border-transparent shadow-lg shadow-orange-500/25" 
+                          : "bg-white/5 text-slate-400 border-white/5 hover:text-white hover:bg-white/10 hover:border-white/10"
                       }`}
                     >
                       {category}
@@ -542,33 +574,36 @@ export default function PosPage() {
                 </div>
 
                 {/* Menu Items Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
                   {filteredMenuItems.map(item => (
                     <div
                       key={item.id}
                       onClick={() => addToCart(item)}
-                      className="bg-[#12192C]/45 backdrop-blur-md border border-slate-800/80 hover:border-[#FF6B35]/40 rounded-2xl p-3 flex flex-col h-52 cursor-pointer transition-all duration-200 group hover:-translate-y-1 hover:shadow-xl hover:shadow-black/25"
+                      className="glass-card rounded-[24px] p-3.5 flex flex-col h-60 cursor-pointer hover:scale-[1.02] active:scale-95 group"
                     >
-                      {/* Rich styled category gradient card */}
-                      <div className={`h-28 w-full rounded-xl bg-gradient-to-tr ${getCategoryGradient(item.category)} relative overflow-hidden flex items-center justify-center shrink-0 border border-slate-850`}>
-                        {getCategoryIcon(item.category)}
-                        <span className="absolute bottom-2.5 right-2.5 text-[9px] font-black bg-[#070C1E]/90 text-slate-300 px-2.5 py-0.5 rounded-md border border-slate-800/60 backdrop-blur-sm tracking-wider uppercase">
+                      {/* Rich styled category gradient card (Dynamic food photography placeholder area) */}
+                      <div className={`h-32 w-full rounded-[18px] bg-gradient-to-tr ${getCategoryGradient(item.category)} relative overflow-hidden flex items-center justify-center shrink-0 border border-white/5 shadow-inner`}>
+                        {/* Dynamic category icon with neon glow */}
+                        <div className="group-hover:scale-110 transition-transform duration-300">
+                          {getCategoryIcon(item.category)}
+                        </div>
+                        <span className="absolute bottom-2.5 right-2.5 text-[9px] font-black bg-[#050814]/90 text-slate-300 px-2.5 py-0.5 rounded-md border border-white/5 backdrop-blur-md tracking-wider uppercase">
                           {item.portion}
                         </span>
                       </div>
 
                       {/* Title and price */}
-                      <div className="pt-2.5 flex flex-col justify-between flex-1 min-h-0">
+                      <div className="pt-3 flex flex-col justify-between flex-1 min-h-0">
                         <div className="flex justify-between items-start gap-2 h-full">
                           <div className="min-w-0 flex flex-col justify-between h-full pb-0.5">
                             <div>
-                              <h3 className="font-bold text-xs line-clamp-2 leading-snug text-slate-200 group-hover:text-[#FF6B35] transition-colors">
+                              <h3 className="font-extrabold text-xs line-clamp-2 leading-snug text-slate-100 group-hover:text-[#FF6B35] transition-colors">
                                 {item.title}
                               </h3>
-                              <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mt-1 block">{item.category}</span>
+                              <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mt-1.5 block">{item.category}</span>
                             </div>
                           </div>
-                          <span className="text-[11px] font-black text-[#FF6B35] shrink-0 bg-[#FF6B35]/10 px-2.5 py-1 rounded-lg border border-[#FF6B35]/20 font-mono">
+                          <span className="text-[11px] font-black text-[#FF6B35] glow-orange shrink-0 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20 font-mono">
                             LKR {item.price.toLocaleString()}
                           </span>
                         </div>
@@ -932,99 +967,101 @@ export default function PosPage() {
           </div>
         </main>
 
-        {/* 3. Cart & Billing (Right - 30% width) */}
-        <aside className="w-[30%] bg-[#080D1A] flex flex-col h-full shrink-0 hidden lg:flex border-l border-slate-800/80">
-          
-          {/* Header */}
-          <div className="h-20 border-b border-slate-800/80 px-5 flex items-center justify-between shrink-0 bg-[#080D1A]">
-            <div className="flex items-center gap-2">
-              <ShoppingBag size={18} className="text-[#FF6B35]" />
-              <h2 className="font-extrabold text-sm text-slate-100 uppercase tracking-wider">Current Order</h2>
+        {/* 3. Cart & Billing (Right - 30% width - Styled as a Floating Dock) */}
+        <aside className="w-[30%] h-full p-4 shrink-0 hidden lg:flex flex-col justify-between">
+          <div className="flex flex-col h-full w-full bg-gradient-to-b from-[#10152B]/85 to-[#080B1A]/85 border border-white/5 rounded-[28px] shadow-2xl shadow-black/40 overflow-hidden backdrop-blur-2xl">
+            
+            {/* Header */}
+            <div className="h-20 border-b border-white/5 px-5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <ShoppingBag size={18} className="text-[#FF6B35] drop-shadow-[0_0_8px_rgba(255,107,53,0.4)]" />
+                <h2 className="font-extrabold text-sm text-slate-100 uppercase tracking-wider">Current Order</h2>
+              </div>
+              <span className="text-xs bg-[#0B132B] px-3 py-1 rounded-full font-mono text-slate-300 font-black border border-white/5">
+                {cart.reduce((sum, i) => sum + i.quantity, 0)} Items
+              </span>
             </div>
-            <span className="text-xs bg-[#0B132B] px-3 py-1 rounded-full font-mono text-slate-300 font-black border border-slate-800/50">
-              {cart.reduce((sum, i) => sum + i.quantity, 0)} Items
-            </span>
-          </div>
 
-          {/* Cart Items List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#080D1A]/30">
-            {cart.map((item) => (
-              <div 
-                key={item.menuItem.id} 
-                className="bg-[#12192C]/60 border border-slate-800/80 rounded-xl p-3 flex gap-3 items-center justify-between"
-              >
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-xs truncate text-slate-200">{item.menuItem.title}</h4>
-                  <p className="text-[10px] text-[#FF6B35] font-black mt-0.5">
-                    LKR {item.menuItem.price.toLocaleString()}
-                  </p>
-                </div>
-
-                {/* Quantity controls */}
-                <div className="flex items-center gap-2.5">
-                  <button
-                    onClick={() => updateQuantity(item.menuItem.id, -1)}
-                    className="w-7 h-7 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 rounded-lg flex items-center justify-center cursor-pointer transition-colors border border-slate-700/30"
-                  >
-                    <Minus size={12} />
-                  </button>
-                  <span className="text-xs font-mono font-black text-white w-4 text-center">{item.quantity}</span>
-                  <button
-                    onClick={() => updateQuantity(item.menuItem.id, 1)}
-                    className="w-7 h-7 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 rounded-lg flex items-center justify-center cursor-pointer transition-colors border border-slate-700/30"
-                  >
-                    <Plus size={12} />
-                  </button>
-                </div>
-
-                {/* Remove Button */}
-                <button
-                  onClick={() => removeFromCart(item.menuItem.id)}
-                  className="text-slate-600 hover:text-red-400 p-1.5 cursor-pointer transition-colors"
+            {/* Cart Items List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {cart.map((item) => (
+                <div 
+                  key={item.menuItem.id} 
+                  className="bg-white/5 border border-white/5 rounded-2xl p-3.5 flex gap-3 items-center justify-between hover:bg-white/10 transition-colors"
                 >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-extrabold text-xs truncate text-slate-200">{item.menuItem.title}</h4>
+                    <p className="text-[10px] text-[#FF6B35] glow-orange font-black mt-1">
+                      LKR {item.menuItem.price.toLocaleString()}
+                    </p>
+                  </div>
 
-            {cart.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center py-24 text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-[#12192C]/80 flex items-center justify-center text-slate-600 border border-slate-800/50">
-                  <ShoppingBag size={20} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-400">Cart is Empty</p>
-                  <p className="text-[10px] text-slate-500 mt-1 max-w-[160px]">Add items from the menu to start building an order</p>
-                </div>
-              </div>
-            )}
-          </div>
+                  {/* Quantity controls */}
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={() => updateQuantity(item.menuItem.id, -1)}
+                      className="w-7 h-7 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg flex items-center justify-center cursor-pointer transition-colors border border-white/5"
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <span className="text-xs font-mono font-black text-white w-4 text-center">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.menuItem.id, 1)}
+                      className="w-7 h-7 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg flex items-center justify-center cursor-pointer transition-colors border border-white/5"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
 
-          {/* Calculations & Checkout */}
-          <div className="border-t border-slate-800/80 p-6 bg-[#0E1528] space-y-4 shrink-0">
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between items-center text-slate-400">
-                <span>Subtotal</span>
-                <span className="font-mono font-bold text-slate-200">LKR {subtotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center text-slate-400">
-                <span>Vat / Tax (10%)</span>
-                <span className="font-mono font-bold text-slate-200">LKR {tax.toLocaleString()}</span>
-              </div>
-              <div className="border-t border-slate-800/50 pt-3 flex justify-between items-center text-sm font-black text-white">
-                <span>Total Amount</span>
-                <span className="text-[#FF6B35] font-mono text-lg">LKR {total.toLocaleString()}</span>
-              </div>
+                  {/* Remove Button */}
+                  <button
+                    onClick={() => removeFromCart(item.menuItem.id)}
+                    className="text-slate-600 hover:text-red-400 p-1.5 cursor-pointer transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+
+              {cart.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center py-24 text-center space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-slate-600 border border-white/5">
+                    <ShoppingBag size={22} className="text-slate-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cart is Empty</p>
+                    <p className="text-[10px] text-slate-500 mt-1.5 max-w-[170px] leading-relaxed">Add items from the menu to start building an order</p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <button
-              onClick={handleCheckout}
-              disabled={cart.length === 0}
-              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-4 px-4 rounded-xl shadow-lg shadow-orange-500/10 hover:shadow-orange-600/20 transition-all duration-200 flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
-            >
-              <Printer size={18} />
-              <span>Charge / Checkout</span>
-            </button>
+            {/* Calculations & Checkout */}
+            <div className="border-t border-white/5 p-6 bg-white/[0.02] space-y-4 shrink-0">
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between items-center text-slate-400">
+                  <span>Subtotal</span>
+                  <span className="font-mono font-bold text-slate-200">LKR {subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-400">
+                  <span>Vat / Tax (10%)</span>
+                  <span className="font-mono font-bold text-slate-200">LKR {tax.toLocaleString()}</span>
+                </div>
+                <div className="border-t border-white/5 pt-3 flex justify-between items-center text-sm font-black text-white">
+                  <span>Total Amount</span>
+                  <span className="text-[#FF6B35] glow-orange font-mono text-lg">LKR {total.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleCheckout}
+                disabled={cart.length === 0}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-orange-500/25 hover:shadow-orange-600/35 transition-all duration-250 flex items-center justify-center gap-2 text-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-widest"
+              >
+                <Printer size={16} />
+                <span>Confirm Order</span>
+              </button>
+            </div>
           </div>
         </aside>
       </div>
