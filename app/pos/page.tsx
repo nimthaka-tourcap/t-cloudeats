@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Plus, 
@@ -260,6 +260,29 @@ function MinimalDataTable({ items, onEdit, onDelete }: MinimalDataTableProps) {
 
 export default function PosPage() {
   const router = useRouter();
+
+  // Fullscreen State & Logic
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {
+        triggerToast("Fullscreen access denied", "warning");
+      });
+    } else {
+      document.exitFullscreen().catch(() => {
+        triggerToast("Error exiting fullscreen", "error");
+      });
+    }
+  };
 
   // POS View & Navigation States
   const [activeSidebar, setActiveSidebar] = useState<"new_order" | "order_history" | "menu_management" | "settings">("new_order");
@@ -601,13 +624,13 @@ export default function PosPage() {
                 <RotateCw size={14} />
               </button>
 
-              {/* Exit FS Button */}
+              {/* Fullscreen Toggle Button */}
               <button 
-                onClick={() => triggerToast("Exited Fullscreen", "info")}
+                onClick={toggleFullscreen}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#222E4E] bg-[#111625] hover:bg-white/5 text-xs font-bold text-slate-200 transition-all cursor-pointer"
               >
                 <Maximize2 size={13} />
-                <span>Exit FS</span>
+                <span>{isFullscreen ? "Exit FS" : "Full Screen"}</span>
               </button>
             </div>
           </header>
