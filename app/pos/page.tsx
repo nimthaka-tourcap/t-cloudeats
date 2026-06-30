@@ -319,7 +319,7 @@ export default function PosPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   
   // Menu Database State
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemData, setNewItemData] = useState<Partial<MenuItem>>({
@@ -328,6 +328,24 @@ export default function PosPage() {
     category: "Fried Rice",
     portion: "Full Portion"
   });
+
+  // Load menu items from database on mount
+  useEffect(() => {
+    async function loadMenu() {
+      try {
+        const res = await fetch("/api/menu");
+        if (res.ok) {
+          const data = await res.json();
+          setMenuItems(data);
+        } else {
+          triggerToast("Failed to load menu from database", "error");
+        }
+      } catch (error) {
+        triggerToast("Network error loading menu", "error");
+      }
+    }
+    loadMenu();
+  }, []);
 
   // Security Admin PIN State
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
@@ -470,35 +488,80 @@ export default function PosPage() {
   };
 
   // CRUD Operations
-  const handleAddItem = (e: React.FormEvent) => {
+  const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemData.title || !newItemData.price) return;
-    const newItem: MenuItem = {
-      id: Math.max(...menuItems.map(i => i.id)) + 1,
-      title: newItemData.title,
-      price: Number(newItemData.price),
-      category: newItemData.category || "Fried Rice",
-      portion: newItemData.portion || "Full Portion",
-      image: newItemData.image
-    };
-    setMenuItems(prev => [...prev, newItem]);
-    setIsAddingItem(false);
-    setNewItemData({ title: "", price: 0, category: "Fried Rice", portion: "Full Portion", image: undefined });
-    triggerToast("Item added to database", "success");
+
+    try {
+      const res = await fetch("/api/menu", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newItemData.title,
+          price: Number(newItemData.price),
+          category: newItemData.category || "Fried Rice",
+          portion: newItemData.portion || "Full Portion",
+          image: newItemData.image
+        })
+      });
+
+      if (res.ok) {
+        const addedItem = await res.json();
+        setMenuItems(prev => [...prev, addedItem]);
+        setIsAddingItem(false);
+        setNewItemData({ title: "", price: 0, category: "Fried Rice", portion: "Full Portion", image: undefined });
+        triggerToast("Item added and synced successfully", "success");
+      } else {
+        const err = await res.json();
+        triggerToast(`Failed to add item: ${err.error}`, "error");
+      }
+    } catch (error) {
+      triggerToast("Network error adding item", "error");
+    }
   };
 
-  const handleEditItem = (e: React.FormEvent) => {
+  const handleEditItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingItem) return;
-    setMenuItems(prev => prev.map(item => item.id === editingItem.id ? editingItem : item));
-    setEditingItem(null);
-    triggerToast("Item updated successfully", "success");
+
+    try {
+      const res = await fetch("/api/menu", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingItem)
+      });
+
+      if (res.ok) {
+        const updatedItem = await res.json();
+        setMenuItems(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+        setEditingItem(null);
+        triggerToast("Item updated and synced successfully", "success");
+      } else {
+        const err = await res.json();
+        triggerToast(`Failed to update item: ${err.error}`, "error");
+      }
+    } catch (error) {
+      triggerToast("Network error updating item", "error");
+    }
   };
 
-  const handleDeleteItem = (id: number) => {
-    if (confirm("Delete this menu item?")) {
-      setMenuItems(prev => prev.filter(item => item.id !== id));
-      triggerToast("Item deleted", "info");
+  const handleDeleteItem = async (id: number) => {
+    if (!confirm("Delete this menu item?")) return;
+
+    try {
+      const res = await fetch(`/api/menu?id=${id}`, {
+        method: "DELETE"
+      });
+
+      if (res.ok) {
+        setMenuItems(prev => prev.filter(item => item.id !== id));
+        triggerToast("Item deleted and synced successfully", "info");
+      } else {
+        const err = await res.json();
+        triggerToast(`Failed to delete item: ${err.error}`, "error");
+      }
+    } catch (error) {
+      triggerToast("Network error deleting item", "error");
     }
   };
 

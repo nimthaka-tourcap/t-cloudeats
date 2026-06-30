@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /* ── SVG Icons ─────────────────────────────────────────────────── */
 const WhatsAppIcon = () => (
@@ -19,66 +19,35 @@ const HomeIcon = () => (
   </svg>
 );
 
-/* ── Menu Data ──────────────────────────────────────────────────── */
-const ORDER_MENU = [
-  // Fried Rice Selection
-  { id: 1, title: "Egg Fried Rice", price: "Rs 750.00", category: "Fried Rice", description: "Basmati Rice, Egg, Carrot, Leek, Aromatic serve with Sunny Side Up, Onion Pickles, Homemade Chili paste", portion: "Full Portion" },
-  { id: 2, title: "Classic Chicken Fried Rice", price: "Rs 1,000.00", category: "Fried Rice", description: "Basmati Rice, Fried Chicken Strip, Vegetable Sere with Sunny side up, Onion Pickles, Homemade Chili Paste", portion: "Full Portion" },
-  { id: 3, title: "Prawns Fried Rice", price: "Rs 1,100.00", category: "Fried Rice", description: "Stir Fried Prawns, Basmati rice, Vegetable, serve with Sunny side up, Onion Pickle, Homemade Chili paste", portion: "Full Portion" },
-  { id: 4, title: "Beef Fried Rice", price: "Rs 1,200.00", category: "Fried Rice", description: "Stir Fried Beef, Basmati rice, Vegetable, serve with Sunny side up, Onion Pickle, Homemade Chili paste", portion: "Full Portion" },
-  { id: 5, title: "Seafood Fried Rice", price: "Rs 1,300.00", category: "Fried Rice", description: "Stir Fried Prawn, Fish, Cuttlefish, Beef, Basmati Rice, Vegetable, Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste", portion: "Full Portion" },
-  { id: 6, title: "Surf & Turf Fried Rice", price: "Rs 1,400.00", category: "Fried Rice", description: "Chicken, Beef, Pork, Fish, Prawns, And Cuttlefish, Vegetables, Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste", portion: "Full Portion" },
-  { id: 7, title: "Nasi Goreng", price: "Rs 1,300.00", category: "Fried Rice", description: "Tender Chicken, Prawns, Beef, Basmati Rice, Vegetable Served With Fried Egg And Served With Crispy Crackers", portion: "Full Portion" },
-
-  // Chopsuey Selection
-  { id: 8, title: "Chicken Chopsuey Rice", price: "Rs 1,250.00", category: "Chopsuey", description: "Aromatic Fried Rice And Colorful Stir-Fried Vegetables With Tender Chicken Finished In A Rich Savory Sauce", portion: "Full Portion" },
-  { id: 9, title: "Prawn Chopsuey Rice", price: "Rs 1,350.00", category: "Chopsuey", description: "Succulent Prawns, Aromatic Fried Rice and Colorful Stir-Fried Vegetables Finished In A Rich Savory Sauce", portion: "Full Portion" },
-  { id: 10, title: "Seafood Chopsuey Rice", price: "Rs 1,450.00", category: "Chopsuey", description: "Prawns, Cuttlefish & Fish, Fresh Vegetables, Savory Gravy And Served With Aromatic Rice.", portion: "Full Portion" },
-  { id: 11, title: "Surf & Turf Chopsuey Rice", price: "Rs 1,600.00", category: "Chopsuey", description: "Wok-Fried Rice Served With Chicken, Beef, Pork, Fish, Prawns, And Cuttlefish In A Savory Chinese-Style Vegetable Gravy.", portion: "Full Portion" },
-
-  // Noodles Selection
-  { id: 12, title: "Egg Fried Noodles", price: "Rs 750.00", category: "Noodles", description: "Wok-Fried Noodles, Egg, Carrot, Leek, Aromatic Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste", portion: "Full Portion" },
-  { id: 13, title: "Chicken Fried Noodles", price: "Rs 1,000.00", category: "Noodles", description: "Fried Chicken Strip, Noodles, Vegetable, Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste", portion: "Full Portion" },
-  { id: 14, title: "Prawn Fried Noodles", price: "Rs 1,100.00", category: "Noodles", description: "Stir Fried Prawns, Noodles, Vegetable, Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste", portion: "Full Portion" },
-  { id: 15, title: "Beef Fried Noodles", price: "Rs 1,200.00", category: "Noodles", description: "Stir Fried Beef, Noodles, Vegetable, Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste", portion: "Full Portion" },
-  { id: 16, title: "Seafood Fried Noodles", price: "Rs 1,300.00", category: "Noodles", description: "Stir Fried Prawns, Fish, Cuttlefish Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste", portion: "Full Portion" },
-  { id: 17, title: "Surf & Turf Fried Noodles", price: "Rs 1,400.00", category: "Noodles", description: "Wok-Fried Noodles Chicken, Beef, Pork, Fish, Prawns & Cuttlefish Served With Sunny Side Up, Onion Pickle, Homemade Chili Paste", portion: "Full Portion" },
-
-  // Kottu Selection
-  { id: 18, title: "Egg Kottu", price: "Rs 750.00", category: "Kottu", description: "Roti, Egg, Carrot, Leek, Aromatic Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste", portion: "Full Portion" },
-  { id: 19, title: "Chicken Kottu", price: "Rs 1,000.00", category: "Kottu", description: "Black Chicken Curry, Chopped Roti, Vegetables, Aromatic Spices, Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste", portion: "Full Portion" },
-  { id: 20, title: "Beef Kottu", price: "Rs 1,200.00", category: "Kottu", description: "Spicy Beef Curry, Chopped Roti, Vegetables, Aromatic Spices, Serve with Sunny Side Up, Onion Pickle, Homemade Chili", portion: "Full Portion" },
-  { id: 21, title: "Seafood Kottu", price: "Rs 1,300.00", category: "Kottu", description: "Chopped Roti, Prawns, Cuttlefish, Fish, Vegetables, Aromatic Spices, Serve With Sunny Side Up, Onion Pickle, Spicy Gravy", portion: "Full Portion" },
-  { id: 22, title: "Surf & Turf Kottu", price: "Rs 1,400.00", category: "Kottu", description: "Kottu Loaded with Chicken, Beef, Pork, Fish, Prawns, Cuttlefish, Vegetables, with Sunny Side Up, Onion Pickle, Spicy Gravy", portion: "Full Portion" },
-  { id: 23, title: "Fried Chicken Cheese Kottu", price: "Rs 1,500.00", category: "Kottu", description: "Street Food Favorite Fried Chicken, Cheese, Milk With Sunny Side Up, Onion Pickle, Spicy Gravy", portion: "Full Portion" },
-
-  // Ultimate Bites
-  { id: 24, title: "Sri Lankan Chicken Devilled", price: "Rs 1,000.00", category: "Ultimate Bites", description: "250g boneless chicken cooked in traditional spicy Sri Lankan devilled style.", portion: "250g" },
-  { id: 25, title: "Sri Lankan Fish Devilled", price: "Rs 1,100.00", category: "Ultimate Bites", description: "250g of Kelawalla fish tossed with banana peppers, onions, and spicy sauce.", portion: "250g" },
-  { id: 26, title: "Sri Lankan Prawn Devilled", price: "Rs 1,100.00", category: "Ultimate Bites", description: "250g of fresh prawns tossed with spices, peppers, and onions.", portion: "250g" },
-  { id: 27, title: "Sri Lankan Beef Devilled", price: "Rs 1,400.00", category: "Ultimate Bites", description: "250g boneless beef stir-fried in a rich, spicy devilled gravy.", portion: "250g" },
-  { id: 28, title: "Sri Lankan Pork Devilled", price: "Rs 1,300.00", category: "Ultimate Bites", description: "250g of boneless pork tossed with capsicum, onions, and chili.", portion: "250g" },
-  { id: 29, title: "Garlic Buttered Vegetable", price: "Rs 900.00", category: "Ultimate Bites", description: "Fresh boiled vegetables tossed in aromatic garlic butter.", portion: "Regular" },
-  { id: 30, title: "French Fries", price: "Rs 800.00", category: "Ultimate Bites", description: "Crispy golden potato fries served hot with seasoning.", portion: "Regular" },
-  { id: 31, title: "Kochi Bite", price: "Rs 800.00", category: "Ultimate Bites", description: "10 pieces of crispy Kochi bites packed with flavor.", portion: "10 Pcs" },
-  { id: 32, title: "Hot Butter Cuttlefish", price: "Rs 900.00", category: "Ultimate Bites", description: "Crispy-fried cuttlefish tossed in butter, spring onions, and dry chilies.", portion: "Regular" },
-
-  // Beverages
-  { id: 33, title: "Ice Milo", price: "Rs 250.00", category: "Beverages", description: "Creamy and refreshing iced Milo chocolate malt drink.", portion: "Regular" },
-  { id: 34, title: "Milk Shake", price: "Rs 350.00", category: "Beverages", description: "Delicious milkshake. Choose your flavor: Strawberry, Vanilla, or Chocolate.", portion: "Regular" },
-  { id: 35, title: "Ice Coffee", price: "Rs 250.00", category: "Beverages", description: "Chilled, sweet, and aromatic house-blend iced coffee.", portion: "Regular" },
-  { id: 36, title: "Mineral Water", price: "Rs 100.00", category: "Beverages", description: "1 Liter bottle of clean, refreshing mineral water.", portion: "1 Liter" }
-];
 
 const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Noodles", "Kottu", "Ultimate Bites", "Beverages"];
 
 export default function OrderPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredItems = ORDER_MENU.filter((item) => {
+  useEffect(() => {
+    async function loadMenu() {
+      try {
+        const res = await fetch("/api/menu");
+        if (res.ok) {
+          const data = await res.json();
+          setMenuItems(data);
+        }
+      } catch (error) {
+        console.error("Failed to load menu:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadMenu();
+  }, []);
+
+  const filteredItems = menuItems.filter((item) => {
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -109,29 +78,39 @@ export default function OrderPage() {
               alt="t-cloud eats logo"
               width={42}
               height={42}
+              className="object-contain"
             />
             <span style={{
-              fontFamily: "var(--font-heading)",
-              fontWeight: 900,
-              fontSize: "1.3rem",
-              color: "#FAF3E0",
-              letterSpacing: "-0.01em"
+              fontSize: "1.1rem",
+              fontWeight: 800,
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+              color: "#FAF3E0"
             }}>
-              t&#8209;<span style={{ color: "#F26F21" }}>cloud</span>&nbsp;eats
+              t-cloud <span style={{ color: "#F26F21" }}>eats</span>
             </span>
           </Link>
-          <Link href="/" style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            fontSize: "0.85rem",
-            fontWeight: 700,
-            color: "rgba(250, 243, 224, 0.7)",
-            textDecoration: "none",
-            transition: "color 0.2s"
-          }}>
+          <Link
+            href="/"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "rgba(242, 111, 33, 0.1)",
+              border: "1px solid rgba(242, 111, 33, 0.25)",
+              padding: "8px 16px",
+              borderRadius: "20px",
+              fontSize: "0.78rem",
+              fontWeight: 700,
+              color: "#F26F21",
+              textDecoration: "none",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              transition: "all 0.2s"
+            }}
+          >
             <HomeIcon />
-            <span>Back to Home</span>
+            Home
           </Link>
         </div>
       </header>
@@ -224,13 +203,17 @@ export default function OrderPage() {
         </div>
 
         {/* Menu Grid */}
-        {filteredItems.length > 0 ? (
+        {isLoading ? (
+          <div className="text-center py-20 opacity-60">
+            <p className="text-sm font-bold tracking-widest uppercase">Loading fresh menu...</p>
+          </div>
+        ) : filteredItems.length > 0 ? (
           <div className="menu-grid">
             {filteredItems.map((item) => (
               <div key={item.id} className="menu-card" style={{ padding: "24px" }}>
                 <div className="menu-card-header">
                   <h3 className="menu-card-title">{item.title}</h3>
-                  <span className="menu-card-price">{item.price}</span>
+                  <span className="menu-card-price">Rs {Number(item.price).toLocaleString()}</span>
                 </div>
                 <div className="menu-card-meta">
                   <span className="menu-card-portion">{item.portion}</span>
@@ -238,7 +221,7 @@ export default function OrderPage() {
                     <span className="menu-tag popular">{item.category}</span>
                   </div>
                 </div>
-                <p className="menu-card-desc">{item.description}</p>
+                <p className="menu-card-desc">{item.description || `Delicious ${item.title} prepared fresh in our kitchen with premium ingredients.`}</p>
                 <div className="menu-card-actions">
                   <a
                     href={`https://wa.me/94706288109?text=Hi%20t-cloud%20eats!%20I%20would%20like%20to%20order%20the%20${encodeURIComponent(item.title)}%20(${encodeURIComponent(item.portion)}).`}
