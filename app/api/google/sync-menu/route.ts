@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 
 // --- Google Business Profile Food Menus API Types ---
 interface GoogleMoney {
@@ -151,6 +152,113 @@ async function getGoogleAccessToken(): Promise<string> {
   return data.access_token;
 }
 
+/**
+ * Helper to dynamically discover the Google Account ID.
+ */
+async function getGoogleAccountId(accessToken: string): Promise<string> {
+  const response = await fetch("https://mybusiness.googleapis.com/v4/accounts", {
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Failed to fetch Google accounts: ${response.statusText} - ${errText}`);
+  }
+
+  const data = await response.json();
+  if (!data.accounts || data.accounts.length === 0) {
+    throw new Error("No Google Business accounts found for this user.");
+  }
+
+  const accountName = data.accounts[0].name;
+  return accountName.split("/")[1];
+}
+
+/**
+ * GET Handler: Pulls the menu from Google Business Profile, updates Supabase, and broadcasts via Realtime.
+ */
+export async function GET() {
+  try {
+    const locationId = "4190813937772677288";
+    
+    const accessToken = await getGoogleAccessToken();
+    const accountId = await getGoogleAccountId(accessToken);
+    const googleApiUrl = `https://mybusiness.googleapis.com/v4/accounts/${accountId}/locations/${locationId}/foodMenus`;
+
+    console.log(`[Import] Fetching menu from Google location ${locationId}...`);
+    const response = await fetch(googleApiUrl, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      return NextResponse.json(
+        { error: "Failed to fetch menu from Google", details: errText },
+        { status: response.status }
+      );
+    }
+
+    const googleMenuData = await response.json();
+    if (!googleMenuData.menus || googleMenuData.menus.length === 0) {
+      return NextResponse.json({ message: "No menus found on Google." });
+    }
+
+    const googleMenu = googleMenuData.menus[0];
+    const sections = googleMenu.sections || [];
+    const updatedItems: any[] = [];
+
+    for (const section of sections) {
+      const items = section.items || [];
+      for (const item of items) {
+        const idMatch = item.itemId.match(/^item_(\d+)$/);
+        if (!idMatch) continue;
+        const dbId = parseInt(idMatch[1], 10);
+
+        const priceVal = item.price;
+        if (!priceVal) continue;
+        const price = parseFloat(priceVal.units) + (priceVal.nanos ? priceVal.nanos / 1e9 : 0);
+
+        const title = item.displayName && item.displayName[0] ? item.displayName[0].value : null;
+
+        const updateData: any = { price };
+        if (title) updateData.title = title;
+
+        const { data, error } = await supabase
+          .from("menu_items")
+          .update(updateData)
+          .eq("id", dbId)
+          .select();
+
+        if (error) {
+          console.error(`[Import] Failed to update item ${dbId}:`, error.message);
+        } else if (data && data.length > 0) {
+          updatedItems.push(data[0]);
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully imported menu from Google. Updated ${updatedItems.length} items in database.`,
+      updatedItems,
+    });
+
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: "Internal Server Error", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST Handler: Pushes the local database menu to Google.
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
