@@ -126,27 +126,26 @@ function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
   return (
     <div
       onClick={() => onAdd(item)}
-      className="bg-[#111625] border border-[#222E4E] hover:border-[#FF6B35]/60 rounded-2xl p-4 flex flex-col justify-between h-[190px] cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 select-none"
+      className="bg-[#111625] border border-[#222E4E] hover:border-[#FF6B35]/60 rounded-xl p-3 flex flex-col justify-between h-[95px] cursor-pointer transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 select-none"
     >
-      {/* Top: Title */}
-      <h3 className="font-extrabold text-xs text-slate-100 leading-snug tracking-wide line-clamp-2">
-        {item.title}
-      </h3>
-
-      {/* Middle: Minimal Image Placeholder Area */}
-      <div className="my-2.5 h-16 w-full rounded-xl bg-[#090D1A] border border-[#1B253F] flex flex-col items-center justify-center gap-1 opacity-60">
-        <ImageIcon size={14} className="text-slate-500" />
-        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Photo</span>
+      {/* Top: Title & Portion */}
+      <div>
+        <h3 className="font-extrabold text-xs text-slate-100 leading-tight tracking-wide line-clamp-2">
+          {item.title}
+        </h3>
+        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-1 block">
+          {item.portion}
+        </span>
       </div>
 
       {/* Bottom: Price & Database Index */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mt-1">
         <span className="text-xs font-black text-[#FF6B35] font-mono">
           LKR {item.price.toLocaleString()}
         </span>
-        <div className="w-5 h-5 rounded-full border border-[#222E4E] flex items-center justify-center text-[9px] font-bold text-slate-500">
-          {item.id}
-        </div>
+        <span className="text-[9px] font-mono font-bold text-slate-600">
+          #{item.id}
+        </span>
       </div>
     </div>
   );
