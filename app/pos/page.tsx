@@ -527,48 +527,60 @@ export default function PosPage() {
             <nav className="flex flex-col gap-5.5 w-full px-2.5">
               <button
                 onClick={() => handleSidebarClick("new_order")}
-                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer relative ${
                   activeSidebar === "new_order" 
                     ? "bg-[#FF6B35] text-white" 
                     : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
                 }`}
               >
+                {activeSidebar === "new_order" && (
+                  <div className="absolute left-[-10px] w-1.5 h-8 bg-[#FF6B35] rounded-r-full shadow-[0_0_8px_#FF6B35]" />
+                )}
                 <ShoppingBag size={20} />
                 <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">POS</span>
               </button>
 
               <button
                 onClick={() => handleSidebarClick("order_history")}
-                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer relative ${
                   activeSidebar === "order_history" 
                     ? "bg-[#FF6B35] text-white" 
                     : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
                 }`}
               >
+                {activeSidebar === "order_history" && (
+                  <div className="absolute left-[-10px] w-1.5 h-8 bg-[#FF6B35] rounded-r-full shadow-[0_0_8px_#FF6B35]" />
+                )}
                 <History size={20} />
                 <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">Logs</span>
               </button>
 
               <button
                 onClick={() => handleSidebarClick("menu_management")}
-                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer relative ${
                   activeSidebar === "menu_management" 
                     ? "bg-[#FF6B35] text-white" 
                     : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
                 }`}
               >
+                {activeSidebar === "menu_management" && (
+                  <div className="absolute left-[-10px] w-1.5 h-8 bg-[#FF6B35] rounded-r-full shadow-[0_0_8px_#FF6B35]" />
+                )}
                 <FolderKanban size={20} />
                 <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">Menu</span>
               </button>
 
               <button
                 onClick={() => handleSidebarClick("settings")}
-                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer relative ${
                   activeSidebar === "settings" 
                     ? "bg-[#FF6B35] text-white" 
                     : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
                 }`}
               >
+                {activeSidebar === "settings" && (
+                  <div className="absolute left-[-10px] w-1.5 h-8 bg-[#FF6B35] rounded-r-full shadow-[0_0_8px_#FF6B35]" />
+                )}
                 <SettingsIcon size={20} />
                 <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">Conf</span>
               </button>
@@ -846,15 +858,73 @@ export default function PosPage() {
             )}
 
             {activeSidebar === "settings" && (
-              <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-6 space-y-4">
-                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">Settings</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Printer</label>
-                    <select className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none">
-                      <option>Default Receipt Printer</option>
-                    </select>
+              <div className="space-y-6 max-w-4xl">
+                <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-6 space-y-6">
+                  
+                  {/* POS Configuration Section */}
+                  <div className="space-y-4">
+                    <h3 className="font-extrabold text-xs text-slate-100 uppercase tracking-wider">POS Configuration</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                      
+                      <div className="space-y-1.5">
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Printer Connection</label>
+                        <select className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60 cursor-pointer">
+                          <option>PRINTER-USB-01 (Default Receipt)</option>
+                          <option>PRINTER-WIFI-02 (Kitchen Display)</option>
+                          <option>Virtual PDF Printer</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Tax Rate (%)</label>
+                        <input
+                          type="number"
+                          defaultValue="10"
+                          className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Currency Unit</label>
+                        <input
+                          type="text"
+                          defaultValue="LKR"
+                          className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Kitchen Mode</label>
+                        <select className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60 cursor-pointer">
+                          <option>Auto-print on checkout</option>
+                          <option>Manual confirmation</option>
+                        </select>
+                      </div>
+
+                    </div>
                   </div>
+
+                  {/* Security Settings Section */}
+                  <div className="border-t border-[#222E4E] pt-6 space-y-4">
+                    <h3 className="font-extrabold text-xs text-red-400 uppercase tracking-wider">Security Settings</h3>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-300">Admin Panel Access</h4>
+                        <p className="text-[10px] text-slate-500 mt-1">Requires 4-digit security PIN passcode to unlock menu database</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setIsAdminUnlocked(false);
+                          triggerToast("Admin session locked", "info");
+                        }}
+                        disabled={!isAdminUnlocked}
+                        className="bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                      >
+                        Lock Admin Session
+                      </button>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             )}
