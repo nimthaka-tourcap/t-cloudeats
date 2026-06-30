@@ -17,3 +17,9 @@
 - **State Management**: Keep state local and lifted only as high as necessary. Use standard React hooks.
 - **Styling**: Use native CSS variables (`globals.css`) for design tokens (colors, spacing, fonts). Do not inline large utility class chains if Tailwind is not configured.
 - **Performance**: Optimize images with `next/image`. Use lazy loading for heavy components if needed.
+
+## 4. Development Workflow & Scope Control
+- **Feature Isolation**: DO NOT modify or refactor unrelated features, UI components, or endpoints while developing a specific task. Keep changes strictly scoped.
+- **Step-by-Step Implementation**: Implement the system incrementally, one feature/step at a time. Do not attempt multi-step changes in a single turn.
+- **Token-Efficient Reading**: NEVER read entire files or perform broad searches unless absolutely necessary. Use specific line ranges when viewing files (`StartLine` and `EndLine` parameters) to minimize token usage and context size.
+- **Clean Architecture**: Maintain a clear separation of concerns (e.g., database interactions, API routes, UI components, and helper utilities). Ensure codebase history and patterns are understood before proposing changes.
