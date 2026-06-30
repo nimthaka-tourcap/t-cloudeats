@@ -510,7 +510,7 @@ export default function PosPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#050814] text-[#F8F9FA] font-sans antialiased selection:bg-[#FF6B35] selection:text-white">
+    <div className="h-screen w-screen bg-[#050814] p-3 text-[#F8F9FA] font-sans antialiased selection:bg-[#FF6B35] selection:text-white flex overflow-hidden relative">
       
       <style dangerouslySetInnerHTML={{__html: `
         ::-webkit-scrollbar {
@@ -523,7 +523,7 @@ export default function PosPage() {
       `}} />
 
       {/* Non-blocking Toast Stack */}
-      <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full">
+      <div className="fixed top-9 right-9 z-50 flex flex-col gap-3 max-w-sm w-full">
         {toasts.map(toast => (
           <div
             key={toast.id}
@@ -543,7 +543,8 @@ export default function PosPage() {
         ))}
       </div>
 
-      <div className="h-screen w-screen flex overflow-hidden">
+      {/* Inner Floating Console Container */}
+      <div className="flex-1 h-full flex bg-[#0A0F1D] rounded-[24px] border border-[#1B253F] overflow-hidden">
         
         {/* Left Thin Navigation Sidebar */}
         <aside className="w-[75px] bg-[#080D1A] border-r border-[#1B253F] flex flex-col justify-between items-center py-8 hidden md:flex shrink-0">
@@ -704,7 +705,7 @@ export default function PosPage() {
           <div className="flex-1 overflow-y-auto p-6">
             
             {activeSidebar === "new_order" && (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pb-16">
                 {filteredMenuItems.map(item => (
                   <MinimalMenuCard
                     key={item.id}
