@@ -114,97 +114,97 @@ const ChevronDownIcon = () => (
 const TOP_10_MENU = [
   {
     id: 1,
-    title: "Signature Chicken Fried Rice",
+    title: "Classic Chicken Fried Rice",
     price: "LKR 1,000",
     portion: "Full Portion",
     tags: ["Popular"],
     description: "Basmati Rice, Fried Chicken Strip, Vegetable serve with Sunny side up, Onion Pickles, Homemade Chili Paste.",
-    category: "Rice"
+    category: "Fried Rice"
   },
   {
     id: 2,
-    title: "Mix Fried Rice",
-    price: "LKR 1,600",
-    portion: "Full Portion",
-    tags: ["Popular", "Chef Special"],
-    description: "Premium wok-fried Basmati rice loaded with a mix of chicken, beef, fresh seafood, and farm eggs.",
-    category: "Rice"
-  },
-  {
-    id: 3,
-    title: "Spicy Seafood Kottu",
-    price: "LKR 1,300",
-    portion: "Full Portion",
-    tags: ["Spicy"],
-    description: "Chopped Roti, Prawns, Cuttlefish, Fish, Vegetables, Aromatic Spices, Serve With Sunny Side Up, Onion Pickle, Spicy Gravy.",
-    category: "Kottu"
-  },
-  {
-    id: 4,
-    title: "Cheese Chicken Kottu",
-    price: "LKR 1,500",
-    portion: "Full Portion",
-    tags: ["Popular"],
-    description: "Street Food Favorite Fried Chicken, Cheese, Milk With Sunny Side Up, Onion Pickle, Spicy Gravy.",
-    category: "Kottu"
-  },
-  {
-    id: 5,
     title: "Nasi Goreng",
     price: "LKR 1,300",
     portion: "Full Portion",
     tags: ["Popular", "Spicy"],
     description: "Tender Chicken, Prawns, Beef, Basmati Rice, Vegetable Served With Fried Egg And Served With Crispy Crackers.",
-    category: "Rice"
+    category: "Fried Rice"
   },
   {
-    id: 6,
+    id: 3,
+    title: "Prawns Fried Rice",
+    price: "LKR 1,100",
+    portion: "Full Portion",
+    tags: [],
+    description: "Stir Fried Prawns, Basmati rice, Vegetable, serve with Sunny side up, Onion Pickle, Homemade Chili paste.",
+    category: "Fried Rice"
+  },
+  {
+    id: 4,
     title: "Chicken Chopsuey Rice",
     price: "LKR 1,250",
     portion: "Full Portion",
-    tags: [],
+    tags: ["Chef Special"],
     description: "Aromatic Fried Rice And Colorful Stir-Fried Vegetables With Tender Chicken Finished In A Rich Savory Sauce.",
-    category: "Rice"
+    category: "Chopsuey"
+  },
+  {
+    id: 5,
+    title: "Chicken Fried Noodles",
+    price: "LKR 1,000",
+    portion: "Full Portion",
+    tags: [],
+    description: "Fried Chicken Strip, Noodles, Vegetable, Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste.",
+    category: "Noodles"
+  },
+  {
+    id: 6,
+    title: "Chicken Kottu",
+    price: "LKR 1,000",
+    portion: "Full Portion",
+    tags: ["Popular"],
+    description: "Black Chicken Curry, Chopped Roti, Vegetables, Aromatic Spices, Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste.",
+    category: "Kottu"
   },
   {
     id: 7,
-    title: "Devilled Chicken",
-    price: "LKR 1,100",
-    portion: "250g",
-    tags: ["Spicy"],
-    description: "Classic Sri Lankan devilled chicken - sweet, spicy, and tangy, tossed with banana peppers and onions.",
-    category: "Sides"
+    title: "Fried Chicken Cheese Kottu",
+    price: "LKR 1,500",
+    portion: "Full Portion",
+    tags: ["Popular", "Cheesy"],
+    description: "Street Food Favorite Fried Chicken, Cheese, Milk With Sunny Side Up, Onion Pickle, Spicy Gravy.",
+    category: "Kottu"
   },
   {
     id: 8,
-    title: "Devilled Beef",
-    price: "LKR 1,400",
+    title: "Sri Lankan Chicken Devilled",
+    price: "LKR 1,000",
     portion: "250g",
     tags: ["Spicy"],
-    description: "Spicy beef curry style devilled, stir-fried in a rich, spicy devilled gravy.",
-    category: "Sides"
+    description: "250g boneless chicken cooked in traditional spicy Sri Lankan devilled style.",
+    category: "Ultimate Bites"
   },
   {
     id: 9,
-    title: "Traditional Sri Lankan Chicken Rice & Curry",
-    price: "LKR 750",
+    title: "Hot Butter Cuttlefish",
+    price: "LKR 900",
     portion: "Regular",
-    tags: ["Popular"],
-    description: "Red or White Basmati Rice, Traditional Sri Lankan Chicken Curry, served with three seasonal vegetable curries and crispy papadum.",
-    category: "Rice"
+    tags: ["Popular", "Spicy"],
+    description: "Crispy-fried cuttlefish tossed in butter, spring onions, and dry chilies.",
+    category: "Ultimate Bites"
   },
   {
     id: 10,
-    title: "Chicken Biriyani",
-    price: "LKR 1,150",
+    title: "Milk Shake",
+    price: "LKR 350",
     portion: "Regular",
-    tags: ["Chef Special"],
-    description: "Fragrant basmati rice cooked with aromatic spices, served with a spiced chicken leg, boiled egg, malay pickle, and mint sambol.",
-    category: "Rice"
+    tags: ["Refreshing"],
+    description: "Delicious milkshake. Choose your flavor: Strawberry, Vanilla, or Chocolate.",
+    category: "Beverages"
   }
 ];
 
-const CATEGORIES = ["All", "Rice", "Kottu", "Noodles", "Sides"];
+const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Noodles", "Kottu", "Ultimate Bites", "Beverages"];
 
 /* ── Page Component ─────────────────────────────────────────────── */
 export default function Home() {
