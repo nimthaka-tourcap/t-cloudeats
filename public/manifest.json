@@ -1,0 +1,24 @@
+{
+  "name": "t-cloud eats",
+  "short_name": "t-cloud eats",
+  "description": "t-cloud eats cloud kitchen terminal.",
+  "start_url": "/login",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0D1B35",
+  "theme_color": "#F26F21",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/Round Logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

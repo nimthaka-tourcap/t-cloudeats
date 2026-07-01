@@ -17,7 +17,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "t-cloud eats | Food Delivery in Mulleriyawa, Angoda & Kotikawatta",
+  title: "t-cloud eats POS",
   description:
     "Craving delicious, hot street-style food? t-cloud eats is your premier cloud kitchen delivering fresh Kottu, Fried Rice, Noodles, and Devilled dishes to Mulleriyawa, Angoda, Kotikawatta, Kelanimulla, and IDH (within a 4km radius). Order now on WhatsApp!",
   keywords: [
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     "noodles",
   ],
   openGraph: {
-    title: "t-cloud eats | Food Delivery in Mulleriyawa, Angoda & Kotikawatta",
+    title: "t-cloud eats POS",
     description:
       "Premier cloud kitchen delivering fresh Kottu, Fried Rice, Noodles, and Devilled dishes to Mulleriyawa, Angoda, Kotikawatta, and IDH (within a 4km radius).",
     type: "website",
@@ -50,6 +50,7 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
     apple: "/favicon.png",
   },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -59,7 +60,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${barlow.variable} ${inter.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    console.log('PWA ServiceWorker registered successfully:', reg.scope);
+                  }).catch(function(err) {
+                    console.warn('PWA ServiceWorker registration failed:', err);
+                  });
+                });
+              }
+            `
+          }}
+        />
+      </body>
     </html>
   );
 }

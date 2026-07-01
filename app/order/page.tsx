@@ -23,6 +23,32 @@ const HomeIcon = () => (
 
 const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Beverages"];
 
+function getFallbackDescription(title: string, category: string): string {
+  if (category === "Beverages") {
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes("cola")) {
+      return "Chilled Coca-Cola bottle from the Coca-Cola Company.";
+    }
+    if (lowerTitle.includes("sprite")) {
+      return "Chilled Sprite bottle from the Coca-Cola Company.";
+    }
+    if (lowerTitle.includes("fanta")) {
+      return "Chilled Fanta bottle from the Coca-Cola Company.";
+    }
+    if (lowerTitle.includes("egb")) {
+      return "Elephant House Ginger Beer (EGB) bottle.";
+    }
+    if (lowerTitle.includes("water")) {
+      return "Pure chilled mineral water bottle.";
+    }
+    if (lowerTitle.includes("shake")) {
+      return "Chilled, creamy milkshake.";
+    }
+    return `Chilled and refreshing beverage.`;
+  }
+  return `Delicious ${title} prepared fresh in our kitchen with premium ingredients.`;
+}
+
 export default function OrderPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -103,9 +129,9 @@ export default function OrderPage() {
               fontWeight: 800,
               letterSpacing: "0.05em",
               textTransform: "uppercase",
-              color: "#FAF3E0"
+              color: "#F26F21"
             }}>
-              t-cloud <span style={{ color: "#F26F21" }}>eats</span>
+              t-cloud eats
             </span>
           </Link>
           <Link
@@ -240,7 +266,7 @@ export default function OrderPage() {
                     {item.sku && <span className="menu-tag chef-special">{item.sku}</span>}
                   </div>
                 </div>
-                <p className="menu-card-desc">{item.description || `Delicious ${item.title} prepared fresh in our kitchen with premium ingredients.`}</p>
+                <p className="menu-card-desc">{item.description || getFallbackDescription(item.title, item.category)}</p>
                 <div className="menu-card-actions">
                   <a
                     href={`https://wa.me/94706288109?text=Hi%20t-cloud%20eats!%20I%20would%20like%20to%20order%20the%20${encodeURIComponent(item.title)}%20(${encodeURIComponent(item.portion)}).`}

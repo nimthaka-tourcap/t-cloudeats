@@ -20,7 +20,8 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ── Reset / Base ────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; }
+body, h1, h2, h3, h4, h5, h6, p, ol, ul, figure, blockquote, dl, dd { margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
   background: var(--navy);
@@ -104,11 +105,10 @@ body {
   font-family: var(--font-heading);
   font-size: clamp(1.8rem, 7vw, 3rem);
   font-weight: 900;
-  color: var(--cream);
+  color: var(--orange);
   line-height: 1;
   letter-spacing: -0.02em;
 }
-.brand-name span { color: var(--orange); }
 
 .hero-headline {
   font-family: var(--font-heading);
@@ -477,10 +477,9 @@ footer {
   font-family: var(--font-heading);
   font-size: 1.3rem;
   font-weight: 900;
-  color: var(--cream);
+  color: var(--orange);
   letter-spacing: -0.01em;
 }
-.footer-brand-name span { color: var(--orange); }
 .footer-slogan {
   font-size: 0.7rem;
   font-weight: 600;

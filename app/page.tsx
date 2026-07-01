@@ -215,6 +215,32 @@ const TOP_10_MENU = [
 
 const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Beverages"];
 
+function getFallbackDescription(title: string, category: string): string {
+  if (category === "Beverages") {
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes("cola")) {
+      return "Chilled Coca-Cola bottle from the Coca-Cola Company.";
+    }
+    if (lowerTitle.includes("sprite")) {
+      return "Chilled Sprite bottle from the Coca-Cola Company.";
+    }
+    if (lowerTitle.includes("fanta")) {
+      return "Chilled Fanta bottle from the Coca-Cola Company.";
+    }
+    if (lowerTitle.includes("egb")) {
+      return "Elephant House Ginger Beer (EGB) bottle.";
+    }
+    if (lowerTitle.includes("water")) {
+      return "Pure chilled mineral water bottle.";
+    }
+    if (lowerTitle.includes("shake")) {
+      return "Chilled, creamy milkshake.";
+    }
+    return `Chilled and refreshing beverage.`;
+  }
+  return `Delicious ${title} prepared fresh in our kitchen with premium ingredients.`;
+}
+
 /* ── Page Component ─────────────────────────────────────────────── */
 export default function Home() {
   useFadeIn();
@@ -272,7 +298,7 @@ export default function Home() {
                 priority
               />
               <div>
-                <span className="brand-name">t&#8209;<span>cloud</span>&nbsp;eats</span>
+                <span className="brand-name" style={{ color: "#F26F21" }}>t&#8209;cloud eats</span>
               </div>
             </div>
 
@@ -427,9 +453,9 @@ export default function Home() {
 
             {/* Menu Grid - Curated Dynamic Cards */}
             <div className="menu-grid">
-              {(menuItems.length > 0 ? menuItems.slice(0, 10) : TOP_10_MENU).map((item) => {
+              {(menuItems.length > 0 ? menuItems.slice(0, 6) : TOP_10_MENU.slice(0, 6)).map((item) => {
                 const priceText = typeof item.price === "string" ? item.price : `Rs ${Number(item.price).toLocaleString()}`;
-                const descriptionText = item.description || `Delicious ${item.title} prepared fresh in our kitchen with premium ingredients.`;
+                const descriptionText = item.description || getFallbackDescription(item.title, item.category);
                 const tags = item.tags || [item.category];
                 return (
                   <div key={item.id} className="menu-card" data-category={item.category}>
@@ -813,7 +839,7 @@ export default function Home() {
               width={52}
               height={52}
             />
-            <span className="footer-brand-name">t&#8209;<span>cloud</span>&nbsp;eats</span>
+            <span className="footer-brand-name" style={{ color: "#F26F21" }}>t&#8209;cloud eats</span>
           </div>
           <p className="footer-slogan fade-in">Eat. Enjoy. Repeat.</p>
 
