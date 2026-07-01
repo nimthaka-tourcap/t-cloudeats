@@ -41,7 +41,7 @@ export default function LoginPage() {
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shadow-lg shadow-orange-500/10">
             <Image 
-              src="/Classic Logo.png" 
+              src="/Round Logo.png" 
               alt="T-Cloud Eats Logo" 
               width={36} 
               height={36} 

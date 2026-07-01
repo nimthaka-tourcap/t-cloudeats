@@ -661,7 +661,7 @@ export default function PosPage() {
           <div className="flex flex-col items-center gap-12 w-full">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer">
               <Image 
-                src="/Classic Logo.png" 
+                src="/Round Logo.png" 
                 alt="T-Cloud Eats Logo" 
                 width={48} 
                 height={48} 

@@ -17,14 +17,19 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "t-cloud eats | Bold Flavors. Delivered Fast.",
+  title: "t-cloud eats | Food Delivery in Mulleriyawa, Angoda & Kotikawatta",
   description:
-    "A modern cloud kitchen bringing hygienically prepared, richly flavored street-style meals right to your door. Always boldly flavored, and always satisfying. Order now on WhatsApp!",
+    "Craving delicious, hot street-style food? t-cloud eats is your premier cloud kitchen delivering fresh Kottu, Fried Rice, Noodles, and Devilled dishes to Mulleriyawa, Angoda, Kotikawatta, Kelanimulla, and IDH (within a 4km radius). Order now on WhatsApp!",
   keywords: [
     "t-cloud eats",
-    "cloud kitchen",
-    "food delivery",
-    "Mulleriyawa",
+    "food delivery Mulleriyawa",
+    "food delivery Angoda",
+    "food delivery Kotikawatta",
+    "cloud kitchen Mulleriyawa",
+    "best kottu in Mulleriyawa",
+    "fried rice delivery Mulleriyawa",
+    "online food delivery Mulleriyawa",
+    "Mulleriyawa food delivery",
     "Sri Lanka",
     "street food",
     "fried rice",
@@ -32,9 +37,9 @@ export const metadata: Metadata = {
     "noodles",
   ],
   openGraph: {
-    title: "t-cloud eats | Bold Flavors. Delivered Fast.",
+    title: "t-cloud eats | Food Delivery in Mulleriyawa, Angoda & Kotikawatta",
     description:
-      "Modern cloud kitchen. Hygienically prepared, boldly flavored street-style meals delivered to your door.",
+      "Premier cloud kitchen delivering fresh Kottu, Fried Rice, Noodles, and Devilled dishes to Mulleriyawa, Angoda, Kotikawatta, and IDH (within a 4km radius).",
     type: "website",
     url: "http://t-cloudeats.com/",
   },
