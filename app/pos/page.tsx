@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { 
@@ -39,6 +39,7 @@ interface MenuItem {
   category: string;
   portion: string;
   image?: string;
+  sku?: string;
 }
 
 interface CartItem {
@@ -64,7 +65,7 @@ interface ToastMessage {
   type: ToastType;
 }
 
-const CATEGORIES = ["All Categories", "Fried Rice", "Chopsuey", "Noodles", "Kottu", "Ultimate Bites", "Beverages"];
+const CATEGORIES = ["All Categories", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Beverages"];
 
 const INITIAL_MENU_ITEMS: MenuItem[] = [
   // Fried Rice Selection
@@ -117,6 +118,31 @@ const INITIAL_MENU_ITEMS: MenuItem[] = [
 ];
 
 // ============================================================================
+// --- REUSABLE COMPONENT: LIVE CLOCK ---
+// ============================================================================
+
+function LiveClock() {
+  const [time, setTime] = useState("");
+
+  useEffect(() => {
+    const update = () =>
+      setTime(new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }));
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div
+      className="font-mono text-[10px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap"
+      style={{ background: "#0E1628", border: "1px solid #1E2D4E", color: "#F26F21" }}
+    >
+      {time} • COLOMBO
+    </div>
+  );
+}
+
+// ============================================================================
 // --- REUSABLE COMPONENT: MINIMAL MENU CARD ---
 // ============================================================================
 
@@ -126,35 +152,33 @@ interface MinimalMenuCardProps {
 }
 
 function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
-  // Category-specific gradient placeholders
-  const getCategoryGradient = (category: string) => {
+  const getCategoryConfig = (category: string): { emoji: string; accent: string; bg: string } => {
     switch (category) {
-      case "Kottu":
-        return "from-red-600 to-rose-400";
-      case "Ultimate Bites":
-        return "from-violet-600 to-purple-400";
-      case "Fried Rice":
-        return "from-amber-500 to-yellow-300";
-      case "Noodles":
-        return "from-orange-500 to-amber-300";
-      case "Chopsuey":
-        return "from-cyan-600 to-blue-400";
-      case "Beverages":
-        return "from-blue-600 to-indigo-400";
-      default: // e.g., Salads, Vegetables, etc.
-        return "from-emerald-600 to-teal-400";
+      case "Kottu":        return { emoji: "🥘", accent: "#EF4444", bg: "rgba(239,68,68,0.08)" };
+      case "Ultimate Bites": return { emoji: "🍗", accent: "#A855F7", bg: "rgba(168,85,247,0.08)" };
+      case "Fried Rice":   return { emoji: "🍚", accent: "#F59E0B", bg: "rgba(245,158,11,0.08)" };
+      case "Chopsuey":     return { emoji: "🥗", accent: "#06B6D4", bg: "rgba(6,182,212,0.08)" };
+      case "Beverages":    return { emoji: "🥤", accent: "#3B82F6", bg: "rgba(59,130,246,0.08)" };
+      default:             return { emoji: "🍽️", accent: "#10B981", bg: "rgba(16,185,129,0.08)" };
     }
   };
 
-  const gradient = getCategoryGradient(item.category);
+  const cfg = getCategoryConfig(item.category);
 
   return (
     <div
       onClick={() => onAdd(item)}
-      className="group bg-[#111625]/40 backdrop-blur-md border border-[#222E4E] hover:border-[#FF6B35]/60 hover:shadow-[0_10px_30px_rgba(255,107,53,0.15)] rounded-[24px] overflow-hidden flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-1 select-none h-full"
+      className="group relative bg-[#0E1628] border border-[#1E2D4E] hover:border-[#F26F21]/50 rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all duration-250 hover:shadow-[0_8px_32px_rgba(242,111,33,0.12)] select-none"
+      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
     >
-      {/* Image / Gradient Placeholder Container */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-950 shrink-0 rounded-t-[24px]">
+      {/* Colored accent top-bar */}
+      <div className="h-[3px] w-full shrink-0" style={{ background: cfg.accent }} />
+
+      {/* Image / Icon Placeholder */}
+      <div
+        className="relative w-full flex items-center justify-center shrink-0"
+        style={{ height: "120px", background: cfg.bg }}
+      >
         {item.image ? (
           <img
             src={item.image}
@@ -162,30 +186,47 @@ function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-tr ${gradient} opacity-85 flex items-center justify-center relative`}>
-            <span className="text-[10px] font-black tracking-widest text-white/55 uppercase font-mono">
-              {item.category}
-            </span>
+          <span style={{ fontSize: "3rem", lineHeight: 1 }}>{cfg.emoji}</span>
+        )}
+        {/* Product ID (SKU) chip */}
+        {item.sku && (
+          <div
+            className="absolute top-2.5 left-2.5 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md"
+            style={{ background: "rgba(242,111,33,0.9)", color: "white", backdropFilter: "blur(4px)" }}
+          >
+            {item.sku}
           </div>
         )}
-        {/* Portion Badge */}
-        <div className="absolute top-3.5 right-3.5 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-xl border border-white/5 text-[9px] font-extrabold text-slate-200 tracking-wide uppercase">
+        {/* Portion chip */}
+        <div
+          className="absolute bottom-2.5 left-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
+          style={{ background: "rgba(0,0,0,0.6)", color: "rgba(255,255,255,0.75)", backdropFilter: "blur(4px)" }}
+        >
           {item.portion}
+        </div>
+        {/* Add button on hover */}
+        <div
+          className="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 scale-75 group-hover:scale-100"
+          style={{ background: cfg.accent }}
+        >
+          <Plus size={15} className="text-white" />
         </div>
       </div>
 
       {/* Text Details */}
-      <div className="p-5 flex flex-col justify-between flex-1 space-y-4">
-        <h3 className="font-extrabold text-xs text-slate-100 leading-snug tracking-wide line-clamp-2 group-hover:text-[#FF6B35] transition-colors duration-150">
+      <div className="px-4 py-4 flex flex-col gap-3 flex-1">
+        <h3 className="font-bold text-[12px] text-slate-100 leading-snug line-clamp-2 group-hover:text-[#F26F21] transition-colors duration-150">
           {item.title}
         </h3>
-
-        <div className="flex justify-between items-baseline pt-1">
-          <span className="text-sm font-black text-[#FF6B35] font-mono tracking-wider">
-            LKR {item.price.toLocaleString()}
+        <div className="flex items-center justify-between mt-auto">
+          <span className="text-[15px] font-black font-mono" style={{ color: cfg.accent }}>
+            Rs {item.price.toLocaleString()}
           </span>
-          <span className="text-[9px] font-mono font-bold text-slate-600">
-            #{item.id}
+          <span
+            className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md"
+            style={{ background: cfg.bg, color: cfg.accent }}
+          >
+            {item.category.split(" ")[0]}
           </span>
         </div>
       </div>
@@ -220,7 +261,7 @@ function MinimalDataTable({ items, onEdit, onDelete }: MinimalDataTableProps) {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-[#222E4E] text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-[#090D1A]">
-              <th className="px-5 py-3.5">ID</th>
+              <th className="px-5 py-3.5">Product ID (SKU)</th>
               <th className="px-5 py-3.5">Item Name</th>
               <th className="px-5 py-3.5">Category</th>
               <th className="px-5 py-3.5">Portion</th>
@@ -231,7 +272,7 @@ function MinimalDataTable({ items, onEdit, onDelete }: MinimalDataTableProps) {
           <tbody className="divide-y divide-[#222E4E] text-xs">
             {paginatedItems.map(item => (
               <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
-                <td className="px-5 py-3 font-mono text-[10px] text-slate-500">{item.id}</td>
+                <td className="px-5 py-3 font-mono text-xs font-black text-orange-400">{item.sku || "N/A"}</td>
                 <td className="px-5 py-3 font-bold text-slate-200">{item.title}</td>
                 <td className="px-5 py-3 text-slate-400">{item.category}</td>
                 <td className="px-5 py-3 text-slate-500">{item.portion}</td>
@@ -327,7 +368,8 @@ export default function PosPage() {
     title: "",
     price: 0,
     category: "Fried Rice",
-    portion: "Full Portion"
+    portion: "Serves Two",
+    sku: ""
   });
 
   // Load menu items from database on mount and subscribe to Realtime updates
@@ -541,8 +583,9 @@ export default function PosPage() {
           title: newItemData.title,
           price: Number(newItemData.price),
           category: newItemData.category || "Fried Rice",
-          portion: newItemData.portion || "Full Portion",
-          image: newItemData.image
+          portion: newItemData.portion || "Serves Two",
+          image: newItemData.image,
+          sku: newItemData.sku
         })
       });
 
@@ -550,7 +593,7 @@ export default function PosPage() {
         const addedItem = await res.json();
         setMenuItems(prev => [...prev, addedItem]);
         setIsAddingItem(false);
-        setNewItemData({ title: "", price: 0, category: "Fried Rice", portion: "Full Portion", image: undefined });
+        setNewItemData({ title: "", price: 0, category: "Fried Rice", portion: "Serves Two", sku: "", image: undefined });
         triggerToast("Item added and synced successfully", "success");
       } else {
         const err = await res.json();
@@ -614,7 +657,7 @@ export default function PosPage() {
   });
 
   return (
-    <div className="h-screen w-screen bg-[#050814] p-5 text-[#F8F9FA] font-sans antialiased selection:bg-[#FF6B35] selection:text-white flex overflow-hidden relative">
+    <div className="h-screen w-screen bg-[#060B18] p-3 text-[#F2F4F8] font-sans antialiased selection:bg-[#F26F21] selection:text-white flex overflow-hidden relative">
       
       <style dangerouslySetInnerHTML={{__html: `
         html, body {
@@ -654,98 +697,69 @@ export default function PosPage() {
       </div>
 
       {/* Inner Floating Console Container */}
-      <div className="flex-1 h-full flex bg-[#0A0F1D] rounded-[32px] border border-[#1B253F] overflow-hidden">
+      <div className="flex-1 h-full flex bg-[#0B1122] rounded-3xl border border-[#1A2640] overflow-hidden" style={{ boxShadow: "0 0 60px rgba(0,0,0,0.5)" }}>
         
         {/* Left Thin Navigation Sidebar */}
-        <aside className="w-[75px] bg-[#080D1A] border-r border-[#1B253F] flex flex-col justify-between items-center py-8 hidden md:flex shrink-0">
-          <div className="flex flex-col items-center gap-12 w-full">
-            <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer">
+        <aside className="w-[80px] bg-[#080E1C] border-r border-[#14203A] flex flex-col justify-between items-center py-8 hidden md:flex shrink-0">
+          <div className="flex flex-col items-center gap-10 w-full">
+            <div className="w-12 h-12 rounded-full border-2 border-[#F26F21]/30 bg-[#0E1628] flex items-center justify-center p-1.5 overflow-hidden cursor-pointer" style={{ boxShadow: "0 0 20px rgba(242,111,33,0.18)" }}>
               <Image 
                 src="/Round Logo.png" 
                 alt="T-Cloud Eats Logo" 
-                width={48} 
-                height={48} 
-                className="object-contain"
+                width={44} 
+                height={44} 
+                className="w-auto h-auto max-w-full max-h-full object-contain"
+                priority
               />
             </div>
 
-            <nav className="flex flex-col gap-5.5 w-full px-2.5">
-              <button
-                onClick={() => handleSidebarClick("new_order")}
-                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer relative ${
-                  activeSidebar === "new_order" 
-                    ? "bg-[#FF6B35] text-white" 
-                    : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
-                }`}
-              >
-                {activeSidebar === "new_order" && (
-                  <div className="absolute left-[-10px] w-1.5 h-8 bg-[#FF6B35] rounded-r-full shadow-[0_0_8px_#FF6B35]" />
-                )}
-                <ShoppingBag size={20} />
-                <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">POS</span>
-              </button>
-
-              <button
-                onClick={() => handleSidebarClick("order_history")}
-                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer relative ${
-                  activeSidebar === "order_history" 
-                    ? "bg-[#FF6B35] text-white" 
-                    : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
-                }`}
-              >
-                {activeSidebar === "order_history" && (
-                  <div className="absolute left-[-10px] w-1.5 h-8 bg-[#FF6B35] rounded-r-full shadow-[0_0_8px_#FF6B35]" />
-                )}
-                <History size={20} />
-                <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">Logs</span>
-              </button>
-
-              <button
-                onClick={() => handleSidebarClick("menu_management")}
-                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer relative ${
-                  activeSidebar === "menu_management" 
-                    ? "bg-[#FF6B35] text-white" 
-                    : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
-                }`}
-              >
-                {activeSidebar === "menu_management" && (
-                  <div className="absolute left-[-10px] w-1.5 h-8 bg-[#FF6B35] rounded-r-full shadow-[0_0_8px_#FF6B35]" />
-                )}
-                <FolderKanban size={20} />
-                <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">Menu</span>
-              </button>
-
-              <button
-                onClick={() => handleSidebarClick("settings")}
-                className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer relative ${
-                  activeSidebar === "settings" 
-                    ? "bg-[#FF6B35] text-white" 
-                    : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
-                }`}
-              >
-                {activeSidebar === "settings" && (
-                  <div className="absolute left-[-10px] w-1.5 h-8 bg-[#FF6B35] rounded-r-full shadow-[0_0_8px_#FF6B35]" />
-                )}
-                <SettingsIcon size={20} />
-                <span className="text-[8px] font-bold mt-1.5 uppercase tracking-wider">Conf</span>
-              </button>
+            <nav className="flex flex-col gap-1 w-full px-2">
+              {([
+                { key: "new_order",       icon: <ShoppingBag size={19} />, label: "POS" },
+                { key: "order_history",   icon: <History size={19} />,     label: "Logs" },
+                { key: "menu_management", icon: <FolderKanban size={19} />, label: "Menu" },
+                { key: "settings",        icon: <SettingsIcon size={19} />, label: "Conf" },
+              ] as { key: typeof activeSidebar; icon: React.ReactNode; label: string }[]).map(({ key, icon, label }) => (
+                <button
+                  key={key}
+                  onClick={() => handleSidebarClick(key)}
+                  className="relative w-full flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl transition-all duration-200 cursor-pointer group"
+                  style={{
+                    background: activeSidebar === key ? "rgba(242,111,33,0.15)" : "transparent",
+                    color: activeSidebar === key ? "#F26F21" : "#4B5E82",
+                  }}
+                >
+                  {activeSidebar === key && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full" style={{ background: "#F26F21", boxShadow: "0 0 10px #F26F21" }} />
+                  )}
+                  <span className="group-hover:text-slate-200 transition-colors" style={{ color: activeSidebar === key ? "#F26F21" : undefined }}>{icon}</span>
+                  <span className="text-[7px] font-bold uppercase tracking-widest" style={{ color: activeSidebar === key ? "#F26F21" : "#4B5E82" }}>{label}</span>
+                </button>
+              ))}
             </nav>
           </div>
 
-          <div className="flex flex-col gap-4 items-center w-full px-2">
-            <button onClick={() => router.push("/login")} className="w-10 h-10 flex items-center justify-center rounded-xl text-red-500/70 hover:bg-red-500/10 transition-all cursor-pointer">
-              <LogOut size={18} />
+          <div className="flex flex-col gap-3 items-center w-full px-2">
+            <button
+              onClick={() => router.push("/login")}
+              className="w-10 h-10 flex flex-col items-center justify-center rounded-xl transition-all cursor-pointer gap-0.5 group"
+              style={{ color: "#4B5E82" }}
+              title="Logout"
+            >
+              <LogOut size={17} className="group-hover:text-red-400 transition-colors" />
+              <span className="text-[7px] font-bold uppercase tracking-widest group-hover:text-red-400 transition-colors">Exit</span>
             </button>
           </div>
         </aside>
 
-        {/* Main Content Pane (Center - Fits to remaining width) */}
-        <main className="flex-1 h-full overflow-hidden flex flex-col pb-16 md:pb-0 bg-[#0A0F1D]">
+        {/* Main Content Pane */}
+        <main className="flex-1 h-full overflow-hidden flex flex-col pb-16 md:pb-0" style={{ background: "#0B1122" }}>
           
-          {/* Header Layout: Brand status, Search, Clock, Actions */}
-          <header className="px-6 py-4.5 border-b border-[#1B253F] bg-[#0A0F1D] flex items-center justify-between gap-4 shrink-0">
+          {/* Header */}
+          <header className="px-6 py-4 border-b flex items-center justify-between gap-4 shrink-0" style={{ borderColor: "#14203A", background: "#080E1C" }}>
             <div className="flex items-center gap-3">
-              <h1 className="text-xs font-black tracking-wider uppercase text-slate-200">
+              <div className="w-1.5 h-6 rounded-full" style={{ background: "#F26F21" }} />
+              <h1 className="text-xs font-black tracking-widest uppercase" style={{ color: "#CBD5E1" }}>
                 {activeSidebar === "new_order" && "POS Terminal"}
                 {activeSidebar === "order_history" && "Order Logs"}
                 {activeSidebar === "menu_management" && "Menu Database"}
@@ -753,38 +767,54 @@ export default function PosPage() {
               </h1>
             </div>
 
-            {/* Right side: Search, Clock, Refresh, Fullscreen */}
             <div className="flex items-center gap-3">
               {activeSidebar === "new_order" && (
-                <div className="relative w-64 group">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#FF6B35] transition-colors duration-200" size={14} />
+                <div className="relative w-64">
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 transition-colors duration-200"
+                    size={14}
+                    style={{ color: "#4B5E82" }}
+                  />
                   <input
                     type="text"
                     placeholder="Search dishes..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-[#111625] border border-[#222E4E] focus:border-[#FF6B35]/60 focus:shadow-[0_0_15px_rgba(255,107,53,0.1)] rounded-2xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none placeholder:text-slate-500 transition-all duration-300"
+                    className="w-full pl-9 pr-4 py-2.5 text-xs text-white outline-none rounded-xl transition-all duration-300"
+                    style={{
+                      background: "#0E1628",
+                      border: "1px solid #1E2D4E",
+                      color: "#F2F4F8",
+                    }}
+                    onFocus={e => {
+                      e.target.style.borderColor = "rgba(242,111,33,0.5)";
+                      e.target.previousElementSibling && ((e.target.previousElementSibling as HTMLElement).style.color = "#F26F21");
+                    }}
+                    onBlur={e => {
+                      e.target.style.borderColor = "#1E2D4E";
+                      e.target.previousElementSibling && ((e.target.previousElementSibling as HTMLElement).style.color = "#4B5E82");
+                    }}
                   />
                 </div>
               )}
 
-              {/* Minimal Colombo Time widget */}
-              <div className="bg-[#111625] text-[#FF6B35] font-mono text-[10px] font-bold px-3.5 py-2 rounded-full border border-[#222E4E] tracking-wider whitespace-nowrap">
-                {new Date().toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' })} • COLOMBO
-              </div>
+              {/* Live Clock */}
+              <LiveClock />
 
-              {/* Refresh Action */}
-              <button 
+              {/* Refresh */}
+              <button
                 onClick={() => triggerToast("Dashboard refreshed", "info")}
-                className="w-9 h-9 rounded-full border border-[#222E4E] hover:border-slate-500 flex items-center justify-center text-slate-400 hover:text-white transition-all bg-[#111625] cursor-pointer"
+                className="w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer"
+                style={{ background: "#0E1628", border: "1px solid #1E2D4E", color: "#4B5E82" }}
               >
                 <RotateCw size={14} />
               </button>
 
-              {/* Fullscreen Toggle Button */}
-              <button 
+              {/* Fullscreen */}
+              <button
                 onClick={toggleFullscreen}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#222E4E] bg-[#111625] hover:bg-white/5 text-xs font-bold text-slate-200 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                style={{ background: "#0E1628", border: "1px solid #1E2D4E", color: "#94A3B8" }}
               >
                 <Maximize2 size={13} />
                 <span>{isFullscreen ? "Exit FS" : "Full Screen"}</span>
@@ -792,22 +822,32 @@ export default function PosPage() {
             </div>
           </header>
 
-          {/* Category Bar: Separate row with breathing space */}
+          {/* Category Bar */}
           {activeSidebar === "new_order" && (
-            <div className="px-6 py-4 border-b border-[#1B253F] bg-[#090D1A]/20 flex gap-3 overflow-x-auto scrollbar-none shrink-0">
-              {CATEGORIES.map(category => (
-                <button
-                  key={category}
-                  onClick={() => setActiveCategory(category)}
-                  className={`px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all duration-300 border whitespace-nowrap cursor-pointer shrink-0 ${
-                    activeCategory === category 
-                      ? "bg-gradient-to-r from-orange-500 to-red-500 text-white border-transparent shadow-lg shadow-orange-500/20 scale-[1.02]" 
-                      : "bg-[#111625]/60 text-slate-400 border-[#222E4E]/60 hover:text-white hover:bg-[#1C233D]/80 hover:border-slate-500/50"
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
+            <div className="px-6 py-4 flex gap-3 overflow-x-auto shrink-0" style={{ borderBottom: "1px solid #14203A", background: "#080E1C" }}>
+              {CATEGORIES.map(category => {
+                const isActive = activeCategory === category;
+                return (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    className="flex items-center gap-2 whitespace-nowrap cursor-pointer shrink-0 font-bold text-[11px] uppercase tracking-wider rounded-xl px-5 py-2.5 transition-all duration-200"
+                    style={{
+                      background: isActive ? "rgba(242,111,33,0.18)" : "rgba(14,22,40,0.8)",
+                      color: isActive ? "#F26F21" : "#4B5E82",
+                      border: `1px solid ${isActive ? "rgba(242,111,33,0.35)" : "#1E2D4E"}`,
+                    }}
+                  >
+                    {category === "All Categories" && <span>⊞</span>}
+                    {category === "Fried Rice" && <span>🍚</span>}
+                    {category === "Chopsuey" && <span>🥗</span>}
+                    {category === "Kottu" && <span>🥘</span>}
+                    {category === "Ultimate Bites" && <span>🍗</span>}
+                    {category === "Beverages" && <span>🥤</span>}
+                    {category}
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -815,7 +855,7 @@ export default function PosPage() {
           <div className="flex-1 overflow-y-auto p-6">
             
             {activeSidebar === "new_order" && (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4.5 pb-16">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(185px,1fr))] gap-4 pb-16">
                 {filteredMenuItems.map(item => (
                   <MinimalMenuCard
                     key={item.id}
@@ -871,7 +911,15 @@ export default function PosPage() {
 
                 {isAddingItem && (
                   <form onSubmit={handleAddItem} className="bg-[#111625] border border-[#222E4E] p-5 rounded-2xl space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                      <input
+                        type="text"
+                        placeholder="Product ID (SKU)"
+                        value={newItemData.sku || ""}
+                        onChange={e => setNewItemData(prev => ({ ...prev, sku: e.target.value }))}
+                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35]"
+                        required
+                      />
                       <input
                         type="text"
                         placeholder="Item Title"
@@ -936,7 +984,15 @@ export default function PosPage() {
                       <h4 className="font-bold text-xs text-blue-400 uppercase tracking-wider">Edit Menu Item</h4>
                       <button type="button" onClick={() => setEditingItem(null)} className="text-xs text-slate-400 hover:text-white cursor-pointer">Cancel</button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                      <input
+                        type="text"
+                        placeholder="Product ID (SKU)"
+                        value={editingItem.sku || ""}
+                        onChange={e => setEditingItem(prev => prev ? { ...prev, sku: e.target.value } : null)}
+                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
+                        required
+                      />
                       <input
                         type="text"
                         placeholder="Item Title"
@@ -1096,93 +1152,105 @@ export default function PosPage() {
           </div>
         </main>
 
-        {/* Right Active Ticket / Cart Panel (Right - Fixed 360px width, Glassmorphic) */}
-        <aside className="w-[360px] bg-[#0B1224]/85 backdrop-blur-xl border-l border-[#1F2C4E] flex flex-col justify-between h-full shrink-0 shadow-2xl z-10">
-          <div className="flex flex-col h-full w-full justify-between">
+        {/* Right Cart Panel */}
+        <aside className="w-[340px] flex flex-col h-full shrink-0" style={{ background: "#080E1C", borderLeft: "1px solid #14203A" }}>
+          <div className="flex flex-col h-full">
             
             {/* Ticket Header */}
-            <div className="h-20 border-b border-[#1F2C4E] px-5 flex items-center justify-between shrink-0 bg-[#090D1A]/40">
+            <div className="px-4 py-3.5 flex items-center justify-between shrink-0" style={{ borderBottom: "1px solid #14203A" }}>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-extrabold text-slate-100 uppercase tracking-wider">Active Ticket</span>
-                <span className="text-[10px] bg-[#111625] border border-[#222E4E] px-2 py-0.5 rounded text-slate-300 font-mono font-bold">R1</span>
+                <ShoppingBag size={15} style={{ color: "#F26F21" }} />
+                <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: "#CBD5E1" }}>Active Ticket</span>
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded" style={{ background: "#0E1628", border: "1px solid #1E2D4E", color: "#6B7BA4" }}>R{Math.floor(Math.random() * 9) + 1}</span>
               </div>
-              <div className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-emerald-400 font-bold uppercase tracking-wider">
+              <div className="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full" style={{ background: "rgba(0,200,150,0.12)", border: "1px solid rgba(0,200,150,0.25)", color: "#00C896" }}>
                 Dine In
               </div>
             </div>
 
-            {/* Ticket Items List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+            {/* Cart Items */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {cart.map((item) => (
-                <div 
-                  key={item.menuItem.id} 
-                  className="bg-[#111625]/60 border border-[#222E4E]/60 rounded-xl p-3 flex gap-3 items-center justify-between"
+                <div
+                  key={item.menuItem.id}
+                  className="rounded-xl p-3 flex gap-2 items-start"
+                  style={{ background: "#0E1628", border: "1px solid #1A2640" }}
                 >
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-xs text-slate-200 truncate">{item.menuItem.title}</h4>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      {item.quantity} x LKR {item.menuItem.price.toLocaleString()}
+                    <h4 className="font-semibold text-[11px] leading-snug" style={{ color: "#CBD5E1" }}>{item.menuItem.title}</h4>
+                    <p className="text-[10px] mt-0.5 font-mono" style={{ color: "#4B5E82" }}>
+                      {item.quantity} × Rs {item.menuItem.price.toLocaleString()}
+                    </p>
+                    <p className="text-[10px] font-bold font-mono mt-0.5" style={{ color: "#F26F21" }}>
+                      Rs {(item.quantity * item.menuItem.price).toLocaleString()}
                     </p>
                   </div>
 
-                  {/* Quantity Controls */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => updateQuantity(item.menuItem.id, -1)}
-                      className="w-6 h-6 bg-[#111625] hover:bg-slate-800 text-slate-300 rounded flex items-center justify-center cursor-pointer border border-[#222E4E]"
-                    >
-                      <Minus size={10} />
+                  <div className="flex flex-col items-end gap-1.5">
+                    <button onClick={() => removeFromCart(item.menuItem.id)} className="cursor-pointer p-0.5 rounded" style={{ color: "#2A3A5A" }}>
+                      <X size={12} className="hover:text-red-400 transition-colors" />
                     </button>
-                    <span className="text-xs font-mono font-bold text-white w-4 text-center">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.menuItem.id, 1)}
-                      className="w-6 h-6 bg-[#111625] hover:bg-slate-800 text-slate-300 rounded flex items-center justify-center cursor-pointer border border-[#222E4E]"
-                    >
-                      <Plus size={10} />
-                    </button>
+                    <div className="flex items-center gap-1 rounded-lg overflow-hidden" style={{ border: "1px solid #1E2D4E" }}>
+                      <button
+                        onClick={() => updateQuantity(item.menuItem.id, -1)}
+                        className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
+                        style={{ background: "#14203A", color: "#6B7BA4" }}
+                      >
+                        <Minus size={9} />
+                      </button>
+                      <span className="text-[11px] font-black font-mono w-5 text-center" style={{ color: "#F2F4F8" }}>{item.quantity}</span>
+                      <button
+                        onClick={() => updateQuantity(item.menuItem.id, 1)}
+                        className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
+                        style={{ background: "rgba(242,111,33,0.15)", color: "#F26F21" }}
+                      >
+                        <Plus size={9} />
+                      </button>
+                    </div>
                   </div>
-
-                  {/* Remove */}
-                  <button
-                    onClick={() => removeFromCart(item.menuItem.id)}
-                    className="text-slate-600 hover:text-red-400 p-1 cursor-pointer"
-                  >
-                    <X size={14} />
-                  </button>
                 </div>
               ))}
 
               {cart.length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center py-24 text-center opacity-40">
-                  <ShoppingBag size={24} className="text-slate-600 mb-2" />
-                  <p className="text-xs font-bold text-slate-500">Ticket is Empty</p>
+                <div className="flex flex-col items-center justify-center py-20 text-center" style={{ opacity: 0.35 }}>
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#0E1628", border: "1px solid #1E2D4E" }}>
+                    <ShoppingBag size={22} style={{ color: "#4B5E82" }} />
+                  </div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#4B5E82" }}>Ticket Empty</p>
+                  <p className="text-[10px] mt-1" style={{ color: "#2A3A5A" }}>Tap a menu item to add</p>
                 </div>
               )}
             </div>
 
-            {/* Calculations & settle button - Standout CTA Area */}
-            <div className="p-5 border-t border-[#1F2C4E] bg-[#080E1C]/90 space-y-4 shrink-0">
-              <div className="bg-[#111625]/80 border border-[#222E4E]/80 p-4.5 rounded-2xl space-y-3.5 shadow-inner">
-                <div className="flex justify-between items-center text-slate-400 font-bold uppercase tracking-widest text-[9px]">
-                  <span>Subtotal</span>
-                  <span className="font-mono text-slate-200">Rs {subtotal.toLocaleString()}</span>
+            {/* Totals & Pay Button */}
+            <div className="p-4 shrink-0 space-y-3" style={{ borderTop: "1px solid #14203A", background: "#060B18" }}>
+              <div className="rounded-xl p-4 space-y-2.5" style={{ background: "#0E1628", border: "1px solid #1A2640" }}>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#4B5E82" }}>Subtotal</span>
+                  <span className="text-[11px] font-bold font-mono" style={{ color: "#94A3B8" }}>Rs {subtotal.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center text-slate-400 font-bold uppercase tracking-widest text-[9px]">
-                  <span>Srv. Chg (10%)</span>
-                  <span className="font-mono text-slate-200">Rs {tax.toLocaleString()}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#4B5E82" }}>Srv. Charge (10%)</span>
+                  <span className="text-[11px] font-bold font-mono" style={{ color: "#94A3B8" }}>Rs {tax.toLocaleString()}</span>
                 </div>
-                <div className="border-t border-[#1F2C4E] pt-3.5 flex justify-between items-center font-black text-slate-100">
-                  <span className="text-xs uppercase tracking-wider">Total Amount</span>
-                  <span className="text-xl font-black font-mono text-[#FF6B35]">Rs {total.toLocaleString()}</span>
+                <div className="flex justify-between items-center pt-2" style={{ borderTop: "1px solid #1A2640" }}>
+                  <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: "#F2F4F8" }}>Total</span>
+                  <span className="text-xl font-black font-mono" style={{ color: "#F26F21" }}>Rs {total.toLocaleString()}</span>
                 </div>
               </div>
 
               <button
                 onClick={handleCheckout}
                 disabled={cart.length === 0}
-                className="w-full bg-[#00A86B] hover:bg-emerald-600 text-white font-black py-4 px-4 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_4px_20px_rgba(0,168,107,0.2)] hover:shadow-[0_4px_25px_rgba(0,168,107,0.4)]"
+                className="w-full font-black py-3.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-[11px] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest"
+                style={{
+                  background: cart.length === 0 ? "#0E1628" : "linear-gradient(135deg, #00C896, #00A87A)",
+                  color: cart.length === 0 ? "#2A3A5A" : "white",
+                  boxShadow: cart.length > 0 ? "0 4px 24px rgba(0,200,150,0.3)" : "none",
+                }}
               >
-                <span>Pay Bill / Settle</span>
+                <Check size={14} />
+                <span>Settle & Pay</span>
               </button>
             </div>
 

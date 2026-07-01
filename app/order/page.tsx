@@ -21,7 +21,7 @@ const HomeIcon = () => (
 );
 
 
-const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Noodles", "Kottu", "Ultimate Bites", "Beverages"];
+const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Beverages"];
 
 export default function OrderPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -228,7 +228,7 @@ export default function OrderPage() {
         ) : filteredItems.length > 0 ? (
           <div className="menu-grid">
             {filteredItems.map((item) => (
-              <div key={item.id} className="menu-card" style={{ padding: "24px" }}>
+          <div key={item.id} className="menu-card" style={{ padding: "24px" }} data-category={item.category}>
                 <div className="menu-card-header">
                   <h3 className="menu-card-title">{item.title}</h3>
                   <span className="menu-card-price">Rs {Number(item.price).toLocaleString()}</span>
@@ -237,6 +237,7 @@ export default function OrderPage() {
                   <span className="menu-card-portion">{item.portion}</span>
                   <div className="menu-card-tags">
                     <span className="menu-tag popular">{item.category}</span>
+                    {item.sku && <span className="menu-tag chef-special">{item.sku}</span>}
                   </div>
                 </div>
                 <p className="menu-card-desc">{item.description || `Delicious ${item.title} prepared fresh in our kitchen with premium ingredients.`}</p>

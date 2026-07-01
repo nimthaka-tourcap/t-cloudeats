@@ -39,13 +39,14 @@ export default function LoginPage() {
       {/* Top Bar / Brand */}
       <header className="w-full max-w-7xl mx-auto flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shadow-lg shadow-orange-500/10">
+          <div className="w-10 h-10 rounded-full border border-orange-500/20 bg-[#111625]/60 flex items-center justify-center p-1 overflow-hidden shadow-lg shadow-orange-500/5">
             <Image 
               src="/Round Logo.png" 
               alt="T-Cloud Eats Logo" 
-              width={36} 
-              height={36} 
-              className="object-cover"
+              width={32} 
+              height={32} 
+              className="w-auto h-auto max-w-full max-h-full object-contain"
+              priority
             />
           </div>
           <span className="font-extrabold text-sm tracking-wider uppercase">

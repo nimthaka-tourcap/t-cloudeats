@@ -22,7 +22,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { title, price, category, portion, image } = body;
+    const { title, price, category, portion, image, sku } = body;
 
     if (!title || !price || !category || !portion) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase
       .from("menu_items")
-      .insert([{ title, price: Number(price), category, portion, image }])
+      .insert([{ title, price: Number(price), category, portion, image, sku }])
       .select();
 
     if (error) {
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, title, price, category, portion, image } = body;
+    const { id, title, price, category, portion, image, sku } = body;
 
     if (!id || !title || !price || !category || !portion) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -57,7 +57,7 @@ export async function PUT(request: Request) {
 
     const { data, error } = await supabase
       .from("menu_items")
-      .update({ title, price: Number(price), category, portion, image })
+      .update({ title, price: Number(price), category, portion, image, sku })
       .eq("id", id)
       .select();
 

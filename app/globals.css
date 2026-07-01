@@ -799,7 +799,7 @@ footer {
 .menu-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
+  gap: 24px;
 }
 
 @media (min-width: 640px) {
@@ -816,15 +816,17 @@ footer {
 
 /* Menu Card */
 .menu-card {
-  background: var(--navy-light);
-  border: 1.5px solid rgba(250,243,224,0.06);
+  background: linear-gradient(145deg, #162447 0%, #0F1B36 100%);
+  border: 1.5px solid rgba(250,243,224,0.07);
+  border-left: 4px solid var(--orange);
   border-radius: 20px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   position: relative;
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s, box-shadow 0.25s;
   overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 
 .menu-card::before {
@@ -838,9 +840,10 @@ footer {
 }
 
 .menu-card:hover {
-  transform: translateY(-6px);
-  border-color: rgba(242,111,33,0.35);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.35), 0 0 24px rgba(242,111,33,0.08);
+  transform: translateY(-4px);
+  border-color: rgba(242,111,33,0.5);
+  border-left-color: var(--orange);
+  box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 30px rgba(242,111,33,0.1);
 }
 
 .menu-card:hover::before {
@@ -857,7 +860,7 @@ footer {
 
 .menu-card-title {
   font-family: var(--font-heading);
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 800;
   color: var(--cream);
   line-height: 1.25;
@@ -953,10 +956,10 @@ footer {
 }
 
 .menu-order-btn:hover {
-  background: var(--orange);
-  border-color: var(--orange);
+  background: #25D366;
+  border-color: #25D366;
   color: #fff;
-  box-shadow: 0 4px 14px rgba(242,111,33,0.35);
+  box-shadow: 0 6px 20px rgba(37,211,102,0.35);
   transform: translateY(-1px);
 }
 
@@ -1237,3 +1240,35 @@ footer {
   }
 }
 
+/* ── Category-specific menu card accent colors ───────────────────── */
+.menu-card[data-category="Fried Rice"]   { border-left-color: #F59E0B; }
+.menu-card[data-category="Chopsuey"]     { border-left-color: #06B6D4; }
+.menu-card[data-category="Kottu"]        { border-left-color: #EF4444; }
+.menu-card[data-category="Ultimate Bites"] { border-left-color: #A855F7; }
+.menu-card[data-category="Beverages"]   { border-left-color: #3B82F6; }
+
+/* ── Menu card loading shimmer ────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── Better scrollbar for order page ─────────────────────────────── */
+.category-tabs-container::-webkit-scrollbar { display: none; }
+.category-tabs-container { scrollbar-width: none; }
+
+/* ── Menu card bottom WhatsApp CTA line ──────────────────────────── */
+.menu-order-btn {
+  letter-spacing: 0.03em;
+}
+
+/* ── Improved category tab active state ──────────────────────────── */
+.category-tab.active {
+  box-shadow: 0 6px 24px rgba(242,111,33,0.35), 0 0 0 1px var(--orange);
+}
+
+/* ── Category tab font size tweak for order page ─────────────────── */
+.category-tab {
+  font-size: 0.82rem;
+  padding: 9px 20px;
+}

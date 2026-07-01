@@ -124,7 +124,7 @@ const TOP_10_MENU = [
   {
     id: 1,
     title: "Classic Chicken Fried Rice",
-    price: "LKR 1,000",
+    price: "LKR 1,100",
     portion: "Full Portion",
     tags: ["Popular"],
     description: "Basmati Rice, Fried Chicken Strip, Vegetable serve with Sunny side up, Onion Pickles, Homemade Chili Paste.",
@@ -133,7 +133,7 @@ const TOP_10_MENU = [
   {
     id: 2,
     title: "Nasi Goreng",
-    price: "LKR 1,300",
+    price: "LKR 1,400",
     portion: "Full Portion",
     tags: ["Popular", "Spicy"],
     description: "Tender Chicken, Prawns, Beef, Basmati Rice, Vegetable Served With Fried Egg And Served With Crispy Crackers.",
@@ -142,7 +142,7 @@ const TOP_10_MENU = [
   {
     id: 3,
     title: "Prawns Fried Rice",
-    price: "LKR 1,100",
+    price: "LKR 1,200",
     portion: "Full Portion",
     tags: [],
     description: "Stir Fried Prawns, Basmati rice, Vegetable, serve with Sunny side up, Onion Pickle, Homemade Chili paste.",
@@ -151,7 +151,7 @@ const TOP_10_MENU = [
   {
     id: 4,
     title: "Chicken Chopsuey Rice",
-    price: "LKR 1,250",
+    price: "LKR 1,400",
     portion: "Full Portion",
     tags: ["Chef Special"],
     description: "Aromatic Fried Rice And Colorful Stir-Fried Vegetables With Tender Chicken Finished In A Rich Savory Sauce.",
@@ -159,17 +159,17 @@ const TOP_10_MENU = [
   },
   {
     id: 5,
-    title: "Chicken Fried Noodles",
-    price: "LKR 1,000",
-    portion: "Full Portion",
+    title: "Coca Cola",
+    price: "LKR 300",
+    portion: "1050ml",
     tags: [],
-    description: "Fried Chicken Strip, Noodles, Vegetable, Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste.",
-    category: "Noodles"
+    description: "Refreshing cold Coca Cola bottle.",
+    category: "Beverages"
   },
   {
     id: 6,
     title: "Chicken Kottu",
-    price: "LKR 1,000",
+    price: "LKR 1,100",
     portion: "Full Portion",
     tags: ["Popular"],
     description: "Black Chicken Curry, Chopped Roti, Vegetables, Aromatic Spices, Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste.",
@@ -178,7 +178,7 @@ const TOP_10_MENU = [
   {
     id: 7,
     title: "Fried Chicken Cheese Kottu",
-    price: "LKR 1,500",
+    price: "LKR 1,600",
     portion: "Full Portion",
     tags: ["Popular", "Cheesy"],
     description: "Street Food Favorite Fried Chicken, Cheese, Milk With Sunny Side Up, Onion Pickle, Spicy Gravy.",
@@ -187,7 +187,7 @@ const TOP_10_MENU = [
   {
     id: 8,
     title: "Sri Lankan Chicken Devilled",
-    price: "LKR 1,000",
+    price: "LKR 1,200",
     portion: "250g",
     tags: ["Spicy"],
     description: "250g boneless chicken cooked in traditional spicy Sri Lankan devilled style.",
@@ -195,17 +195,17 @@ const TOP_10_MENU = [
   },
   {
     id: 9,
-    title: "Hot Butter Cuttlefish",
-    price: "LKR 900",
-    portion: "Regular",
-    tags: ["Popular", "Spicy"],
-    description: "Crispy-fried cuttlefish tossed in butter, spring onions, and dry chilies.",
+    title: "Fried Fish",
+    price: "LKR 1,500",
+    portion: "250g",
+    tags: ["Popular"],
+    description: "Crispy fried devilled fish prepared Sri Lankan style.",
     category: "Ultimate Bites"
   },
   {
     id: 10,
     title: "Milk Shake",
-    price: "LKR 350",
+    price: "LKR 700",
     portion: "Regular",
     tags: ["Refreshing"],
     description: "Delicious milkshake. Choose your flavor: Strawberry, Vanilla, or Chocolate.",
@@ -213,13 +213,29 @@ const TOP_10_MENU = [
   }
 ];
 
-const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Noodles", "Kottu", "Ultimate Bites", "Beverages"];
+const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Beverages"];
 
 /* ── Page Component ─────────────────────────────────────────────── */
 export default function Home() {
   useFadeIn();
 
   const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadMenu() {
+      try {
+        const res = await fetch("/api/menu");
+        if (res.ok) {
+          const data = await res.json();
+          setMenuItems(data);
+        }
+      } catch (error) {
+        console.error("Failed to load menu on homepage:", error);
+      }
+    }
+    loadMenu();
+  }, []);
 
   useEffect(() => {
     // Grand Launch: July 2nd, 2026 at 00:00:00 (Sri Lanka Time: UTC+05:30)
@@ -409,38 +425,48 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Menu Grid - Curated Top 10 Static Cards */}
+            {/* Menu Grid - Curated Dynamic Cards */}
             <div className="menu-grid">
-              {TOP_10_MENU.map((item) => (
-                <div key={item.id} className="menu-card">
-                  <div className="menu-card-header">
-                    <h3 className="menu-card-title">{item.title}</h3>
-                    <span className="menu-card-price">{item.price}</span>
-                  </div>
-                  <div className="menu-card-meta">
-                    <span className="menu-card-portion">{item.portion}</span>
-                    <div className="menu-card-tags">
-                      {item.tags.map((tag) => (
-                        <span key={tag} className={`menu-tag ${tag.toLowerCase().replace(" & ", "-").replace(" ", "-")}`}>
-                          {tag}
-                        </span>
-                      ))}
+              {(menuItems.length > 0 ? menuItems.slice(0, 10) : TOP_10_MENU).map((item) => {
+                const priceText = typeof item.price === "string" ? item.price : `Rs ${Number(item.price).toLocaleString()}`;
+                const descriptionText = item.description || `Delicious ${item.title} prepared fresh in our kitchen with premium ingredients.`;
+                const tags = item.tags || [item.category];
+                return (
+                  <div key={item.id} className="menu-card" data-category={item.category}>
+                    <div className="menu-card-header">
+                      <h3 className="menu-card-title">{item.title}</h3>
+                      <span className="menu-card-price">{priceText}</span>
+                    </div>
+                    <div className="menu-card-meta">
+                      <span className="menu-card-portion">{item.portion}</span>
+                      <div className="menu-card-tags">
+                        {tags.map((tag: string) => (
+                          <span key={tag} className={`menu-tag ${tag.toLowerCase().replace(" & ", "-").replace(" ", "-")}`}>
+                            {tag}
+                          </span>
+                        ))}
+                        {item.sku && (
+                          <span className="menu-tag chef-special">
+                            {item.sku}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="menu-card-desc">{descriptionText}</p>
+                    <div className="menu-card-actions">
+                      <a
+                        href={`https://wa.me/94706288109?text=Hi%20t-cloud%20eats!%20I%20would%20like%20to%20order%20the%20${encodeURIComponent(item.title)}%20(${encodeURIComponent(item.portion)}).`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="menu-order-btn"
+                      >
+                        <WhatsAppIcon />
+                        Order on WhatsApp
+                      </a>
                     </div>
                   </div>
-                  <p className="menu-card-desc">{item.description}</p>
-                  <div className="menu-card-actions">
-                    <a
-                      href={`https://wa.me/94706288109?text=Hi%20t-cloud%20eats!%20I%20would%20like%20to%20order%20the%20${encodeURIComponent(item.title)}.`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="menu-order-btn"
-                    >
-                      <WhatsAppIcon />
-                      Order on WhatsApp
-                    </a>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* View Full Menu Button */}
