@@ -92,7 +92,7 @@ export default function OrderPage() {
         }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
             <Image
-              src="/Classic Logo.png"
+              src="/Round Logo.png"
               alt="t-cloud eats logo"
               width={42}
               height={42}
