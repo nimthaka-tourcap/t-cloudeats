@@ -76,6 +76,8 @@ export default function BillPage() {
 
         if (error || !data) {
           setErrorMsg("Order not found in our database");
+        } else if (data.status === "Ignored") {
+          setErrorMsg("This order has been ignored. Invoice is not generated.");
         } else {
           setOrder({
             ...data,

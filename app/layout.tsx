@@ -43,13 +43,6 @@ export const metadata: Metadata = {
     type: "website",
     url: "http://t-cloudeats.com/",
   },
-  icons: {
-    icon: [
-      { url: "/favicon.png", type: "image/png" },
-    ],
-    shortcut: "/favicon.ico",
-    apple: "/favicon.png",
-  },
   manifest: "/manifest.json",
 };
 

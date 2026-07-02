@@ -63,7 +63,7 @@ interface Order {
   tax: number;
   total: number;
   status: "Preparing" | "Ready" | "Dispatched" | "Completed" | "Voided" | "Ignored";
-  type: "Take Away" | "Pick Up" | "Delivery";
+  type: "Take Away" | "Pick Up" | "Delivery" | "3rd Party";
   customer?: CustomerDetails;
 }
 
@@ -388,7 +388,7 @@ export default function PosPage() {
   const [activeCategory, setActiveCategory] = useState("All Categories");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [orderType, setOrderType] = useState<"Take Away" | "Pick Up" | "Delivery">("Take Away");
+  const [orderType, setOrderType] = useState<"Take Away" | "Pick Up" | "Delivery" | "3rd Party">("Delivery");
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   
@@ -427,10 +427,15 @@ export default function PosPage() {
 
   // Load order history and CMS from database on mount, fallback to localStorage
   useEffect(() => {
-    const currentUser = localStorage.getItem("t-cloud-eats-user");
+    let currentUser = localStorage.getItem("t-cloud-eats-user");
     if (!currentUser) {
-      router.push("/login");
-      return;
+      currentUser = "cashier@t-cloudeats.com";
+      localStorage.setItem("t-cloud-eats-user", currentUser);
+    }
+
+    const savedOrdersStr = localStorage.getItem("t-cloud-eats-orders");
+    if (savedOrdersStr && savedOrdersStr.includes('"status":"Ignored"')) {
+      localStorage.removeItem("t-cloud-eats-orders");
     }
 
     const cacheTimeStr = localStorage.getItem("t-cloud-eats-cache-time");
@@ -466,7 +471,19 @@ export default function PosPage() {
     }
 
     async function loadOrdersAndCMS() {
-      // 1. Fetch Orders
+      // 1. Clean up ignored orders older than 2 days in Supabase
+      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+      try {
+        await supabase
+          .from("orders")
+          .delete()
+          .eq("status", "Ignored")
+          .lt("timestamp", twoDaysAgo);
+      } catch (e) {
+        console.error("Failed to prune expired ignored orders from database", e);
+      }
+
+      // 2. Fetch Orders
       try {
         const { data: dbOrders, error: ordersErr } = await supabase
           .from("orders")
@@ -476,7 +493,17 @@ export default function PosPage() {
         if (ordersErr) {
           console.error("Supabase orders fetch error, falling back to localStorage", ordersErr);
           const saved = localStorage.getItem("t-cloud-eats-orders");
-          if (saved) setOrderHistory(JSON.parse(saved));
+          if (saved) {
+            const list = JSON.parse(saved);
+            const filtered = list.filter((o: any) => {
+              if (o.status === "Ignored") {
+                const ageMs = Date.now() - new Date(o.timestamp).getTime();
+                return ageMs <= 2 * 24 * 60 * 60 * 1000;
+              }
+              return true;
+            });
+            setOrderHistory(filtered);
+          }
         } else if (dbOrders) {
           const formatted = dbOrders.map(o => ({
             ...o,
@@ -486,16 +513,33 @@ export default function PosPage() {
             tax: Number(o.tax),
             total: Number(o.total)
           }));
-          setOrderHistory(formatted);
-          localStorage.setItem("t-cloud-eats-orders", JSON.stringify(formatted));
+          const filtered = formatted.filter(o => {
+            if (o.status === "Ignored") {
+              const ageMs = Date.now() - new Date(o.timestamp).getTime();
+              return ageMs <= 2 * 24 * 60 * 60 * 1000;
+            }
+            return true;
+          });
+          setOrderHistory(filtered);
+          localStorage.setItem("t-cloud-eats-orders", JSON.stringify(filtered));
         }
       } catch (e) {
         console.error("Network error fetching orders", e);
         const saved = localStorage.getItem("t-cloud-eats-orders");
-        if (saved) setOrderHistory(JSON.parse(saved));
+        if (saved) {
+          const list = JSON.parse(saved);
+          const filtered = list.filter((o: any) => {
+            if (o.status === "Ignored") {
+              const ageMs = Date.now() - new Date(o.timestamp).getTime();
+              return ageMs <= 2 * 24 * 60 * 60 * 1000;
+            }
+            return true;
+          });
+          setOrderHistory(filtered);
+        }
       }
 
-      // 2. Fetch Customers
+      // 3. Fetch Customers
       try {
         const { data: dbCustomers, error: custErr } = await supabase
           .from("customers")
@@ -1525,12 +1569,24 @@ export default function PosPage() {
                                         >
                                           Void
                                         </button>
-                                        <button
-                                          onClick={() => updateOrderStatus(order.id, "Ignored")}
-                                          className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg bg-[#25324D] text-slate-400 hover:bg-slate-700 hover:text-white transition-all cursor-pointer border border-slate-600 active:scale-95"
-                                        >
-                                          Ignore
-                                        </button>
+                                        {(() => {
+                                          const orderAgeMs = Date.now() - new Date(order.timestamp).getTime();
+                                          const canIgnore = orderAgeMs <= 3 * 60 * 1000;
+                                          return (
+                                            <button
+                                              disabled={!canIgnore}
+                                              onClick={() => updateOrderStatus(order.id, "Ignored")}
+                                              className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg border transition-all ${
+                                                canIgnore 
+                                                  ? "bg-[#25324D] text-slate-400 hover:bg-slate-700 hover:text-white border-slate-600 active:scale-95 cursor-pointer"
+                                                  : "bg-[#1E2533] text-slate-600 border-[#2A344A] cursor-not-allowed opacity-40"
+                                              }`}
+                                              title={canIgnore ? "Ignore order" : "Ignore option expired (3-min limit)"}
+                                            >
+                                              Ignore
+                                            </button>
+                                          );
+                                        })()}
                                       </>
                                     )}
                                   </div>
@@ -1777,59 +1833,7 @@ export default function PosPage() {
                     </div>
                   </div>
 
-                  {/* Google Menu Integration Section */}
-                  <div className="border-t border-[#222E4E] pt-6 space-y-4">
-                    <h3 className="font-extrabold text-xs text-orange-400 uppercase tracking-wider">Google Menu Integration</h3>
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-300">Synchronize Prices</h4>
-                        <p className="text-[10px] text-slate-500 mt-1">Pull the latest menu prices from your Google Business Profile and update the website and POS</p>
-                      </div>
-                      <button
-                        onClick={handlePullFromGoogle}
-                        disabled={isSyncing}
-                        className="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-orange-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1.5"
-                      >
-                        <RotateCw size={12} className={isSyncing ? "animate-spin" : ""} />
-                        {isSyncing ? "Syncing..." : "Pull from Google"}
-                      </button>
-                    </div>
-                  </div>
 
-                  {/* System Data Maintenance Section */}
-                  <div className="border-t border-[#222E4E] pt-6 space-y-4">
-                    <h3 className="font-extrabold text-xs text-red-500 uppercase tracking-wider">System Maintenance</h3>
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-300">Clear Cache &amp; Reset Orders</h4>
-                        <p className="text-[10px] text-slate-500 mt-1">Clears local storage orders cache and clears all orders database entries (requires confirm)</p>
-                      </div>
-                      <button
-                        onClick={async () => {
-                          if (!confirm("Are you sure you want to delete ALL orders and cache? This cannot be undone.")) return;
-                          
-                          localStorage.removeItem("t-cloud-eats-orders");
-                          setOrderHistory([]);
-                          
-                          try {
-                            const { error } = await supabase.from("orders").delete().neq("id", "placeholder_to_force_delete_all");
-                            if (error) {
-                              console.error("Failed to delete database orders:", error);
-                              triggerToast("Failed to clear database orders", "error");
-                            } else {
-                              triggerToast("All orders cache and database cleared!", "success");
-                            }
-                          } catch (e) {
-                            console.error(e);
-                            triggerToast("Offline mode. Local cache cleared.", "warning");
-                          }
-                        }}
-                        className="bg-red-500/10 text-red-400 border border-red-500/20 px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/25 transition-all cursor-pointer"
-                      >
-                        Reset All Orders
-                      </button>
-                    </div>
-                  </div>
 
                 </div>
               </div>
@@ -2127,6 +2131,17 @@ export default function PosPage() {
                 <div className="flex bg-[#0E1628] p-1 rounded-xl border border-[#1E2D4E] w-full">
                   <button
                     type="button"
+                    onClick={() => setOrderType("Delivery")}
+                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
+                      orderType === "Delivery" 
+                        ? "bg-[#3B82F6] text-white shadow-lg shadow-blue-500/20" 
+                        : "text-[#4B5E82] hover:text-slate-300"
+                    }`}
+                  >
+                    Delivery
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setOrderType("Take Away")}
                     className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
                       orderType === "Take Away" 
@@ -2138,25 +2153,11 @@ export default function PosPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setOrderType("Pick Up")}
-                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
-                      orderType === "Pick Up" 
-                        ? "bg-[#A855F7] text-white shadow-lg shadow-purple-500/20" 
-                        : "text-[#4B5E82] hover:text-slate-300"
-                    }`}
+                    disabled
+                    className="flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg text-slate-600 bg-slate-800/40 border border-slate-800/50 cursor-not-allowed opacity-40 text-center"
+                    title="3rd Party Delivery (Uber Eats & PickMe Food integration coming soon)"
                   >
-                    Pick Up
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOrderType("Delivery")}
-                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
-                      orderType === "Delivery" 
-                        ? "bg-[#3B82F6] text-white shadow-lg shadow-blue-500/20" 
-                        : "text-[#4B5E82] hover:text-slate-300"
-                    }`}
-                  >
-                    Delivery
+                    3rd Party
                   </button>
                 </div>
               ) : (
