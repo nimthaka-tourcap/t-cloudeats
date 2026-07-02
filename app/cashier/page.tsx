@@ -24,7 +24,9 @@ import {
   Info,
   RotateCw,
   Maximize2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  BarChart3,
+  Bell
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -253,81 +255,47 @@ interface MinimalDataTableProps {
 }
 
 function MinimalDataTable({ items, onEdit, onDelete }: MinimalDataTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
-  const totalPages = Math.ceil(items.length / itemsPerPage);
-  
-  const paginatedItems = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return items.slice(start, start + itemsPerPage);
-  }, [items, currentPage]);
-
   return (
-    <div className="space-y-4">
-      <div className="bg-[#111625] border border-[#222E4E] rounded-2xl overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-[#222E4E] text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-[#090D1A]">
-              <th className="px-5 py-3.5">Product ID (SKU)</th>
-              <th className="px-5 py-3.5">Item Name</th>
-              <th className="px-5 py-3.5">Category</th>
-              <th className="px-5 py-3.5">Portion</th>
-              <th className="px-5 py-3.5">Price</th>
-              <th className="px-5 py-3.5 text-right">Actions</th>
+    <div className="bg-[#111625] border border-[#222E4E] rounded-2xl overflow-y-auto max-h-[550px]" style={{ scrollbarWidth: "thin" }}>
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-[#222E4E] text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-[#090D1A] sticky top-0 z-10 shadow-sm">
+            <th className="px-5 py-3.5 bg-[#090D1A]">Product ID (SKU)</th>
+            <th className="px-5 py-3.5 bg-[#090D1A]">Item Name</th>
+            <th className="px-5 py-3.5 bg-[#090D1A]">Category</th>
+            <th className="px-5 py-3.5 bg-[#090D1A]">Portion</th>
+            <th className="px-5 py-3.5 bg-[#090D1A]">Price</th>
+            <th className="px-5 py-3.5 text-right bg-[#090D1A]">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#222E4E] text-xs">
+          {items.map(item => (
+            <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
+              <td className="px-5 py-3 font-mono text-xs font-black text-orange-400">{item.sku || "N/A"}</td>
+              <td className="px-5 py-3 font-bold text-slate-200">{item.title}</td>
+              <td className="px-5 py-3 text-slate-400">{item.category}</td>
+              <td className="px-5 py-3 text-slate-500">{item.portion}</td>
+              <td className="px-5 py-3 font-bold text-[#FF6B35]">LKR {item.price.toLocaleString()}</td>
+              <td className="px-5 py-3 text-right space-x-2">
+                <button
+                  type="button"
+                  onClick={() => onEdit(item)}
+                  className="text-orange-400 hover:text-orange-300 font-bold text-[10px] uppercase cursor-pointer"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(item.id)}
+                  className="text-red-400 hover:text-red-300 font-bold text-[10px] uppercase cursor-pointer"
+                >
+                  Delete
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-[#222E4E] text-xs">
-            {paginatedItems.map(item => (
-              <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
-                <td className="px-5 py-3 font-mono text-xs font-black text-orange-400">{item.sku || "N/A"}</td>
-                <td className="px-5 py-3 font-bold text-slate-200">{item.title}</td>
-                <td className="px-5 py-3 text-slate-400">{item.category}</td>
-                <td className="px-5 py-3 text-slate-500">{item.portion}</td>
-                <td className="px-5 py-3 font-bold text-[#FF6B35]">LKR {item.price.toLocaleString()}</td>
-                <td className="px-5 py-3 text-right space-x-2">
-                  <button
-                    onClick={() => onEdit(item)}
-                    className="text-orange-400 hover:text-orange-300 font-bold text-[10px] uppercase"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => onDelete(item.id)}
-                    className="text-red-400 hover:text-red-300 font-bold text-[10px] uppercase"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center">
-          <span className="text-[10px] font-mono text-slate-500 uppercase">
-            Page {currentPage} of {totalPages}
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 bg-[#111625] border border-[#222E4E] rounded-lg text-slate-400 hover:text-white disabled:opacity-30 cursor-pointer"
-            >
-              Prev
-            </button>
-            <button
-              onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1.5 bg-[#111625] border border-[#222E4E] rounded-lg text-slate-400 hover:text-white disabled:opacity-30 cursor-pointer"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -364,6 +332,20 @@ function getStatusBadgeStyle(status: Order["status"]): { bg: string; text: strin
   }
 }
 
+function getBillHash(invoiceId: string): string {
+  let hash = 0;
+  for (let i = 0; i < invoiceId.length; i++) {
+    hash = (hash << 5) - hash + invoiceId.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash % 4096).toString(16).padStart(3, "0");
+}
+
+function getBillUrl(invoiceId: string): string {
+  const hash = getBillHash(invoiceId);
+  return `https://t-cloudeats.com/bills/${invoiceId}${hash}`;
+}
+
 // ============================================================================
 // --- MAIN PAGE COMPONENT ---
 // ============================================================================
@@ -395,7 +377,14 @@ export default function PosPage() {
   };
 
   // POS View & Navigation States
-  const [activeSidebar, setActiveSidebar] = useState<"new_order" | "order_history" | "menu_management" | "settings">("new_order");
+  const [selectedLogDate, setSelectedLogDate] = useState(() => {
+    const local = new Date();
+    const yy = local.getFullYear();
+    const mm = String(local.getMonth() + 1).padStart(2, "0");
+    const dd = String(local.getDate()).padStart(2, "0");
+    return `${yy}-${mm}-${dd}`;
+  });
+  const [activeSidebar, setActiveSidebar] = useState<"new_order" | "order_history" | "menu_management" | "reports" | "settings">("new_order");
   const [activeCategory, setActiveCategory] = useState("All Categories");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -436,24 +425,121 @@ export default function PosPage() {
     sku: ""
   });
 
-  // Load order history and CMS from localStorage on mount
+  // Load order history and CMS from database on mount, fallback to localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("t-cloud-eats-orders");
-    if (saved) {
+    const currentUser = localStorage.getItem("t-cloud-eats-user");
+    if (!currentUser) {
+      router.push("/login");
+      return;
+    }
+
+    const cacheTimeStr = localStorage.getItem("t-cloud-eats-cache-time");
+    const cacheTime = cacheTimeStr ? Number(cacheTimeStr) : 0;
+    const now = Date.now();
+    if (now - cacheTime > 10 * 60 * 1000) {
+      localStorage.removeItem("t-cloud-eats-orders");
+      localStorage.removeItem("t-cloud-eats-cms");
+      localStorage.removeItem(`t-cloud-eats-notifications-${currentUser}`);
+      console.log("Cache expired (10 minutes). Wiping cache & loading fresh from database.");
+    }
+    localStorage.setItem("t-cloud-eats-cache-time", now.toString());
+
+    // Load notifications
+    const savedNotifications = localStorage.getItem(`t-cloud-eats-notifications-${currentUser}`);
+    if (savedNotifications) {
       try {
-        setOrderHistory(JSON.parse(saved));
+        const list = JSON.parse(savedNotifications);
+        setNotificationsList(list);
+        setUnreadCount(list.filter((n: any) => !n.read).length);
       } catch (e) {
-        console.error("Failed to load orders from localStorage", e);
+        console.error(e);
+      }
+    } else {
+      const defaults = [
+        { id: 1, text: "Kitchen Alert: Order INV-260702-001 is ready for Pick Up!", time: "5 mins ago", read: false },
+        { id: 2, text: "Rider Alert: Delivery driver assigned to Order INV-260702-002!", time: "12 mins ago", read: false },
+        { id: 3, text: "Google Sync: Menu prices updated from Google Sheet.", time: "1 hour ago", read: true }
+      ];
+      setNotificationsList(defaults);
+      setUnreadCount(defaults.filter(n => !n.read).length);
+      localStorage.setItem(`t-cloud-eats-notifications-${currentUser}`, JSON.stringify(defaults));
+    }
+
+    async function loadOrdersAndCMS() {
+      // 1. Fetch Orders
+      try {
+        const { data: dbOrders, error: ordersErr } = await supabase
+          .from("orders")
+          .select("*")
+          .order("timestamp", { ascending: false });
+
+        if (ordersErr) {
+          console.error("Supabase orders fetch error, falling back to localStorage", ordersErr);
+          const saved = localStorage.getItem("t-cloud-eats-orders");
+          if (saved) setOrderHistory(JSON.parse(saved));
+        } else if (dbOrders) {
+          const formatted = dbOrders.map(o => ({
+            ...o,
+            items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
+            customer: typeof o.customer === 'string' ? JSON.parse(o.customer) : o.customer,
+            subtotal: Number(o.subtotal),
+            tax: Number(o.tax),
+            total: Number(o.total)
+          }));
+          setOrderHistory(formatted);
+          localStorage.setItem("t-cloud-eats-orders", JSON.stringify(formatted));
+        }
+      } catch (e) {
+        console.error("Network error fetching orders", e);
+        const saved = localStorage.getItem("t-cloud-eats-orders");
+        if (saved) setOrderHistory(JSON.parse(saved));
+      }
+
+      // 2. Fetch Customers
+      try {
+        const { data: dbCustomers, error: custErr } = await supabase
+          .from("customers")
+          .select("*");
+
+        if (custErr) {
+          console.error("Supabase customers fetch error, falling back to localStorage", custErr);
+          const savedCms = localStorage.getItem("t-cloud-eats-cms");
+          if (savedCms) setCustomers(JSON.parse(savedCms));
+        } else if (dbCustomers) {
+          setCustomers(dbCustomers);
+          localStorage.setItem("t-cloud-eats-cms", JSON.stringify(dbCustomers));
+        }
+      } catch (e) {
+        console.error("Network error fetching customers", e);
+        const savedCms = localStorage.getItem("t-cloud-eats-cms");
+        if (savedCms) setCustomers(JSON.parse(savedCms));
       }
     }
-    const savedCms = localStorage.getItem("t-cloud-eats-cms");
-    if (savedCms) {
-      try {
-        setCustomers(JSON.parse(savedCms));
-      } catch (e) {
-        console.error("Failed to load CMS from localStorage", e);
-      }
-    }
+
+    loadOrdersAndCMS();
+
+    // Subscribe to realtime changes on orders & customers!
+    const ordersChannel = supabase
+      .channel("realtime-orders-cms")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        () => {
+          loadOrdersAndCMS();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "customers" },
+        () => {
+          loadOrdersAndCMS();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+    };
   }, []);
 
   // Load menu items from database on mount and subscribe to Realtime updates
@@ -504,12 +590,28 @@ export default function PosPage() {
   // Toast State
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
+  // Notification States
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsList, setNotificationsList] = useState<{ id: number; text: string; time: string; read: boolean }[]>([]);
+
   const triggerToast = (message: string, type: ToastType = "success") => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 3000);
+  };
+
+  const saveNotifications = (newList: { id: number; text: string; time: string; read: boolean }[]) => {
+    setNotificationsList(newList);
+    setUnreadCount(newList.filter(n => !n.read).length);
+    const user = localStorage.getItem("t-cloud-eats-user") || "default";
+    localStorage.setItem(`t-cloud-eats-notifications-${user}`, JSON.stringify(newList));
+  };
+
+  const slideCacheWindow = () => {
+    localStorage.setItem("t-cloud-eats-cache-time", Date.now().toString());
   };
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -539,7 +641,8 @@ export default function PosPage() {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: Order["status"]) => {
+  const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
+    // 1. Update local state
     const updatedHistory = orderHistory.map(o => {
       if (o.id === orderId) {
         return { ...o, status: newStatus };
@@ -548,7 +651,46 @@ export default function PosPage() {
     });
     setOrderHistory(updatedHistory);
     localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
-    triggerToast(`Order ${orderId} marked as ${newStatus}`, "success");
+
+    // 2. Add Live notification trigger
+    slideCacheWindow();
+    if (newStatus === "Ready") {
+      const updatedList = [
+        { id: Date.now(), text: `🍲 Kitchen Alert: Order ${orderId} is ready for Pick Up!`, time: "Just now", read: false },
+        ...notificationsList
+      ];
+      saveNotifications(updatedList);
+    } else if (newStatus === "Dispatched") {
+      const updatedList = [
+        { id: Date.now(), text: `🛵 Rider Alert: Order ${orderId} has been dispatched!`, time: "Just now", read: false },
+        ...notificationsList
+      ];
+      saveNotifications(updatedList);
+    } else if (newStatus === "Completed") {
+      const targetOrder = updatedHistory.find(o => o.id === orderId);
+      if (targetOrder) {
+        setLatestOrder(targetOrder);
+        setShowReceiptModal(true);
+      }
+    }
+
+    // 3. Update Supabase
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: newStatus })
+        .eq("id", orderId);
+      
+      if (error) {
+        console.error("Supabase order status update error:", error);
+        triggerToast("Saved locally, database update failed", "warning");
+      } else {
+        triggerToast(`Order ${orderId} marked as ${newStatus}`, "success");
+      }
+    } catch (e) {
+      console.error("Network error updating order status:", e);
+      triggerToast("Saved locally, offline mode active", "warning");
+    }
   };
 
   const handleStatusAdvance = () => {
@@ -586,13 +728,15 @@ export default function PosPage() {
     }
   };
 
-  const handleUpdateOrder = () => {
+  const handleUpdateOrder = async () => {
     if (!selectedInvoiceId) return;
+    const newSubtotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+    const newTax = 0;
+    const newTotal = newSubtotal;
+
+    // 1. Update local state
     const updatedHistory = orderHistory.map(o => {
       if (o.id === selectedInvoiceId) {
-        const newSubtotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
-        const newTax = 0;
-        const newTotal = newSubtotal;
         return {
           ...o,
           items: [...cart],
@@ -605,9 +749,33 @@ export default function PosPage() {
     });
     setOrderHistory(updatedHistory);
     localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
+
+    // 2. Update Supabase
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({
+          items: cart,
+          subtotal: newSubtotal,
+          tax: newTax,
+          total: newTotal
+        })
+        .eq("id", selectedInvoiceId);
+
+      if (error) {
+        console.error("Supabase order update error:", error);
+        triggerToast("Saved locally, database update failed", "warning");
+      } else {
+        triggerToast("Order updated successfully", "success");
+      }
+    } catch (e) {
+      console.error("Network error updating order:", e);
+      triggerToast("Saved locally, offline mode active", "warning");
+    }
+
+    slideCacheWindow();
     setCart([]);
     setSelectedInvoiceId(null);
-    triggerToast("Order updated successfully", "success");
   };
 
   const handlePlaceOrderClick = () => {
@@ -621,7 +789,7 @@ export default function PosPage() {
     setCustomerAddress("");
   };
 
-  const handleConfirmPlaceOrder = () => {
+  const handleConfirmPlaceOrder = async () => {
     if (!customerPhone || !customerName) {
       triggerToast("Please enter name and phone number", "warning");
       return;
@@ -634,13 +802,27 @@ export default function PosPage() {
     }
     const formattedPhone = `${customerCountryCode}${processedNum}`;
     
-    // Save/update customer details in CMS
     const newCustomer = { phone: formattedPhone, name: customerName, address: customerAddress };
+
+    // 1. Update local CMS state and localStorage
     const updatedCms = [newCustomer, ...customers.filter(c => c.phone !== formattedPhone)];
     setCustomers(updatedCms);
     localStorage.setItem("t-cloud-eats-cms", JSON.stringify(updatedCms));
 
-    // Create new order in "Preparing" status
+    // 2. Upsert customer in Supabase
+    try {
+      const { error: custErr } = await supabase
+        .from("customers")
+        .upsert(newCustomer, { onConflict: "phone" });
+      
+      if (custErr) {
+        console.error("Supabase customer upsert error:", custErr);
+      }
+    } catch (e) {
+      console.error("Network error saving customer:", e);
+    }
+
+    // 3. Create new order in "Preparing" status
     const currentBizDateStr = getBusinessDateStr(new Date());
     const todaysOrdersForSeq = orderHistory.filter(o => getBusinessDateStr(o.timestamp) === currentBizDateStr);
     const nextSeq = todaysOrdersForSeq.length + 1;
@@ -658,15 +840,41 @@ export default function PosPage() {
       customer: newCustomer
     };
 
+    // 4. Update local order logs state and localStorage
     const updatedHistory = [newOrder, ...orderHistory];
     setOrderHistory(updatedHistory);
     localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
-    
-    setLatestOrder(newOrder);
-    setShowReceiptModal(true);
+
+    // 5. Insert order into Supabase
+    try {
+      const { error: orderErr } = await supabase
+        .from("orders")
+        .insert({
+          id: newInvoiceId,
+          timestamp: newOrder.timestamp,
+          items: newOrder.items,
+          subtotal: newOrder.subtotal,
+          tax: newOrder.tax,
+          total: newOrder.total,
+          status: newOrder.status,
+          type: newOrder.type,
+          customer: newOrder.customer
+        });
+      
+      if (orderErr) {
+        console.error("Supabase order insertion error:", orderErr);
+        triggerToast("Saved locally, database insert failed", "warning");
+      } else {
+        triggerToast("Order placed & sent to kitchen", "success");
+      }
+    } catch (e) {
+      console.error("Network error saving order:", e);
+      triggerToast("Saved locally, offline mode active", "warning");
+    }
+
+    slideCacheWindow();
     setCart([]);
     setShowCustomerModal(false);
-    triggerToast("Order placed & sent to kitchen", "success");
   };
 
   // Cart Functions
@@ -719,36 +927,66 @@ export default function PosPage() {
   const selectedOrderType = selectedOrder ? selectedOrder.type : orderType;
 
   const currentBizDate = useMemo(() => getBusinessDateStr(new Date()), []);
+
+  const selectedLogBizDateStr = useMemo(() => {
+    const parts = selectedLogDate.split("-");
+    if (parts.length === 3) {
+      return `${parts[0].slice(-2)}${parts[1]}${parts[2]}`;
+    }
+    return getBusinessDateStr(new Date());
+  }, [selectedLogDate]);
   
   const todaysOrders = useMemo(() => {
     return orderHistory.filter(order => {
-      const isToday = getBusinessDateStr(order.timestamp) === currentBizDate;
+      const isSelectedDate = getBusinessDateStr(order.timestamp) === selectedLogBizDateStr;
       const isNotVoidOrIgnore = order.status !== "Voided" && order.status !== "Ignored";
-      return isToday && isNotVoidOrIgnore;
+      return isSelectedDate && isNotVoidOrIgnore;
     });
-  }, [orderHistory, currentBizDate]);
+  }, [orderHistory, selectedLogBizDateStr]);
 
   const todaysAllOrders = useMemo(() => {
-    return orderHistory.filter(order => getBusinessDateStr(order.timestamp) === currentBizDate);
-  }, [orderHistory, currentBizDate]);
+    return orderHistory.filter(order => getBusinessDateStr(order.timestamp) === selectedLogBizDateStr);
+  }, [orderHistory, selectedLogBizDateStr]);
+
+  const reportData = useMemo(() => {
+    const groups: Record<string, { dateStr: string; orderCount: number; revenue: number }> = {};
+    
+    orderHistory.forEach(order => {
+      // Exclude voided/ignored orders from metrics
+      if (order.status === "Voided" || order.status === "Ignored") return;
+      
+      const bizDate = getBusinessDateStr(order.timestamp);
+      const formattedDate = `20${bizDate.slice(0, 2)}-${bizDate.slice(2, 4)}-${bizDate.slice(4, 6)}`;
+      
+      if (!groups[bizDate]) {
+        groups[bizDate] = {
+          dateStr: formattedDate,
+          orderCount: 0,
+          revenue: 0
+        };
+      }
+      groups[bizDate].orderCount += 1;
+      groups[bizDate].revenue += order.total;
+    });
+
+    return Object.values(groups).sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+  }, [orderHistory]);
 
   // Checkout Operations
   // Removed old handleCheckout function to use handlePlaceOrderClick and handleConfirmPlaceOrder
 
   const confirmAndPrintInvoice = () => {
-    if (latestOrder) {
-      const updatedHistory = [latestOrder, ...orderHistory];
-      setOrderHistory(updatedHistory);
-      localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
+    if (typeof window !== "undefined") {
+      window.print();
     }
     setCart([]);
     setShowReceiptModal(false);
     setLatestOrder(null);
-    triggerToast("Ticket settled successfully", "success");
+    triggerToast("Receipt completed successfully", "success");
   };
 
   // Sidebar access check
-  const handleSidebarClick = (view: "new_order" | "order_history" | "menu_management" | "settings") => {
+  const handleSidebarClick = (view: "new_order" | "order_history" | "menu_management" | "reports" | "settings") => {
     if (view === "menu_management") {
       if (isAdminUnlocked) {
         setActiveSidebar("menu_management");
@@ -946,6 +1184,7 @@ export default function PosPage() {
                 { key: "new_order",       icon: <ShoppingBag size={19} />, label: "POS" },
                 { key: "order_history",   icon: <History size={19} />,     label: "Logs" },
                 { key: "menu_management", icon: <FolderKanban size={19} />, label: "Menu" },
+                { key: "reports",         icon: <BarChart3 size={19} />,   label: "Reports" },
                 { key: "settings",        icon: <SettingsIcon size={19} />, label: "Conf" },
               ] as { key: typeof activeSidebar; icon: React.ReactNode; label: string }[]).map(({ key, icon, label }) => (
                 <button
@@ -991,6 +1230,7 @@ export default function PosPage() {
                 {activeSidebar === "new_order" && "POS Terminal"}
                 {activeSidebar === "order_history" && "Order Logs"}
                 {activeSidebar === "menu_management" && "Menu Database"}
+                {activeSidebar === "reports" && "Kitchen Reports"}
                 {activeSidebar === "settings" && "Settings"}
               </h1>
             </div>
@@ -1037,6 +1277,66 @@ export default function PosPage() {
               >
                 <RotateCw size={14} />
               </button>
+
+              {/* Notification Button */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowNotifications(!showNotifications);
+                    if (!showNotifications) {
+                      const readList = notificationsList.map(n => ({ ...n, read: true }));
+                      saveNotifications(readList);
+                    }
+                  }}
+                  className="w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer relative"
+                  style={{ 
+                    background: "#0E1628", 
+                    border: "1px solid #1E2D4E", 
+                    color: showNotifications ? "#F26F21" : "#4B5E82" 
+                  }}
+                  title="Notifications"
+                >
+                  <Bell size={14} className={unreadCount > 0 ? "animate-pulse text-amber-400" : ""} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-[8px] font-bold text-white rounded-full flex items-center justify-center border border-[#060B18]">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notifications Dropdown */}
+                {showNotifications && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                    <div className="absolute right-0 mt-2 w-80 bg-[#111625]/95 border border-[#222E4E] rounded-xl shadow-2xl p-4 space-y-3 z-50 backdrop-blur-md">
+                      <div className="flex items-center justify-between pb-2 border-b border-[#222E4E]">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">Live Kitchen Alerts</span>
+                        <button 
+                          onClick={() => {
+                            setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
+                            setUnreadCount(0);
+                          }}
+                          className="text-[9px] font-bold text-[#F26F21] hover:underline"
+                        >
+                          Mark all read
+                        </button>
+                      </div>
+                      <div className="max-h-60 overflow-y-auto space-y-2" style={{ scrollbarWidth: "none" }}>
+                        {notificationsList.length === 0 ? (
+                          <div className="text-center py-6 text-[10px] text-slate-500">No recent notifications.</div>
+                        ) : (
+                          notificationsList.map(n => (
+                            <div key={n.id} className={`p-2 rounded-lg text-[10px] space-y-1 transition-colors ${n.read ? "bg-white/[0.02] text-slate-400" : "bg-white/[0.05] text-slate-200 border-l-2 border-[#F26F21]"}`}>
+                              <p className="leading-snug text-left">{n.text}</p>
+                              <span className="text-[8px] text-slate-500 font-mono block text-left">{n.time}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
               {/* Fullscreen */}
               <button
@@ -1097,18 +1397,30 @@ export default function PosPage() {
             {activeSidebar === "order_history" && (
               <div className="space-y-6">
                 {/* Sales Summary */}
-                <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5">
-                  <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300 mb-4 flex items-center gap-2">
-                    <TrendingUp size={14} className="text-[#FF6B35]" />
-                    Today's Shift Sales (2 PM - 2 AM)
-                  </h3>
+                <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                      <TrendingUp size={14} className="text-[#FF6B35]" />
+                      Shift Sales (2 PM - 2 AM)
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Select Date:</span>
+                      <input
+                        type="date"
+                        value={selectedLogDate}
+                        onChange={(e) => setSelectedLogDate(e.target.value)}
+                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-[#FF6B35] cursor-pointer font-mono"
+                        style={{ colorScheme: "dark" }}
+                      />
+                    </div>
+                  </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-[#090D1A] p-4 rounded-xl border border-[#222E4E]">
-                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Today's Orders</p>
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Shift Orders</p>
                       <p className="text-lg font-black mt-1 text-slate-200">{todaysOrders.length}</p>
                     </div>
                     <div className="bg-[#090D1A] p-4 rounded-xl border border-[#222E4E]">
-                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Today's Revenue</p>
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Shift Revenue</p>
                       <p className="text-lg font-black mt-1 text-emerald-400 font-mono">
                         LKR {todaysOrders.reduce((sum, o) => sum + o.total, 0).toLocaleString()}
                       </p>
@@ -1125,7 +1437,7 @@ export default function PosPage() {
                 {/* Today's Orders list */}
                 <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-4">
                   <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">
-                    Today's Order Invoices
+                    Shift Orders List
                   </h3>
                   
                   {todaysAllOrders.length === 0 ? (
@@ -1484,7 +1796,277 @@ export default function PosPage() {
                     </div>
                   </div>
 
+                  {/* System Data Maintenance Section */}
+                  <div className="border-t border-[#222E4E] pt-6 space-y-4">
+                    <h3 className="font-extrabold text-xs text-red-500 uppercase tracking-wider">System Maintenance</h3>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-300">Clear Cache &amp; Reset Orders</h4>
+                        <p className="text-[10px] text-slate-500 mt-1">Clears local storage orders cache and clears all orders database entries (requires confirm)</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!confirm("Are you sure you want to delete ALL orders and cache? This cannot be undone.")) return;
+                          
+                          localStorage.removeItem("t-cloud-eats-orders");
+                          setOrderHistory([]);
+                          
+                          try {
+                            const { error } = await supabase.from("orders").delete().neq("id", "placeholder_to_force_delete_all");
+                            if (error) {
+                              console.error("Failed to delete database orders:", error);
+                              triggerToast("Failed to clear database orders", "error");
+                            } else {
+                              triggerToast("All orders cache and database cleared!", "success");
+                            }
+                          } catch (e) {
+                            console.error(e);
+                            triggerToast("Offline mode. Local cache cleared.", "warning");
+                          }
+                        }}
+                        className="bg-red-500/10 text-red-400 border border-red-500/20 px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/25 transition-all cursor-pointer"
+                      >
+                        Reset All Orders
+                      </button>
+                    </div>
+                  </div>
+
                 </div>
+              </div>
+            )}
+
+            {activeSidebar === "reports" && (
+              <div className="space-y-6 overflow-y-auto pb-12 pr-1 max-h-full" style={{ scrollbarWidth: "thin" }}>
+                
+                {/* Reports Header & Recommendations Alert */}
+                <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-3">
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                    <BarChart3 size={15} className="text-[#FF6B35]" />
+                    Cloud Kitchen Business Reports
+                  </h3>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Based on your cloud kitchen model, we track key operational indicators. 
+                    Below are suggested analytics reports generated dynamically from your POS transaction history:
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-2 pt-1.5">
+                    <div className="bg-[#090D1A] p-3 rounded-lg border border-[#1A2640] text-[9px] text-slate-400 space-y-1">
+                      <p className="font-bold text-[#FF6B35] uppercase">📈 Everyday Sales Report</p>
+                      <p>Tracks shift-by-shift daily sales revenue, average order value, and volume.</p>
+                    </div>
+                    <div className="bg-[#090D1A] p-3 rounded-lg border border-[#1A2640] text-[9px] text-slate-400 space-y-1">
+                      <p className="font-bold text-purple-400 uppercase">🛵 Logistics &amp; Dispatch</p>
+                      <p>Compares pickup platforms (Uber/PickMe) against direct T-Cloud Eats deliveries.</p>
+                    </div>
+                    <div className="bg-[#090D1A] p-3 rounded-lg border border-[#1A2640] text-[9px] text-slate-400 space-y-1">
+                      <p className="font-bold text-blue-400 uppercase">🍲 Popular Dishes Report</p>
+                      <p>Identifies high-velocity items to optimize ingredients inventory and preparation.</p>
+                    </div>
+                    <div className="bg-[#090D1A] p-3 rounded-lg border border-[#1A2640] text-[9px] text-slate-400 space-y-1">
+                      <p className="font-bold text-red-400 uppercase">🛡️ Loss Prevention Report</p>
+                      <p>Monitors voided or ignored orders to verify transaction compliance and cashier integrity.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Key Metrics Row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-xl">
+                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Total Sales Revenue</p>
+                    <p className="text-lg font-black mt-1 text-emerald-400 font-mono">
+                      LKR {orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored").reduce((sum, o) => sum + o.total, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-xl">
+                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Settled Orders</p>
+                    <p className="text-lg font-black mt-1 text-slate-200">
+                      {orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored").length}
+                    </p>
+                  </div>
+                  <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-xl">
+                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">CMS Customers</p>
+                    <p className="text-lg font-black mt-1 text-purple-400 font-mono">
+                      {customers.length} Profiles
+                    </p>
+                  </div>
+                  <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-xl">
+                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Average Order Value</p>
+                    <p className="text-lg font-black mt-1 text-slate-200 font-mono">
+                      LKR {(() => {
+                        const settled = orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored");
+                        if (settled.length === 0) return "0";
+                        const totalRev = settled.reduce((sum, o) => sum + o.total, 0);
+                        return Math.round(totalRev / settled.length).toLocaleString();
+                      })()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Left Column: Everyday Sales Table */}
+                  <div className="lg:col-span-2 bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-4">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">
+                      Everyday Sales &amp; Shift Logs
+                    </h3>
+                    {reportData.length === 0 ? (
+                      <div className="text-center py-12 text-xs text-slate-500">
+                        No transaction data available yet.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-[#222E4E] text-[9px] text-slate-400 font-bold uppercase tracking-wider bg-[#090D1A]">
+                              <th className="px-4 py-3">Business Date</th>
+                              <th className="px-4 py-3">Orders Count</th>
+                              <th className="px-4 py-3">Gross Revenue</th>
+                              <th className="px-4 py-3">Avg Order Value</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#222E4E] text-xs">
+                            {reportData.map(row => (
+                              <tr key={row.dateStr} className="hover:bg-white/[0.01] transition-colors">
+                                <td className="px-4 py-3 font-mono font-bold text-slate-300">{row.dateStr}</td>
+                                <td className="px-4 py-3 font-bold text-slate-400">{row.orderCount} orders</td>
+                                <td className="px-4 py-3 font-bold text-[#FF6B35] font-mono">LKR {row.revenue.toLocaleString()}</td>
+                                <td className="px-4 py-3 text-slate-300 font-mono">LKR {Math.round(row.revenue / row.orderCount).toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column: Visual Charts & Analytics Suggestions */}
+                  <div className="space-y-6">
+                    {/* Order Type Distribution Card */}
+                    <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-4">
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-slate-300">Logistics Breakdown</h4>
+                      {(() => {
+                        const settled = orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored");
+                        const totalO = settled.length || 1;
+                        const takeAway = settled.filter(o => o.type === "Take Away").length;
+                        const pickUp = settled.filter(o => o.type === "Pick Up").length;
+                        const delivery = settled.filter(o => o.type === "Delivery").length;
+
+                        const pctTA = Math.round((takeAway / totalO) * 100);
+                        const pctPU = Math.round((pickUp / totalO) * 100);
+                        const pctDL = Math.round((delivery / totalO) * 100);
+
+                        return (
+                          <div className="space-y-3.5">
+                            {/* Take Away */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] font-bold">
+                                <span className="text-amber-400">Take Away (Customer Collect)</span>
+                                <span className="text-slate-300">{takeAway} ({pctTA}%)</span>
+                              </div>
+                              <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
+                                <div className="bg-amber-400 h-full rounded-full transition-all duration-500" style={{ width: `${pctTA}%` }} />
+                              </div>
+                            </div>
+                            {/* Pick Up */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] font-bold">
+                                <span className="text-purple-400">Pick Up (Uber / PickMe)</span>
+                                <span className="text-slate-300">{pickUp} ({pctPU}%)</span>
+                              </div>
+                              <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
+                                <div className="bg-purple-400 h-full rounded-full transition-all duration-500" style={{ width: `${pctPU}%` }} />
+                              </div>
+                            </div>
+                            {/* Delivery */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] font-bold">
+                                <span className="text-blue-400">Delivery (T-Cloud Rider)</span>
+                                <span className="text-slate-300">{delivery} ({pctDL}%)</span>
+                              </div>
+                              <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
+                                <div className="bg-blue-400 h-full rounded-full transition-all duration-500" style={{ width: `${pctDL}%` }} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Top Selling Items Card */}
+                    <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-4">
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-slate-300">Top Selling Dishes</h4>
+                      {(() => {
+                        const counts: Record<string, number> = {};
+                        orderHistory
+                          .filter(o => o.status !== "Voided" && o.status !== "Ignored")
+                          .forEach(order => {
+                            order.items.forEach(item => {
+                              counts[item.menuItem.title] = (counts[item.menuItem.title] || 0) + item.quantity;
+                            });
+                          });
+
+                        const sorted = Object.entries(counts)
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 4);
+
+                        const maxQty = sorted[0]?.[1] || 1;
+
+                        if (sorted.length === 0) {
+                          return <div className="text-[10px] text-slate-500 py-3 text-center">No sales items logged yet.</div>;
+                        }
+
+                        return (
+                          <div className="space-y-3">
+                            {sorted.map(([title, qty], index) => {
+                              const pct = Math.round((qty / maxQty) * 100);
+                              return (
+                                <div key={title} className="space-y-1">
+                                  <div className="flex justify-between text-[10px]">
+                                    <span className="font-semibold text-slate-300 truncate max-w-[150px]">{index + 1}. {title}</span>
+                                    <span className="font-mono text-slate-500 font-bold">{qty} sold</span>
+                                  </div>
+                                  <div className="w-full bg-[#090D1A] h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-[#FF6B35] h-full rounded-full" style={{ width: `${pct}%` }} />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Loss Prevention Audit Card */}
+                    <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-3">
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-slate-300">Loss &amp; Integrity Audit</h4>
+                      {(() => {
+                        const totalOrders = orderHistory.length || 1;
+                        const voided = orderHistory.filter(o => o.status === "Voided").length;
+                        const ignored = orderHistory.filter(o => o.status === "Ignored").length;
+                        const voidRate = Math.round((voided / totalOrders) * 100);
+
+                        return (
+                          <div className="space-y-2.5 text-[10px]">
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Total Voided Orders:</span>
+                              <span className="font-black text-red-400 font-mono">{voided}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Total Test (Ignored) Orders:</span>
+                              <span className="font-black text-slate-400 font-mono">{ignored}</span>
+                            </div>
+                            <div className="flex justify-between border-t border-[#1A2640] pt-2">
+                              <span className="text-slate-300 font-bold">Void Leakage Rate:</span>
+                              <span className={`font-black font-mono ${voidRate > 10 ? "text-red-400" : "text-emerald-400"}`}>{voidRate}%</span>
+                            </div>
+                            <p className="text-[8px] text-slate-500 italic mt-1 leading-normal">
+                              Note: A leakage rate above 10% is flagged for manager audit reviews.
+                            </p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
               </div>
             )}
 
@@ -1808,15 +2390,47 @@ export default function PosPage() {
               ))}
             </div>
             <div className="flex justify-between font-black text-sm">
-              <span>Total Settle</span>
+              <span>Total Amount</span>
               <span>Rs {latestOrder.total.toLocaleString()}</span>
             </div>
+
+            {/* E-Bill URL Block */}
+            <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-2 text-left">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Customer Digital E-Bill Link:</span>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={getBillUrl(latestOrder.id)}
+                  className="bg-white border border-slate-200 text-[9px] px-2 py-1.5 rounded-lg flex-1 font-mono text-slate-600 truncate focus:outline-none"
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(getBillUrl(latestOrder.id));
+                    triggerToast("E-Bill URL copied!", "success");
+                  }}
+                  className="bg-[#FF6B35]/10 text-[#FF6B35] font-bold px-2 py-1.5 rounded-lg text-[9px] hover:bg-[#FF6B35]/20 transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                >
+                  Copy
+                </button>
+                <a
+                  href={getBillUrl(latestOrder.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-slate-200 text-slate-700 font-bold px-2 py-1.5 rounded-lg text-[9px] hover:bg-slate-300 transition-all text-center cursor-pointer active:scale-95"
+                >
+                  Open
+                </a>
+              </div>
+            </div>
+
             <div className="pt-2 flex flex-col gap-2">
-              <button onClick={confirmAndPrintInvoice} className="w-full bg-[#00A86B] text-white font-bold py-3 rounded-xl cursor-pointer">
-                Settle &amp; Print Receipt
+              <button onClick={confirmAndPrintInvoice} className="w-full bg-[#00A86B] text-white font-bold py-3 rounded-xl cursor-pointer flex items-center justify-center gap-2 uppercase tracking-widest text-[10px]">
+                <Printer size={13} />
+                Print Invoice
               </button>
-              <button onClick={() => setShowReceiptModal(false)} className="w-full bg-slate-100 text-slate-600 py-2 rounded-xl cursor-pointer">
-                Cancel
+              <button onClick={() => setShowReceiptModal(false)} className="w-full bg-slate-100 text-slate-600 py-2 rounded-xl cursor-pointer uppercase tracking-widest text-[10px]">
+                Close Receipt
               </button>
             </div>
           </div>

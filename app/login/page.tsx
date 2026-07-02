@@ -7,8 +7,8 @@ import { Lock, Mail, ArrowRight, Loader2, Maximize, Minimize, Eye, EyeOff } from
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("cashier@t-cloudeats.com");
-  const [password, setPassword] = useState("cashier123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -60,7 +60,14 @@ export default function LoginPage() {
     setError("");
 
     setTimeout(() => {
-      if (email === "cashier@t-cloudeats.com" && password === "cashier123") {
+      if (email === "cashier@t-cloudeats.com" && password === "cashier@ti321") {
+        const lastUser = localStorage.getItem("t-cloud-eats-user");
+        if (lastUser !== email) {
+          localStorage.removeItem("t-cloud-eats-orders");
+          localStorage.removeItem("t-cloud-eats-cms");
+        }
+        localStorage.setItem("t-cloud-eats-user", email);
+        localStorage.setItem("t-cloud-eats-cache-time", Date.now().toString());
         router.push("/cashier");
       } else {
         setError("Invalid email or password. Use demo credentials.");
