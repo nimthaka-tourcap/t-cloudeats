@@ -47,6 +47,12 @@ interface CartItem {
   quantity: number;
 }
 
+interface CustomerDetails {
+  phone: string;
+  name: string;
+  address: string;
+}
+
 interface Order {
   id: string;
   timestamp: string;
@@ -54,8 +60,9 @@ interface Order {
   subtotal: number;
   tax: number;
   total: number;
-  status: "Completed" | "Pending";
+  status: "Preparing" | "Ready" | "Dispatched" | "Completed" | "Voided" | "Ignored";
   type: "Take Away" | "Pick Up" | "Delivery";
+  customer?: CustomerDetails;
 }
 
 type ToastType = "success" | "error" | "info" | "warning";
@@ -325,6 +332,38 @@ function MinimalDataTable({ items, onEdit, onDelete }: MinimalDataTableProps) {
   );
 }
 
+function getBusinessDateStr(dateInput: Date | string = new Date()): string {
+  const d = new Date(dateInput);
+  const hours = d.getHours();
+  const dateCopy = new Date(d);
+  if (hours < 2) {
+    dateCopy.setDate(dateCopy.getDate() - 1);
+  }
+  const yy = String(dateCopy.getFullYear()).slice(-2);
+  const mm = String(dateCopy.getMonth() + 1).padStart(2, "0");
+  const dd = String(dateCopy.getDate()).padStart(2, "0");
+  return `${yy}${mm}${dd}`;
+}
+
+function getNextInvoiceNumber(history: Order[]): string {
+  const currentBizDateStr = getBusinessDateStr(new Date());
+  const todaysOrders = history.filter(order => getBusinessDateStr(order.timestamp) === currentBizDateStr);
+  const nextSeq = todaysOrders.length + 1;
+  return `INV-${currentBizDateStr}-${String(nextSeq).padStart(3, "0")}`;
+}
+
+function getStatusBadgeStyle(status: Order["status"]): { bg: string; text: string; border: string } {
+  switch (status) {
+    case "Preparing":  return { bg: "rgba(245,158,11,0.08)", text: "#F59E0B", border: "rgba(245,158,11,0.2)" };
+    case "Ready":      return { bg: "rgba(168,85,247,0.08)", text: "#A855F7", border: "rgba(168,85,247,0.2)" };
+    case "Dispatched": return { bg: "rgba(59,130,246,0.08)", text: "#3B82F6", border: "rgba(59,130,246,0.2)" };
+    case "Completed":  return { bg: "rgba(16,185,129,0.08)", text: "#10B981", border: "rgba(16,185,129,0.2)" };
+    case "Voided":     return { bg: "rgba(239,68,68,0.08)",  text: "#EF4444", border: "rgba(239,68,68,0.2)" };
+    case "Ignored":    return { bg: "rgba(148,163,184,0.08)", text: "#94A3B8", border: "rgba(148,163,184,0.2)" };
+    default:           return { bg: "rgba(148,163,184,0.08)", text: "#94A3B8", border: "rgba(148,163,184,0.2)" };
+  }
+}
+
 // ============================================================================
 // --- MAIN PAGE COMPONENT ---
 // ============================================================================
@@ -361,6 +400,29 @@ export default function PosPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderType, setOrderType] = useState<"Take Away" | "Pick Up" | "Delivery">("Take Away");
+  const [orderHistory, setOrderHistory] = useState<Order[]>([]);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  
+  // Customer CMS States
+  const [customers, setCustomers] = useState<{ phone: string; name: string; address: string }[]>([]);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerCountryCode, setCustomerCountryCode] = useState("+94");
+  const [customerName, setCustomerName] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+
+  // Sync loaded invoice items to cart for editing
+  useEffect(() => {
+    if (selectedInvoiceId) {
+      const order = orderHistory.find(o => o.id === selectedInvoiceId);
+      if (order) {
+        setCart(order.items);
+        setOrderType(order.type);
+      }
+    } else {
+      setCart([]);
+    }
+  }, [selectedInvoiceId, orderHistory]);
   
   // Menu Database State
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -373,6 +435,26 @@ export default function PosPage() {
     portion: "Serves Two",
     sku: ""
   });
+
+  // Load order history and CMS from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("t-cloud-eats-orders");
+    if (saved) {
+      try {
+        setOrderHistory(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load orders from localStorage", e);
+      }
+    }
+    const savedCms = localStorage.getItem("t-cloud-eats-cms");
+    if (savedCms) {
+      try {
+        setCustomers(JSON.parse(savedCms));
+      } catch (e) {
+        console.error("Failed to load CMS from localStorage", e);
+      }
+    }
+  }, []);
 
   // Load menu items from database on mount and subscribe to Realtime updates
   useEffect(() => {
@@ -418,7 +500,6 @@ export default function PosPage() {
   // Receipt Modal State
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [latestOrder, setLatestOrder] = useState<Order | null>(null);
-  const [orderHistory, setOrderHistory] = useState<Order[]>([]);
 
   // Toast State
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -458,8 +539,142 @@ export default function PosPage() {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
+  const updateOrderStatus = (orderId: string, newStatus: Order["status"]) => {
+    const updatedHistory = orderHistory.map(o => {
+      if (o.id === orderId) {
+        return { ...o, status: newStatus };
+      }
+      return o;
+    });
+    setOrderHistory(updatedHistory);
+    localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
+    triggerToast(`Order ${orderId} marked as ${newStatus}`, "success");
+  };
+
+  const handleStatusAdvance = () => {
+    if (!selectedOrder) return;
+    let nextStatus: Order["status"] = "Completed";
+    if (selectedOrder.status === "Preparing") {
+      nextStatus = "Ready";
+    } else if (selectedOrder.status === "Ready") {
+      if (selectedOrder.type === "Delivery") {
+        nextStatus = "Dispatched";
+      } else {
+        nextStatus = "Completed";
+      }
+    } else if (selectedOrder.status === "Dispatched") {
+      nextStatus = "Completed";
+    }
+    
+    updateOrderStatus(selectedOrder.id, nextStatus);
+  };
+
+  const handlePhoneChange = (val: string, cc: string = customerCountryCode) => {
+    setCustomerPhone(val);
+    
+    // Check if the Sri Lankan number starts with 0
+    let processedNum = val.trim().replace(/\D/g, "");
+    if (cc === "+94" && processedNum.startsWith("0")) {
+      processedNum = processedNum.substring(1);
+    }
+    const formattedPhone = `${cc}${processedNum}`;
+    
+    const existing = customers.find(c => c.phone === formattedPhone);
+    if (existing) {
+      setCustomerName(existing.name);
+      setCustomerAddress(existing.address);
+    }
+  };
+
+  const handleUpdateOrder = () => {
+    if (!selectedInvoiceId) return;
+    const updatedHistory = orderHistory.map(o => {
+      if (o.id === selectedInvoiceId) {
+        const newSubtotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+        const newTax = 0;
+        const newTotal = newSubtotal;
+        return {
+          ...o,
+          items: [...cart],
+          subtotal: newSubtotal,
+          tax: newTax,
+          total: newTotal
+        };
+      }
+      return o;
+    });
+    setOrderHistory(updatedHistory);
+    localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
+    setCart([]);
+    setSelectedInvoiceId(null);
+    triggerToast("Order updated successfully", "success");
+  };
+
+  const handlePlaceOrderClick = () => {
+    if (cart.length === 0) {
+      triggerToast("Ticket is empty", "warning");
+      return;
+    }
+    setShowCustomerModal(true);
+    setCustomerPhone("");
+    setCustomerName("");
+    setCustomerAddress("");
+  };
+
+  const handleConfirmPlaceOrder = () => {
+    if (!customerPhone || !customerName) {
+      triggerToast("Please enter name and phone number", "warning");
+      return;
+    }
+    
+    // Process phone number
+    let processedNum = customerPhone.trim().replace(/\D/g, "");
+    if (customerCountryCode === "+94" && processedNum.startsWith("0")) {
+      processedNum = processedNum.substring(1);
+    }
+    const formattedPhone = `${customerCountryCode}${processedNum}`;
+    
+    // Save/update customer details in CMS
+    const newCustomer = { phone: formattedPhone, name: customerName, address: customerAddress };
+    const updatedCms = [newCustomer, ...customers.filter(c => c.phone !== formattedPhone)];
+    setCustomers(updatedCms);
+    localStorage.setItem("t-cloud-eats-cms", JSON.stringify(updatedCms));
+
+    // Create new order in "Preparing" status
+    const currentBizDateStr = getBusinessDateStr(new Date());
+    const todaysOrdersForSeq = orderHistory.filter(o => getBusinessDateStr(o.timestamp) === currentBizDateStr);
+    const nextSeq = todaysOrdersForSeq.length + 1;
+    const newInvoiceId = `INV-${currentBizDateStr}-${String(nextSeq).padStart(3, "0")}`;
+
+    const newOrder: Order = {
+      id: newInvoiceId,
+      timestamp: new Date().toISOString(),
+      items: [...cart],
+      subtotal,
+      tax,
+      total,
+      status: "Preparing",
+      type: orderType,
+      customer: newCustomer
+    };
+
+    const updatedHistory = [newOrder, ...orderHistory];
+    setOrderHistory(updatedHistory);
+    localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
+    
+    setLatestOrder(newOrder);
+    setShowReceiptModal(true);
+    setCart([]);
+    setShowCustomerModal(false);
+    triggerToast("Order placed & sent to kitchen", "success");
+  };
+
   // Cart Functions
   const addToCart = (item: MenuItem) => {
+    if (selectedInvoiceId) {
+      setSelectedInvoiceId(null);
+      triggerToast("Switched back to Active Ticket", "info");
+    }
     setCart(prev => {
       const existing = prev.find(i => i.menuItem.id === item.id);
       if (existing) {
@@ -489,32 +704,42 @@ export default function PosPage() {
 
   // Financial Calculations
   const subtotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
-  const tax = Math.round(subtotal * 0.1);
-  const total = subtotal + tax;
+  const tax = 0;
+  const total = subtotal;
+
+  const selectedOrder = useMemo(() => {
+    if (!selectedInvoiceId) return null;
+    return orderHistory.find(o => o.id === selectedInvoiceId) || null;
+  }, [selectedInvoiceId, orderHistory]);
+
+  const displayedItems = selectedOrder ? selectedOrder.items : cart;
+  const displayedSubtotal = selectedOrder ? selectedOrder.subtotal : subtotal;
+  const displayedTax = selectedOrder ? selectedOrder.tax : tax;
+  const displayedTotal = selectedOrder ? selectedOrder.total : total;
+  const selectedOrderType = selectedOrder ? selectedOrder.type : orderType;
+
+  const currentBizDate = useMemo(() => getBusinessDateStr(new Date()), []);
+  
+  const todaysOrders = useMemo(() => {
+    return orderHistory.filter(order => {
+      const isToday = getBusinessDateStr(order.timestamp) === currentBizDate;
+      const isNotVoidOrIgnore = order.status !== "Voided" && order.status !== "Ignored";
+      return isToday && isNotVoidOrIgnore;
+    });
+  }, [orderHistory, currentBizDate]);
+
+  const todaysAllOrders = useMemo(() => {
+    return orderHistory.filter(order => getBusinessDateStr(order.timestamp) === currentBizDate);
+  }, [orderHistory, currentBizDate]);
 
   // Checkout Operations
-  const handleCheckout = () => {
-    if (cart.length === 0) {
-      triggerToast("Ticket is empty", "warning");
-      return;
-    }
-    const newOrder: Order = {
-      id: `TCE-${Math.floor(100000 + Math.random() * 900000)}`,
-      timestamp: new Date().toLocaleString(),
-      items: [...cart],
-      subtotal,
-      tax,
-      total,
-      status: "Completed",
-      type: orderType
-    };
-    setLatestOrder(newOrder);
-    setShowReceiptModal(true);
-  };
+  // Removed old handleCheckout function to use handlePlaceOrderClick and handleConfirmPlaceOrder
 
   const confirmAndPrintInvoice = () => {
     if (latestOrder) {
-      setOrderHistory(prev => [latestOrder, ...prev]);
+      const updatedHistory = [latestOrder, ...orderHistory];
+      setOrderHistory(updatedHistory);
+      localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
     }
     setCart([]);
     setShowReceiptModal(false);
@@ -871,29 +1096,140 @@ export default function PosPage() {
 
             {activeSidebar === "order_history" && (
               <div className="space-y-6">
+                {/* Sales Summary */}
                 <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5">
                   <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300 mb-4 flex items-center gap-2">
                     <TrendingUp size={14} className="text-[#FF6B35]" />
-                    Sales Summary
+                    Today's Shift Sales (2 PM - 2 AM)
                   </h3>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-[#090D1A] p-4 rounded-xl border border-[#222E4E]">
-                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Total Orders</p>
-                      <p className="text-lg font-black mt-1 text-slate-200">{orderHistory.length + 3}</p>
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Today's Orders</p>
+                      <p className="text-lg font-black mt-1 text-slate-200">{todaysOrders.length}</p>
                     </div>
                     <div className="bg-[#090D1A] p-4 rounded-xl border border-[#222E4E]">
-                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Gross Revenue</p>
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Today's Revenue</p>
                       <p className="text-lg font-black mt-1 text-emerald-400 font-mono">
-                        LKR {(orderHistory.reduce((sum, o) => sum + o.total, 0) + 4140).toLocaleString()}
+                        LKR {todaysOrders.reduce((sum, o) => sum + o.total, 0).toLocaleString()}
                       </p>
                     </div>
                     <div className="bg-[#090D1A] p-4 rounded-xl border border-[#222E4E]">
-                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Average Ticket</p>
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Avg Ticket Size</p>
                       <p className="text-lg font-black mt-1 text-slate-200 font-mono">
-                        LKR {Math.round((orderHistory.reduce((sum, o) => sum + o.total, 0) + 4140) / (orderHistory.length + 3)).toLocaleString()}
+                        LKR {todaysOrders.length > 0 ? Math.round(todaysOrders.reduce((sum, o) => sum + o.total, 0) / todaysOrders.length).toLocaleString() : "0"}
                       </p>
                     </div>
                   </div>
+                </div>
+
+                {/* Today's Orders list */}
+                <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-4">
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">
+                    Today's Order Invoices
+                  </h3>
+                  
+                  {todaysAllOrders.length === 0 ? (
+                    <div className="text-center py-10 text-xs text-slate-500">
+                      No invoices settled during today's shift yet.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#222E4E] text-[9px] text-slate-400 font-bold uppercase tracking-wider bg-[#090D1A]">
+                            <th className="px-4 py-3">Invoice No</th>
+                            <th className="px-4 py-3">Time Placed</th>
+                            <th className="px-4 py-3">Customer</th>
+                            <th className="px-4 py-3">Type</th>
+                            <th className="px-4 py-3">Status</th>
+                            <th className="px-4 py-3">Items</th>
+                            <th className="px-4 py-3">Total Amount</th>
+                            <th className="px-4 py-3 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#222E4E] text-xs">
+                          {todaysAllOrders.map(order => {
+                            const badge = getStatusBadgeStyle(order.status);
+                            return (
+                              <tr key={order.id} className="hover:bg-white/[0.01] transition-colors">
+                                <td className="px-4 py-3 font-mono font-black text-orange-400">{order.id}</td>
+                                <td className="px-4 py-3 text-slate-300">
+                                  {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </td>
+                                <td className="px-4 py-3 text-left">
+                                  {order.customer ? (
+                                    <div className="flex flex-col">
+                                      <span className="font-bold text-slate-200">{order.customer.name}</span>
+                                      <span className="text-[9px] text-slate-500 font-mono">{order.customer.phone}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-500 italic">No customer details</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                                    style={{
+                                      background: order.type === "Take Away" ? "rgba(245,158,11,0.12)" : order.type === "Pick Up" ? "rgba(168,85,247,0.12)" : "rgba(59,130,246,0.12)",
+                                      color: order.type === "Take Away" ? "#F59E0B" : order.type === "Pick Up" ? "#A855F7" : "#3B82F6",
+                                    }}
+                                  >
+                                    {order.type}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border"
+                                    style={{
+                                      background: badge.bg,
+                                      color: badge.text,
+                                      borderColor: badge.border
+                                    }}
+                                  >
+                                    {order.status}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-slate-400">
+                                  {order.items.reduce((sum, item) => sum + item.quantity, 0)} items
+                                </td>
+                                <td className="px-4 py-3 font-bold text-[#FF6B35]">
+                                  LKR {order.total.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <div className="flex gap-1.5 justify-end">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedInvoiceId(order.id);
+                                        setActiveSidebar("new_order");
+                                        triggerToast(`Loaded ${order.id}`, "info");
+                                      }}
+                                      className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg bg-orange-500/10 text-orange-400 hover:bg-[#F26F21] hover:text-white transition-all cursor-pointer border border-[#F26F21]/30 active:scale-95"
+                                    >
+                                      Load
+                                    </button>
+                                    {order.status !== "Voided" && order.status !== "Ignored" && (
+                                      <>
+                                        <button
+                                          onClick={() => updateOrderStatus(order.id, "Voided")}
+                                          className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all cursor-pointer border border-red-500/20 active:scale-95"
+                                        >
+                                          Void
+                                        </button>
+                                        <button
+                                          onClick={() => updateOrderStatus(order.id, "Ignored")}
+                                          className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg bg-[#25324D] text-slate-400 hover:bg-slate-700 hover:text-white transition-all cursor-pointer border border-slate-600 active:scale-95"
+                                        >
+                                          Ignore
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1160,42 +1496,101 @@ export default function PosPage() {
           <div className="flex flex-col h-full">
             
             {/* Ticket Header */}
-            <div className="px-4 py-3.5 flex items-center justify-between shrink-0" style={{ borderBottom: "1px solid #14203A" }}>
-              <div className="flex items-center gap-2">
-                <ShoppingBag size={15} style={{ color: "#F26F21" }} />
-                <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: "#CBD5E1" }}>Active Ticket</span>
+            <div className="px-4 py-3.5 flex flex-col gap-2.5 shrink-0" style={{ borderBottom: "1px solid #14203A" }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag size={15} style={{ color: "#F26F21" }} />
+                  <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: "#CBD5E1" }}>Active Ticket</span>
+                </div>
+                <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded" 
+                  style={{ 
+                    background: selectedOrderType === "Take Away" ? "rgba(245,158,11,0.12)" : selectedOrderType === "Pick Up" ? "rgba(168,85,247,0.12)" : "rgba(59,130,246,0.12)",
+                    color: selectedOrderType === "Take Away" ? "#F59E0B" : selectedOrderType === "Pick Up" ? "#A855F7" : "#3B82F6",
+                    border: `1px solid ${selectedOrderType === "Take Away" ? "rgba(245,158,11,0.25)" : selectedOrderType === "Pick Up" ? "rgba(168,85,247,0.25)" : "rgba(59,130,246,0.25)"}`
+                  }}
+                >
+                  {selectedInvoiceId ? "SETTLED" : "NEW ORDER"}
+                </span>
               </div>
-              <select
-                value={orderType}
-                onChange={(e) => setOrderType(e.target.value as any)}
-                className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full outline-none cursor-pointer border transition-all duration-200"
-                style={{
-                  background: orderType === "Take Away" 
-                    ? "rgba(245,158,11,0.12)" 
-                    : orderType === "Pick Up" 
-                      ? "rgba(168,85,247,0.12)" 
-                      : "rgba(59,130,246,0.12)",
-                  borderColor: orderType === "Take Away" 
-                    ? "rgba(245,158,11,0.25)" 
-                    : orderType === "Pick Up" 
-                      ? "rgba(168,85,247,0.25)" 
-                      : "rgba(59,130,246,0.25)",
-                  color: orderType === "Take Away" 
-                    ? "#F59E0B" 
-                    : orderType === "Pick Up" 
-                      ? "#A855F7" 
-                      : "#3B82F6",
-                }}
-              >
-                <option value="Take Away" style={{ background: "#080E1C", color: "#F59E0B" }}>Take Away</option>
-                <option value="Pick Up" style={{ background: "#080E1C", color: "#A855F7" }}>Pick Up</option>
-                <option value="Delivery" style={{ background: "#080E1C", color: "#3B82F6" }}>Delivery</option>
-              </select>
+
+              {/* Today's Invoice Number Switcher Dropdown */}
+              <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold bg-[#090D1A] p-2 rounded-lg border border-[#1A2640]">
+                <span>INVOICE NO:</span>
+                <select
+                  value={selectedInvoiceId || "active"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "active") {
+                      setSelectedInvoiceId(null);
+                    } else {
+                      setSelectedInvoiceId(val);
+                    }
+                  }}
+                  className="font-mono text-[#F26F21] font-black bg-transparent outline-none cursor-pointer border-none p-0 focus:ring-0 text-[10px] text-right"
+                  style={{ direction: "rtl" }}
+                >
+                  <option value="active" style={{ background: "#080E1C", color: "#F26F21", direction: "ltr" }}>
+                    New Order ({getNextInvoiceNumber(orderHistory)})
+                  </option>
+                  {todaysOrders.map(order => (
+                    <option key={order.id} value={order.id} style={{ background: "#080E1C", color: "#94A3B8", direction: "ltr" }}>
+                      {order.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* High-Attention Segmented Tab Bar (Hidden when viewing settled invoice) */}
+              {!selectedInvoiceId ? (
+                <div className="flex bg-[#0E1628] p-1 rounded-xl border border-[#1E2D4E] w-full">
+                  <button
+                    type="button"
+                    onClick={() => setOrderType("Take Away")}
+                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
+                      orderType === "Take Away" 
+                        ? "bg-[#F26F21] text-white shadow-lg shadow-orange-500/20" 
+                        : "text-[#4B5E82] hover:text-slate-300"
+                    }`}
+                  >
+                    Take Away
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrderType("Pick Up")}
+                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
+                      orderType === "Pick Up" 
+                        ? "bg-[#A855F7] text-white shadow-lg shadow-purple-500/20" 
+                        : "text-[#4B5E82] hover:text-slate-300"
+                    }`}
+                  >
+                    Pick Up
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrderType("Delivery")}
+                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
+                      orderType === "Delivery" 
+                        ? "bg-[#3B82F6] text-white shadow-lg shadow-blue-500/20" 
+                        : "text-[#4B5E82] hover:text-slate-300"
+                    }`}
+                  >
+                    Delivery
+                  </button>
+                </div>
+              ) : (
+                <div className="text-[9px] font-bold text-center uppercase tracking-wider text-slate-500">
+                  Fulfillment: <span style={{
+                    color: selectedOrderType === "Take Away" ? "#F59E0B" : selectedOrderType === "Pick Up" ? "#A855F7" : "#3B82F6"
+                  }}>{selectedOrderType} ({
+                    selectedOrderType === "Take Away" ? "Collect" : selectedOrderType === "Pick Up" ? "Rider" : "Delivery"
+                  })</span>
+                </div>
+              )}
             </div>
 
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {cart.map((item) => (
+              {displayedItems.map((item) => (
                 <div
                   key={item.menuItem.id}
                   className="rounded-xl p-3 flex gap-2 items-start"
@@ -1212,31 +1607,37 @@ export default function PosPage() {
                   </div>
 
                   <div className="flex flex-col items-end gap-1.5">
-                    <button onClick={() => removeFromCart(item.menuItem.id)} className="cursor-pointer p-0.5 rounded" style={{ color: "#2A3A5A" }}>
-                      <X size={12} className="hover:text-red-400 transition-colors" />
-                    </button>
-                    <div className="flex items-center gap-1 rounded-lg overflow-hidden" style={{ border: "1px solid #1E2D4E" }}>
-                      <button
-                        onClick={() => updateQuantity(item.menuItem.id, -1)}
-                        className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
-                        style={{ background: "#14203A", color: "#6B7BA4" }}
-                      >
-                        <Minus size={9} />
+                    {!selectedInvoiceId && (
+                      <button onClick={() => removeFromCart(item.menuItem.id)} className="cursor-pointer p-0.5 rounded" style={{ color: "#2A3A5A" }}>
+                        <X size={12} className="hover:text-red-400 transition-colors" />
                       </button>
-                      <span className="text-[11px] font-black font-mono w-5 text-center" style={{ color: "#F2F4F8" }}>{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.menuItem.id, 1)}
-                        className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
-                        style={{ background: "rgba(242,111,33,0.15)", color: "#F26F21" }}
-                      >
-                        <Plus size={9} />
-                      </button>
-                    </div>
+                    )}
+                    {selectedInvoiceId ? (
+                      <span className="text-[9px] font-mono font-black text-slate-600 bg-slate-950/40 px-1.5 py-0.5 rounded">QTY: {item.quantity}</span>
+                    ) : (
+                      <div className="flex items-center gap-1 rounded-lg overflow-hidden" style={{ border: "1px solid #1E2D4E" }}>
+                        <button
+                          onClick={() => updateQuantity(item.menuItem.id, -1)}
+                          className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
+                          style={{ background: "#14203A", color: "#6B7BA4" }}
+                        >
+                          <Minus size={9} />
+                        </button>
+                        <span className="text-[11px] font-black font-mono w-5 text-center" style={{ color: "#F2F4F8" }}>{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.menuItem.id, 1)}
+                          className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
+                          style={{ background: "rgba(242,111,33,0.15)", color: "#F26F21" }}
+                        >
+                          <Plus size={9} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
 
-              {cart.length === 0 && (
+              {displayedItems.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-center" style={{ opacity: 0.35 }}>
                   <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#0E1628", border: "1px solid #1E2D4E" }}>
                     <ShoppingBag size={22} style={{ color: "#4B5E82" }} />
@@ -1251,32 +1652,78 @@ export default function PosPage() {
             <div className="p-4 shrink-0 space-y-3" style={{ borderTop: "1px solid #14203A", background: "#060B18" }}>
               <div className="rounded-xl p-4 space-y-2.5" style={{ background: "#0E1628", border: "1px solid #1A2640" }}>
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#4B5E82" }}>Subtotal</span>
-                  <span className="text-[11px] font-bold font-mono" style={{ color: "#94A3B8" }}>Rs {subtotal.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#4B5E82" }}>Srv. Charge (10%)</span>
-                  <span className="text-[11px] font-bold font-mono" style={{ color: "#94A3B8" }}>Rs {tax.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center pt-2" style={{ borderTop: "1px solid #1A2640" }}>
                   <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: "#F2F4F8" }}>Total</span>
-                  <span className="text-xl font-black font-mono" style={{ color: "#F26F21" }}>Rs {total.toLocaleString()}</span>
+                  <span className="text-xl font-black font-mono" style={{ color: "#F26F21" }}>Rs {displayedTotal.toLocaleString()}</span>
                 </div>
               </div>
 
-              <button
-                onClick={handleCheckout}
-                disabled={cart.length === 0}
-                className="w-full font-black py-3.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-[11px] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest"
-                style={{
-                  background: cart.length === 0 ? "#0E1628" : "linear-gradient(135deg, #00C896, #00A87A)",
-                  color: cart.length === 0 ? "#2A3A5A" : "white",
-                  boxShadow: cart.length > 0 ? "0 4px 24px rgba(0,200,150,0.3)" : "none",
-                }}
-              >
-                <Check size={14} />
-                <span>Settle & Pay</span>
-              </button>
+              {selectedInvoiceId ? (
+                <div className="space-y-2.5">
+                  {/* Status Advancement Button */}
+                  {selectedOrder && ["Preparing", "Ready", "Dispatched"].includes(selectedOrder.status) && (
+                    <button
+                      onClick={handleStatusAdvance}
+                      className="w-full font-black py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-[10px] cursor-pointer uppercase tracking-widest text-white shadow-lg active:scale-95 hover:opacity-90"
+                      style={{
+                        background: selectedOrder.status === "Preparing" 
+                          ? "linear-gradient(135deg, #F59E0B, #D97706)" // Orange for Ready
+                          : selectedOrder.status === "Ready" && selectedOrder.type === "Delivery"
+                            ? "linear-gradient(135deg, #3B82F6, #2563EB)" // Blue for Dispatch
+                            : "linear-gradient(135deg, #10B981, #059669)", // Green for Complete
+                        boxShadow: "0 4px 15px rgba(0,0,0,0.2)"
+                      }}
+                    >
+                      {selectedOrder.status === "Preparing" && "Mark as Ready"}
+                      {selectedOrder.status === "Ready" && selectedOrder.type === "Delivery" && "Dispatch Order"}
+                      {selectedOrder.status === "Ready" && selectedOrder.type !== "Delivery" && "Mark as Completed / Collected"}
+                      {selectedOrder.status === "Dispatched" && "Mark as Completed / Delivered"}
+                    </button>
+                  )}
+
+                  {/* Actions Row */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleUpdateOrder}
+                      className="flex-1 font-black py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-[10px] cursor-pointer bg-[#FF6B35] hover:bg-[#F26F21] text-white shadow-lg shadow-orange-500/20 uppercase tracking-widest active:scale-95"
+                    >
+                      <span>Update Order</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (selectedOrder) {
+                          setLatestOrder(selectedOrder);
+                          setShowReceiptModal(true);
+                        }
+                      }}
+                      className="font-black p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95"
+                      title="Reprint Receipt"
+                    >
+                      <Printer size={13} />
+                    </button>
+                    <button
+                      onClick={() => setSelectedInvoiceId(null)}
+                      className="font-black p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 active:scale-95"
+                      title="Close Ticket"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handlePlaceOrderClick}
+                  disabled={cart.length === 0}
+                  className="w-full font-black py-3.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-[11px] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest active:scale-95"
+                  style={{
+                    background: cart.length === 0 ? "#0E1628" : "linear-gradient(135deg, #F26F21, #FF6B35)",
+                    color: cart.length === 0 ? "#2A3A5A" : "white",
+                    boxShadow: cart.length > 0 ? "0 4px 24px rgba(242,111,33,0.3)" : "none",
+                  }}
+                >
+                  <Check size={14} />
+                  <span>Place Order</span>
+                </button>
+              )}
             </div>
 
           </div>
@@ -1338,7 +1785,20 @@ export default function PosPage() {
                       : "t-cloud eats Rider"
                 }
               </div>
+              <p className="text-[8px] font-bold text-orange-600 uppercase mt-1">Status: {latestOrder.status}</p>
             </div>
+            
+            {latestOrder.customer && (
+              <div className="border-b border-dashed border-slate-300 pb-3 text-[9px] space-y-0.5 text-slate-700 text-left">
+                <p className="font-bold uppercase tracking-wider text-slate-900">Customer Profile:</p>
+                <p><span className="font-semibold text-slate-600">Name:</span> {latestOrder.customer.name}</p>
+                <p><span className="font-semibold text-slate-600">Phone:</span> {latestOrder.customer.phone}</p>
+                {latestOrder.customer.address && (
+                  <p className="line-clamp-2"><span className="font-semibold text-slate-600">Address:</span> {latestOrder.customer.address}</p>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2 border-b border-dashed border-slate-300 pb-3">
               {latestOrder.items.map(item => (
                 <div key={item.menuItem.id} className="flex justify-between">
@@ -1356,6 +1816,98 @@ export default function PosPage() {
                 Settle &amp; Print Receipt
               </button>
               <button onClick={() => setShowReceiptModal(false)} className="w-full bg-slate-100 text-slate-600 py-2 rounded-xl cursor-pointer">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Details Modal */}
+      {showCustomerModal && (
+        <div className="fixed inset-0 bg-[#050814]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#111625] border border-[#222E4E] rounded-3xl p-6 max-w-md w-full space-y-6 shadow-2xl relative" style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
+            <button
+              onClick={() => setShowCustomerModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="text-center space-y-1.5">
+              <h3 className="text-sm font-black uppercase tracking-wider text-slate-100">Customer Details</h3>
+              <p className="text-[10px] text-slate-500">Search customer by phone or create new profile</p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Phone Input with Country Code Dropdown */}
+              <div className="space-y-1.5">
+                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Phone Number (CMS ID)</label>
+                <div className="flex gap-2">
+                  <select
+                    value={customerCountryCode}
+                    onChange={(e) => {
+                      const newCc = e.target.value;
+                      setCustomerCountryCode(newCc);
+                      handlePhoneChange(customerPhone, newCc);
+                    }}
+                    className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none cursor-pointer focus:border-[#FF6B35]/60"
+                  >
+                    <option value="+94">+94 (SL)</option>
+                    <option value="+1">+1 (US)</option>
+                    <option value="+44">+44 (UK)</option>
+                    <option value="+91">+91 (IN)</option>
+                    <option value="+61">+61 (AU)</option>
+                    <option value="+971">+971 (AE)</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="771234567"
+                    value={customerPhone}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    className="flex-1 bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Full Name */}
+              <div className="space-y-1.5">
+                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Full Name</label>
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                  required
+                />
+              </div>
+
+              {/* Address */}
+              <div className="space-y-1.5">
+                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Delivery/Collection Address</label>
+                <textarea
+                  placeholder="123 Main Street, Mulleriyawa"
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                  rows={3}
+                  className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                onClick={handleConfirmPlaceOrder}
+                className="flex-1 bg-[#FF6B35] hover:bg-[#F26F21] text-white font-bold py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider"
+              >
+                Confirm &amp; Place Order
+              </button>
+              <button
+                onClick={() => setShowCustomerModal(false)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-700"
+              >
                 Cancel
               </button>
             </div>
