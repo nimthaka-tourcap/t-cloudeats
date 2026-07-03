@@ -251,8 +251,8 @@ export default function BillPage() {
         </div>
 
         {/* Thank You Note */}
-        <div className="mt-4 pt-4 border-t border-dashed border-slate-200 text-center space-y-2">
-          <div className="flex justify-center text-red-500">
+        <div className="mt-4 pt-4 border-t border-dashed border-slate-200 text-center space-y-2 flex flex-col items-center">
+          <div className="text-red-500">
             <Heart size={16} fill="currentColor" />
           </div>
           <p className="text-[10px] font-bold text-slate-800 leading-relaxed max-w-[280px] mx-auto">
@@ -279,17 +279,17 @@ export default function BillPage() {
           <div className="pt-1.5 border-t border-slate-200/60 grid grid-cols-2 gap-2 text-center">
             <div className="flex flex-col items-center gap-0.5">
               <span className="font-black text-[7px] text-slate-400 uppercase tracking-wider">Phone</span>
-              <div className="flex items-center gap-1 font-bold text-slate-700 justify-center">
+              <a href="tel:0706288109" className="flex items-center gap-1 font-bold text-slate-700 justify-center hover:text-[#FF6B35] hover:underline transition-all">
                 <Phone size={8} className="text-[#FF6B35]" />
                 <span>070 628 8109</span>
-              </div>
+              </a>
             </div>
             <div className="flex flex-col items-center gap-0.5">
               <span className="font-black text-[7px] text-slate-400 uppercase tracking-wider">WhatsApp Order</span>
-              <div className="flex items-center gap-1 font-bold text-slate-700 justify-center">
+              <a href="https://wa.me/94706288109" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 font-bold text-slate-700 justify-center hover:text-[#FF6B35] hover:underline transition-all">
                 <Globe size={8} className="text-[#FF6B35]" />
                 <span>+94 70 628 8109</span>
-              </div>
+              </a>
             </div>
           </div>
         </div>
