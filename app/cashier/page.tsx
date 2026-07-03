@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { 
@@ -76,6 +76,287 @@ interface ToastMessage {
 }
 
 const CATEGORIES = ["All Categories", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Beverages"];
+
+const MONTHS = [
+  { value: "01", label: "January" },
+  { value: "02", label: "February" },
+  { value: "03", label: "March" },
+  { value: "04", label: "April" },
+  { value: "05", label: "May" },
+  { value: "06", label: "June" },
+  { value: "07", label: "July" },
+  { value: "08", label: "August" },
+  { value: "09", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
+];
+
+const DAYS = Array.from({ length: 31 }, (_, i) => {
+  const d = String(i + 1).padStart(2, "0");
+  return { value: d, label: d };
+});
+
+const POSTAL_CODES: Record<string, string> = {
+  "Colombo 01": "00100",
+  "Colombo 02": "00200",
+  "Colombo 03": "00300",
+  "Colombo 04": "00400",
+  "Colombo 05": "00500",
+  "Colombo 06": "00600",
+  "Colombo 07": "00700",
+  "Colombo 08": "00800",
+  "Colombo 09": "00900",
+  "Colombo 10": "01000",
+  "Colombo 11": "01100",
+  "Colombo 12": "01200",
+  "Colombo 13": "01300",
+  "Colombo 14": "01400",
+  "Colombo 15": "01500",
+  "Akarawita": "10732",
+  "Angoda": "10620",
+  "Arangala": "10150",
+  "Athurugiriya": "10150",
+  "Avissawella": "10700",
+  "Bambalapitiya": "00400",
+  "Batawala": "10513",
+  "Battaramulla": "10120",
+  "Batugampola": "10526",
+  "Bope": "10522",
+  "Boralesgamuwa": "10290",
+  "Borella": "00800",
+  "Dedigamuwa": "10656",
+  "Dehiwala": "10350",
+  "Deltara": "10302",
+  "Embuldeniya": "10250",
+  "Gongodawila": "10250",
+  "Habarakada": "10204",
+  "Handapangoda": "10524",
+  "Hanwella": "10650",
+  "Hewainna": "10714",
+  "Hiripitya": "10232",
+  "Hokandara": "10118",
+  "Homagama": "10200",
+  "Horagala": "10502",
+  "Kaduwela": "10640",
+  "Kahawala": "10508",
+  "Kalatuwawa": "10718",
+  "Kalubowila": "10350",
+  "Kiriwattuduwa": "10208",
+  "Kohuwala": "10250",
+  "Kolonnawa": "10600",
+  "Kosgama": "10730",
+  "Kotahena": "01300",
+  "Kotikawatta": "10120",
+  "Kottawa": "10230",
+  "Madapatha": "10306",
+  "Maharagama": "10280",
+  "Malabe": "10115",
+  "Meegoda": "10504",
+  "Moratuwa": "10400",
+  "Mount Lavinia": "10370",
+  "Mullegama": "10202",
+  "Mulleriyawa": "10620",
+  "Mutwal": "01500",
+  "Napawela": "10704",
+  "Narahenpita": "00500",
+  "Nugegoda": "10250",
+  "Padukka": "10500",
+  "Pannipitiya": "10230",
+  "Piliyandala": "10300",
+  "Pita Kotte": "10100",
+  "Pitipana Homagama": "10206",
+  "Polgasowita": "10320",
+  "Puwakpitiya": "10712",
+  "Rajagiriya": "10100",
+  "Ranala": "10654",
+  "Ratmalana": "10390",
+  "Siddamulla": "10304",
+  "Sri Jayewardenepura": "10100",
+  "Talawatugoda": "10116",
+  "Tummodara": "10682",
+  "Waga": "10680",
+  "Watareka": "10511",
+  "Wijerama": "10250",
+  "Akaragama": "11536",
+  "Alawala": "11122",
+  "Ambagaspitiya": "11052",
+  "Ambepussa": "11212",
+  "Andiambalama": "11558",
+  "Attanagalla": "11120",
+  "Badalgama": "11538",
+  "Banduragoda": "11244",
+  "Batuwatta": "11011",
+  "Bemmulla": "11040",
+  "Biyagama": "11650",
+  "Biyagama IPZ": "11672",
+  "Bokalagama": "11216",
+  "Bopagama": "11134",
+  "Buthpitiya": "11720",
+  "Dagonna": "11524",
+  "Danowita": "11896",
+  "Debahera": "11889",
+  "Dekatana": "11690",
+  "Delgoda": "11700",
+  "Delwagura": "11228",
+  "Demalagama": "11692",
+  "Demanhandiya": "11270",
+  "Dewalapola": "11102",
+  "Divulapitiya": "11250",
+  "Divuldeniya": "11208",
+  "Dompe": "11680",
+  "Dunagaha": "11264",
+  "Ekala": "11380",
+  "Ellakkala": "11116",
+  "Essella": "11108",
+  "Gampaha": "11000",
+  "Ganemulla": "11020",
+  "GonawalaWP": "11630",
+  "Heiyanthuduwa": "11618",
+  "Hendala": "11300",
+  "Henegama": "11715",
+  "Hinatiyana Madawala": "11568",
+  "Hiswella": "11734",
+  "Horampella": "11564",
+  "Hunumulla": "11262",
+  "Ihala Madampella": "11265",
+  "Imbulgoda": "11856",
+  "Ja-Ela": "11350",
+  "Kadawatha": "11850",
+  "Kahatowita": "11144",
+  "Kalagedihena": "11875",
+  "Kaleliya": "11160",
+  "Kaluaggala": "11224",
+  "Kandana": "11320",
+  "Kapugoda": "10662",
+  "Kapuwatta": "11350",
+  "Katana": "11534",
+  "Katunayake": "11450",
+  "Katunayake Air Force Camp": "11440",
+  "Katuwellegama": "11526",
+  "Kelaniya": "11600",
+  "Kimbulapitiya": "11522",
+  "Kiribathgoda": "11600",
+  "Kirindiwela": "11730",
+  "Kitalawalana": "11206",
+  "Kitulwala": "11242",
+  "Kochchikade": "11540",
+  "Kotadeniyawa": "11232",
+  "Kotugoda": "11390",
+  "Kumbaloluwa": "11105",
+  "Loluwagoda": "11204",
+  "Lunugama": "11062",
+  "Mabodale": "11114",
+  "Madelgamuwa": "11033",
+  "Makewita": "11358",
+  "Makola": "11640",
+  "Malwana": "11670",
+  "Mandawala": "11061",
+  "Marandagahamula": "11260",
+  "Mellawagedara": "11234",
+  "Minuwangoda": "11550",
+  "Mirigama": "11200",
+  "Mithirigala": "11742",
+  "Muddaragama": "11112",
+  "Mudungoda": "11056",
+  "Naranwala": "11063",
+  "Nawana": "11222",
+  "Nedungamuwa": "11066",
+  "Negombo": "11500",
+  "Nikahetikanda": "11128",
+  "Nittambuwa": "11880",
+  "Niwandama": "11354",
+  "Pallewela": "11150",
+  "Pamunugama": "11370",
+  "Pamunuwatta": "11214",
+  "Pasyala": "11890",
+  "Peliyagoda": "11830",
+  "Pepiliyawala": "11741",
+  "Pethiyagoda": "11043",
+  "Polpithimukulana": "11324",
+  "Pugoda": "10660",
+  "Radawadunna": "11892",
+  "Radawana": "11725",
+  "Raddolugama": "11400",
+  "Ragama": "11010",
+  "Ruggahawila": "11142",
+  "Rukmale": "11129",
+  "Seeduwa": "11410",
+  "Siyambalape": "11607",
+  "Talahena": "11504",
+  "Thimbirigaskatuwa": "11532",
+  "Tittapattara": "10664",
+  "Udathuthiripitiya": "11054",
+  "Udugampola": "11030",
+  "Uggalboda": "11034",
+  "Urapola": "11126",
+  "Uswetakeiyawa": "11328",
+  "Veyangoda": "11100",
+  "Walgammulla": "11146",
+  "Walpita": "11226",
+  "Wanaluwewa": "11068",
+  "Wathurugama": "11724",
+  "Watinapaha": "11104",
+  "Wattala": "11300",
+  "Weboda": "11858",
+  "Wegowwa": "11562",
+  "Weliveriya": "11710",
+  "Weweldeniya": "11894",
+  "Yakkala": "11870"
+};
+
+function parseAddress(fullAddress: string) {
+  let homeNo = "";
+  let street = "";
+  let postalArea = "";
+  let postalCode = "";
+
+  if (!fullAddress) return { homeNo, street, postalArea, postalCode };
+
+  // 1. Find 5-digit postal code
+  const pcMatch = fullAddress.match(/\b\d{5}\b/);
+  if (pcMatch) {
+    postalCode = pcMatch[0];
+    fullAddress = fullAddress.replace(postalCode, "").trim();
+  }
+
+  // 2. Find matching postal area
+  const areas = Object.keys(POSTAL_CODES);
+  areas.sort((a, b) => b.length - a.length);
+
+  for (const area of areas) {
+    const regex = new RegExp(`\\b${area}\\b`, "i");
+    if (regex.test(fullAddress)) {
+      postalArea = area;
+      if (!postalCode) {
+        postalCode = POSTAL_CODES[area];
+      }
+      fullAddress = fullAddress.replace(regex, "").trim();
+      break;
+    }
+  }
+
+  // Clean trailing/leading commas/spaces
+  let remaining = fullAddress.replace(/^[\s,]+|[\s,]+$/g, "").replace(/\s+/g, " ").trim();
+
+  // 3. Split remaining into Home No and Street
+  const parts = remaining.split(",");
+  if (parts.length > 1) {
+    homeNo = parts[0].trim();
+    street = parts.slice(1).join(",").trim();
+  } else {
+    // If no comma, check if starts with a number
+    const firstWordMatch = remaining.match(/^([0-9\/\-\.\,A-Za-z]+)\b/);
+    if (firstWordMatch && /\d/.test(firstWordMatch[1])) {
+      homeNo = firstWordMatch[1];
+      street = remaining.slice(homeNo.length).trim();
+    } else {
+      street = remaining;
+    }
+  }
+
+  return { homeNo, street, postalArea, postalCode };
+}
 
 const INITIAL_MENU_ITEMS: MenuItem[] = [
   // Fried Rice Selection
@@ -315,8 +596,24 @@ function getBusinessDateStr(dateInput: Date | string = new Date()): string {
 
 function getNextInvoiceNumber(history: Order[]): string {
   const currentBizDateStr = getBusinessDateStr(new Date());
-  const todaysOrders = history.filter(order => getBusinessDateStr(order.timestamp) === currentBizDateStr);
-  const nextSeq = todaysOrders.length + 1;
+  const todaysValidOrders = history.filter(o => 
+    getBusinessDateStr(o.timestamp) === currentBizDateStr && 
+    o.status !== "Ignored" && 
+    o.id.startsWith("INV-")
+  );
+  
+  let nextSeq = 1;
+  if (todaysValidOrders.length > 0) {
+    const seqs = todaysValidOrders
+      .map(o => {
+        const parts = o.id.split("-");
+        return parts.length === 3 ? parseInt(parts[2], 10) : 0;
+      })
+      .filter(Boolean);
+    if (seqs.length > 0) {
+      nextSeq = Math.max(...seqs) + 1;
+    }
+  }
   return `INV-${currentBizDateStr}-${String(nextSeq).padStart(3, "0")}`;
 }
 
@@ -393,23 +690,88 @@ export default function PosPage() {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   
   // Customer CMS States
-  const [customers, setCustomers] = useState<{ phone: string; name: string; address: string }[]>([]);
+  const [customers, setCustomers] = useState<{ phone: string; name: string; address: string; birthday?: string | null; address_label?: string | null }[]>([]);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerCountryCode, setCustomerCountryCode] = useState("+94");
   const [customerName, setCustomerName] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
+
+  // Structured Address States (POS Checkout)
+  const [addrHomeNo, setAddrHomeNo] = useState("");
+  const [addrStreet, setAddrStreet] = useState("");
+  const [addrPostalArea, setAddrPostalArea] = useState("");
+  const [addrPostalCode, setAddrPostalCode] = useState("");
+  const [originalAutofilledAddress, setOriginalAutofilledAddress] = useState<string | null>(null);
+
+
+  // CMS Profiles Modal & Edit States
+  const [showCMSModal, setShowCMSModal] = useState(false);
+  const [cmsSearchQuery, setCmsSearchQuery] = useState("");
+  const [editingCustomer, setEditingCustomer] = useState<{ phone: string; name: string; address: string; birthday?: string | null; address_label?: string | null } | null>(null);
+  const [editCustName, setEditCustName] = useState("");
+  const [editCustAddress, setEditCustAddress] = useState("");
+  // Structured Address States (CMS Modal)
+  const [editAddrHomeNo, setEditAddrHomeNo] = useState("");
+  const [editAddrStreet, setEditAddrStreet] = useState("");
+  const [editAddrPostalArea, setEditAddrPostalArea] = useState("");
+  const [editAddrPostalCode, setEditAddrPostalCode] = useState("");
+
+  const [editCustBirthMonth, setEditCustBirthMonth] = useState("");
+  const [editCustBirthDay, setEditCustBirthDay] = useState("");
+  const [editCustAddressLabel, setEditCustAddressLabel] = useState("");
+  const [isUpdatingCust, setIsUpdatingCust] = useState(false);
+
+
+
+  // Synchronize POS Checkout address fields to single customerAddress string
+  useEffect(() => {
+    let parts = [];
+    if (addrHomeNo) parts.push(addrHomeNo);
+    if (addrStreet) parts.push(addrStreet);
+    if (addrPostalArea) {
+      if (addrPostalCode) {
+        parts.push(`${addrPostalArea} ${addrPostalCode}`);
+      } else {
+        parts.push(addrPostalArea);
+      }
+    }
+    setCustomerAddress(parts.join(", "));
+  }, [addrHomeNo, addrStreet, addrPostalArea, addrPostalCode]);
+
+  // Synchronize CMS edit address fields to single editCustAddress string
+  useEffect(() => {
+    let parts = [];
+    if (editAddrHomeNo) parts.push(editAddrHomeNo);
+    if (editAddrStreet) parts.push(editAddrStreet);
+    if (editAddrPostalArea) {
+      if (editAddrPostalCode) {
+        parts.push(`${editAddrPostalArea} ${editAddrPostalCode}`);
+      } else {
+        parts.push(editAddrPostalArea);
+      }
+    }
+    setEditCustAddress(parts.join(", "));
+  }, [editAddrHomeNo, editAddrStreet, editAddrPostalArea, editAddrPostalCode]);
 
   // Sync loaded invoice items to cart for editing
+  const lastLoadedIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (selectedInvoiceId) {
-      const order = orderHistory.find(o => o.id === selectedInvoiceId);
-      if (order) {
-        setCart(order.items);
-        setOrderType(order.type);
+      if (lastLoadedIdRef.current !== selectedInvoiceId) {
+        const order = orderHistory.find(o => o.id === selectedInvoiceId);
+        if (order) {
+          setCart(order.items);
+          setOrderType(order.type);
+        }
+        lastLoadedIdRef.current = selectedInvoiceId;
       }
     } else {
-      setCart([]);
+      if (lastLoadedIdRef.current !== null) {
+        setCart([]);
+        lastLoadedIdRef.current = null;
+      }
     }
   }, [selectedInvoiceId, orderHistory]);
   
@@ -686,15 +1048,22 @@ export default function PosPage() {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
+    const isIgnoring = newStatus === "Ignored";
+    const newOrderId = isIgnoring ? orderId.replace(/^INV-/, "IGNORED-") : orderId;
+
     // 1. Update local state
     const updatedHistory = orderHistory.map(o => {
       if (o.id === orderId) {
-        return { ...o, status: newStatus };
+        return { ...o, id: newOrderId, status: newStatus };
       }
       return o;
     });
     setOrderHistory(updatedHistory);
     localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
+
+    if (isIgnoring && selectedInvoiceId === orderId) {
+      setSelectedInvoiceId(null);
+    }
 
     // 2. Add Live notification trigger
     slideCacheWindow();
@@ -711,7 +1080,7 @@ export default function PosPage() {
       ];
       saveNotifications(updatedList);
     } else if (newStatus === "Completed") {
-      const targetOrder = updatedHistory.find(o => o.id === orderId);
+      const targetOrder = updatedHistory.find(o => o.id === newOrderId);
       if (targetOrder) {
         setLatestOrder(targetOrder);
         setShowReceiptModal(true);
@@ -720,16 +1089,21 @@ export default function PosPage() {
 
     // 3. Update Supabase
     try {
+      const updatePayload: any = { status: newStatus };
+      if (isIgnoring) {
+        updatePayload.id = newOrderId;
+      }
+
       const { error } = await supabase
         .from("orders")
-        .update({ status: newStatus })
+        .update(updatePayload)
         .eq("id", orderId);
       
       if (error) {
         console.error("Supabase order status update error:", error);
         triggerToast("Saved locally, database update failed", "warning");
       } else {
-        triggerToast(`Order ${orderId} marked as ${newStatus}`, "success");
+        triggerToast(isIgnoring ? `Order ignored & invoice number removed` : `Order ${orderId} marked as ${newStatus}`, "success");
       }
     } catch (e) {
       console.error("Network error updating order status:", e);
@@ -755,6 +1129,47 @@ export default function PosPage() {
     updateOrderStatus(selectedOrder.id, nextStatus);
   };
 
+  const handleSaveCustomer = async () => {
+    if (!editingCustomer) return;
+    setIsUpdatingCust(true);
+    try {
+      let birthdayIso = null;
+      if (editCustBirthMonth && editCustBirthDay) {
+        birthdayIso = new Date(`2000-${editCustBirthMonth}-${editCustBirthDay}T00:00:00`).toISOString();
+      }
+
+      const { error } = await supabase
+        .from("customers")
+        .update({
+          name: editCustName,
+          address: editCustAddress,
+          birthday: birthdayIso,
+          address_label: editCustAddressLabel || null
+        })
+        .eq("phone", editingCustomer.phone);
+
+      if (error) {
+        console.error("Supabase customer update error", error);
+        triggerToast("Failed to update customer profile", "error");
+      } else {
+        triggerToast("Customer profile updated successfully!", "success");
+        setCustomers(prev => 
+          prev.map(c => 
+            c.phone === editingCustomer.phone 
+              ? { ...c, name: editCustName, address: editCustAddress, birthday: birthdayIso, address_label: editCustAddressLabel || null }
+              : c
+          )
+        );
+        setEditingCustomer(null);
+      }
+    } catch (e) {
+      console.error(e);
+      triggerToast("Failed to connect to database", "error");
+    } finally {
+      setIsUpdatingCust(false);
+    }
+  };
+
   const handlePhoneChange = (val: string, cc: string = customerCountryCode) => {
     setCustomerPhone(val);
     
@@ -769,6 +1184,18 @@ export default function PosPage() {
     if (existing) {
       setCustomerName(existing.name);
       setCustomerAddress(existing.address);
+      const parsed = parseAddress(existing.address);
+      setAddrHomeNo(parsed.homeNo);
+      setAddrStreet(parsed.street);
+      setAddrPostalArea(parsed.postalArea);
+      setAddrPostalCode(parsed.postalCode);
+      setOriginalAutofilledAddress(existing.address);
+    } else {
+      setAddrHomeNo("");
+      setAddrStreet("");
+      setAddrPostalArea("");
+      setAddrPostalCode("");
+      setOriginalAutofilledAddress(null);
     }
   };
 
@@ -831,6 +1258,11 @@ export default function PosPage() {
     setCustomerPhone("");
     setCustomerName("");
     setCustomerAddress("");
+    setShowNameSuggestions(false);
+    setAddrHomeNo("");
+    setAddrStreet("");
+    setAddrPostalArea("");
+    setAddrPostalCode("");
   };
 
   const handleConfirmPlaceOrder = async () => {
@@ -868,8 +1300,24 @@ export default function PosPage() {
 
     // 3. Create new order in "Preparing" status
     const currentBizDateStr = getBusinessDateStr(new Date());
-    const todaysOrdersForSeq = orderHistory.filter(o => getBusinessDateStr(o.timestamp) === currentBizDateStr);
-    const nextSeq = todaysOrdersForSeq.length + 1;
+    const todaysValidOrders = orderHistory.filter(o => 
+      getBusinessDateStr(o.timestamp) === currentBizDateStr && 
+      o.status !== "Ignored" && 
+      o.id.startsWith("INV-")
+    );
+    
+    let nextSeq = 1;
+    if (todaysValidOrders.length > 0) {
+      const seqs = todaysValidOrders
+        .map(o => {
+          const parts = o.id.split("-");
+          return parts.length === 3 ? parseInt(parts[2], 10) : 0;
+        })
+        .filter(Boolean);
+      if (seqs.length > 0) {
+        nextSeq = Math.max(...seqs) + 1;
+      }
+    }
     const newInvoiceId = `INV-${currentBizDateStr}-${String(nextSeq).padStart(3, "0")}`;
 
     const newOrder: Order = {
@@ -924,8 +1372,12 @@ export default function PosPage() {
   // Cart Functions
   const addToCart = (item: MenuItem) => {
     if (selectedInvoiceId) {
-      setSelectedInvoiceId(null);
-      triggerToast("Switched back to Active Ticket", "info");
+      const loadedOrder = orderHistory.find(o => o.id === selectedInvoiceId);
+      const isEditable = loadedOrder && (loadedOrder.status === "Preparing" || loadedOrder.status === "Ready");
+      if (!isEditable) {
+        setSelectedInvoiceId(null);
+        triggerToast("Switched back to Active Ticket", "info");
+      }
     }
     setCart(prev => {
       const existing = prev.find(i => i.menuItem.id === item.id);
@@ -1508,7 +1960,13 @@ export default function PosPage() {
                             const badge = getStatusBadgeStyle(order.status);
                             return (
                               <tr key={order.id} className="hover:bg-white/[0.01] transition-colors">
-                                <td className="px-4 py-3 font-mono font-black text-orange-400">{order.id}</td>
+                                <td className="px-4 py-3 font-mono font-black text-orange-400">
+                                  {order.status === "Ignored" || order.id.startsWith("IGNORED-") ? (
+                                    <span className="text-slate-500 font-semibold italic">-</span>
+                                  ) : (
+                                    order.id
+                                  )}
+                                </td>
                                 <td className="px-4 py-3 text-slate-300">
                                   {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </td>
@@ -1543,8 +2001,24 @@ export default function PosPage() {
                                     {order.status}
                                   </span>
                                 </td>
-                                <td className="px-4 py-3 text-slate-400">
-                                  {order.items.reduce((sum, item) => sum + item.quantity, 0)} items
+                                <td className="px-4 py-3 text-slate-400 relative">
+                                  <div className="group inline-block cursor-pointer">
+                                    <span className="underline decoration-dotted hover:text-slate-200 transition-colors">
+                                      {order.items.reduce((sum, item) => sum + item.quantity, 0)} items
+                                    </span>
+                                    {/* Hover Preview Tooltip */}
+                                    <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2.5 hidden group-hover:flex flex-col z-50 bg-[#0E1628] border border-[#1A2640] rounded-xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-w-[220px] pointer-events-none transition-all">
+                                      <p className="text-[8px] font-black uppercase text-[#F26F21] mb-2 tracking-widest border-b border-[#1A2640] pb-1.5">Items Preview</p>
+                                      <div className="space-y-1.5 max-h-[160px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                                        {order.items.map((item, idx) => (
+                                          <div key={idx} className="flex justify-between items-start gap-3 text-[10px] text-slate-300">
+                                            <span className="font-bold flex-1 leading-tight text-left">{item.menuItem.title}</span>
+                                            <span className="font-mono text-[#F26F21] whitespace-nowrap">x{item.quantity}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </td>
                                 <td className="px-4 py-3 font-bold text-[#FF6B35]">
                                   LKR {order.total.toLocaleString()}
@@ -1554,7 +2028,6 @@ export default function PosPage() {
                                     <button
                                       onClick={() => {
                                         setSelectedInvoiceId(order.id);
-                                        setActiveSidebar("new_order");
                                         triggerToast(`Loaded ${order.id}`, "info");
                                       }}
                                       className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg bg-orange-500/10 text-orange-400 hover:bg-[#F26F21] hover:text-white transition-all cursor-pointer border border-[#F26F21]/30 active:scale-95"
@@ -1572,16 +2045,12 @@ export default function PosPage() {
                                         {(() => {
                                           const orderAgeMs = Date.now() - new Date(order.timestamp).getTime();
                                           const canIgnore = orderAgeMs <= 3 * 60 * 1000;
+                                          if (!canIgnore) return null;
                                           return (
                                             <button
-                                              disabled={!canIgnore}
                                               onClick={() => updateOrderStatus(order.id, "Ignored")}
-                                              className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg border transition-all ${
-                                                canIgnore 
-                                                  ? "bg-[#25324D] text-slate-400 hover:bg-slate-700 hover:text-white border-slate-600 active:scale-95 cursor-pointer"
-                                                  : "bg-[#1E2533] text-slate-600 border-[#2A344A] cursor-not-allowed opacity-40"
-                                              }`}
-                                              title={canIgnore ? "Ignore order" : "Ignore option expired (3-min limit)"}
+                                              className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg border border-slate-600 bg-[#25324D] text-slate-400 hover:bg-slate-700 hover:text-white active:scale-95 cursor-pointer transition-all"
+                                              title="Ignore order"
                                             >
                                               Ignore
                                             </button>
@@ -1886,12 +2355,21 @@ export default function PosPage() {
                       {orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored").length}
                     </p>
                   </div>
-                  <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-xl">
-                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">CMS Customers</p>
+                  <button
+                    onClick={() => {
+                      setCmsSearchQuery("");
+                      setShowCMSModal(true);
+                    }}
+                    className="bg-[#111625] border border-[#222E4E] p-4 rounded-xl text-left hover:border-purple-500/50 hover:bg-[#151C30] cursor-pointer transition-all duration-200 group active:scale-98"
+                  >
+                    <div className="flex justify-between items-start">
+                      <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider group-hover:text-purple-400 transition-colors">CMS Customers</p>
+                      <span className="text-[8px] text-[#A855F7] font-black uppercase tracking-wider bg-[#A855F7]/10 px-1.5 py-0.5 rounded border border-[#A855F7]/25 opacity-0 group-hover:opacity-100 transition-opacity">View directory</span>
+                    </div>
                     <p className="text-lg font-black mt-1 text-purple-400 font-mono">
                       {customers.length} Profiles
                     </p>
-                  </div>
+                  </button>
                   <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-xl">
                     <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Average Order Value</p>
                     <p className="text-lg font-black mt-1 text-slate-200 font-mono">
@@ -1950,7 +2428,7 @@ export default function PosPage() {
                         const settled = orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored");
                         const totalO = settled.length || 1;
                         const takeAway = settled.filter(o => o.type === "Take Away").length;
-                        const pickUp = settled.filter(o => o.type === "Pick Up").length;
+                        const pickUp = settled.filter(o => o.type === "Pick Up" || o.type === "3rd Party").length;
                         const delivery = settled.filter(o => o.type === "Delivery").length;
 
                         const pctTA = Math.round((takeAway / totalO) * 100);
@@ -1969,10 +2447,10 @@ export default function PosPage() {
                                 <div className="bg-amber-400 h-full rounded-full transition-all duration-500" style={{ width: `${pctTA}%` }} />
                               </div>
                             </div>
-                            {/* Pick Up */}
+                            {/* 3rd Party */}
                             <div className="space-y-1">
                               <div className="flex justify-between text-[10px] font-bold">
-                                <span className="text-purple-400">Pick Up (Uber / PickMe)</span>
+                                <span className="text-purple-400">3rd Party (Uber / PickMe)</span>
                                 <span className="text-slate-300">{pickUp} ({pctPU}%)</span>
                               </div>
                               <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
@@ -2487,28 +2965,206 @@ export default function PosPage() {
               </div>
 
               {/* Full Name */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 relative">
                 <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Full Name</label>
                 <input
                   type="text"
                   placeholder="John Doe"
                   value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  onChange={(e) => {
+                    setCustomerName(e.target.value);
+                    setShowNameSuggestions(true);
+                  }}
+                  onFocus={() => setShowNameSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowNameSuggestions(false), 200)}
                   className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60"
                   required
                 />
+
+                {/* Suggestions List */}
+                {showNameSuggestions && customerName && (
+                  (() => {
+                    const filtered = customers.filter(c => 
+                      c.name.toLowerCase().includes(customerName.toLowerCase()) &&
+                      c.name.toLowerCase() !== customerName.toLowerCase()
+                    ).slice(0, 5);
+
+                    if (filtered.length === 0) return null;
+
+                    return (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-[#111625] border border-[#222E4E] rounded-xl overflow-hidden shadow-2xl z-50 divide-y divide-[#1A2640] max-h-[180px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                        {filtered.map(c => (
+                          <button
+                            key={c.phone}
+                            type="button"
+                            onMouseDown={() => {
+                              setCustomerName(c.name);
+                              
+                              let phoneVal = c.phone;
+                              let ccVal = "+94";
+                              if (phoneVal.startsWith("+")) {
+                                ccVal = phoneVal.substring(0, 3);
+                                phoneVal = phoneVal.substring(3);
+                              }
+                              setCustomerCountryCode(ccVal);
+                              setCustomerPhone(phoneVal);
+                              
+                              setCustomerAddress(c.address);
+                              const parsed = parseAddress(c.address);
+                              setAddrHomeNo(parsed.homeNo);
+                              setAddrStreet(parsed.street);
+                              setAddrPostalArea(parsed.postalArea);
+                              setAddrPostalCode(parsed.postalCode);
+                              setOriginalAutofilledAddress(c.address);
+                              
+                              setShowNameSuggestions(false);
+                            }}
+                            className="w-full text-left px-4 py-2 flex flex-col gap-0.5 cursor-pointer hover:bg-[#FF6B35]/10 transition-colors"
+                          >
+                            <div className="flex justify-between items-center w-full">
+                              <span className="font-extrabold text-[11px] text-white">{c.name}</span>
+                              <span className="text-[9px] font-mono font-bold text-[#FF9F1C]">{c.phone}</span>
+                            </div>
+                            <span className="text-[9px] text-slate-400 truncate w-full">{c.address}</span>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()
+                )}
               </div>
 
-              {/* Address */}
-              <div className="space-y-1.5">
-                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Delivery/Collection Address</label>
-                <textarea
-                  placeholder="123 Main Street, Mulleriyawa"
-                  value={customerAddress}
-                  onChange={(e) => setCustomerAddress(e.target.value)}
-                  rows={3}
-                  className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60 resize-none"
-                />
+              {/* Address (Structured) */}
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Delivery Address</label>
+                  {originalAutofilledAddress && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddrHomeNo("");
+                        setAddrStreet("");
+                        setAddrPostalArea("");
+                        setAddrPostalCode("");
+                        setCustomerAddress("");
+                      }}
+                      className="text-[9px] font-bold text-[#FF6B35] hover:text-[#F26F21] transition-colors uppercase tracking-wider cursor-pointer bg-none border-none p-0"
+                    >
+                      not this adress? add new one
+                    </button>
+                  )}
+                </div>
+
+                {originalAutofilledAddress && (() => {
+                  const currentFullAddress = [addrHomeNo, addrStreet, addrPostalArea, addrPostalCode].filter(Boolean).join(", ");
+                  const isSavedActive = currentFullAddress === originalAutofilledAddress;
+                  
+                  return (
+                    <div className="flex gap-3 items-center py-0.5">
+                      {/* Saved Address Circle Selection */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const parsed = parseAddress(originalAutofilledAddress);
+                          setAddrHomeNo(parsed.homeNo);
+                          setAddrStreet(parsed.street);
+                          setAddrPostalArea(parsed.postalArea);
+                          setAddrPostalCode(parsed.postalCode);
+                          setCustomerAddress(originalAutofilledAddress);
+                        }}
+                        className={`flex items-center gap-1.5 text-[9px] font-extrabold px-3 py-1 rounded-full border transition-all cursor-pointer ${
+                          isSavedActive
+                            ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                            : "bg-[#090D1A] text-slate-400 border-[#222E4E] hover:border-slate-700 hover:text-slate-300"
+                        }`}
+                      >
+                        <span className={`w-2 h-2 rounded-full border flex items-center justify-center ${
+                          isSavedActive ? "border-purple-400 bg-purple-400" : "border-slate-500"
+                        }`} />
+                        <span>Saved Address</span>
+                      </button>
+
+                      {/* New Address Circle Selection */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddrHomeNo("");
+                          setAddrStreet("");
+                          setAddrPostalArea("");
+                          setAddrPostalCode("");
+                          setCustomerAddress("");
+                        }}
+                        className={`flex items-center gap-1.5 text-[9px] font-extrabold px-3 py-1 rounded-full border transition-all cursor-pointer ${
+                          !isSavedActive
+                            ? "bg-[#FF6B35]/10 text-[#FF6B35] border-[#FF6B35]/30"
+                            : "bg-[#090D1A] text-slate-400 border-[#222E4E] hover:border-slate-700 hover:text-slate-300"
+                        }`}
+                      >
+                        <span className={`w-2 h-2 rounded-full border flex items-center justify-center ${
+                          !isSavedActive ? "border-[#FF6B35] bg-[#FF6B35]" : "border-slate-500"
+                        }`} />
+                        <span>New Address</span>
+                      </button>
+                    </div>
+                  );
+                })()}
+                
+                {/* Home No & Street Name */}
+                <div className="flex gap-2">
+                  <div className="w-1/3">
+                    <input
+                      type="text"
+                      placeholder="Home NO"
+                      value={addrHomeNo}
+                      onChange={(e) => setAddrHomeNo(e.target.value)}
+                      className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                    />
+                  </div>
+                  <div className="w-2/3">
+                    <input
+                      type="text"
+                      placeholder="Street Name"
+                      value={addrStreet}
+                      onChange={(e) => setAddrStreet(e.target.value)}
+                      className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                    />
+                  </div>
+                </div>
+
+                {/* Postal Area & Postal Code */}
+                <div className="flex gap-2">
+                  <div className="w-2/3">
+                    <select
+                      value={addrPostalArea}
+                      onChange={(e) => {
+                        const area = e.target.value;
+                        setAddrPostalArea(area);
+                        setAddrPostalCode(POSTAL_CODES[area] || "");
+                      }}
+                      className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60 cursor-pointer"
+                    >
+                      <option value="">Select Postal Area...</option>
+                      {Object.keys(POSTAL_CODES).sort().map(area => (
+                        <option key={area} value={area}>{area}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-1/3">
+                    <input
+                      type="text"
+                      placeholder="Post Code"
+                      value={addrPostalCode}
+                      readOnly
+                      className="w-full bg-[#090D1A]/50 border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-slate-400 outline-none cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                {/* Combined Preview */}
+                <div className="bg-[#050814]/40 border border-[#1A2640] p-2 rounded-xl text-[9px] text-slate-400 font-mono flex items-center justify-between">
+                  <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider">Preview:</span>
+                  <span className="truncate flex-1 text-right pl-2 text-slate-300">{customerAddress || "(empty address)"}</span>
+                </div>
               </div>
             </div>
 
@@ -2526,6 +3182,277 @@ export default function PosPage() {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CMS Profiles Modal */}
+      {showCMSModal && (
+        <div className="fixed inset-0 bg-[#050814]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#111625] border border-[#222E4E] rounded-3xl p-6 max-w-4xl w-full h-[80vh] flex flex-col shadow-2xl relative" style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
+            <button
+              onClick={() => {
+                setShowCMSModal(false);
+                setEditingCustomer(null);
+              }}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            {!editingCustomer ? (
+              // Directory View
+              <div className="flex flex-col h-full space-y-4 overflow-hidden">
+                <div className="text-center shrink-0 space-y-1">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-100">Customer CMS Directory</h3>
+                  <p className="text-[10px] text-slate-500">Manage and edit customer profiles and birthdays</p>
+                </div>
+
+                {/* Search Bar */}
+                <div className="shrink-0">
+                  <input
+                    type="text"
+                    placeholder="Search by name, phone or address..."
+                    value={cmsSearchQuery}
+                    onChange={(e) => setCmsSearchQuery(e.target.value)}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500/60"
+                  />
+                </div>
+
+                {/* Customer List in Compact Row Layout */}
+                <div className="flex-1 overflow-y-auto pr-1 space-y-1.5" style={{ scrollbarWidth: "thin" }}>
+                  {customers
+                    .filter(c => 
+                      c.name.toLowerCase().includes(cmsSearchQuery.toLowerCase()) ||
+                      c.phone.includes(cmsSearchQuery) ||
+                      c.address.toLowerCase().includes(cmsSearchQuery.toLowerCase())
+                    )
+                    .map(c => (
+                      <div key={c.phone} className="bg-[#0D1527] border border-[#1E2D4E] rounded-xl p-2.5 flex items-center justify-between gap-4 hover:border-purple-500/40 transition-all">
+                        <div className="flex-1 min-w-0 flex items-center gap-4">
+                          {/* Name & Phone */}
+                          <div className="w-[180px] shrink-0 min-w-0">
+                            <p className="font-extrabold text-[12px] text-white truncate" title={c.name}>{c.name}</p>
+                            <p className="text-[9px] font-mono font-bold text-[#FF9F1C] mt-0.5">{c.phone}</p>
+                          </div>
+                          
+                          {/* Birthday */}
+                          <div className="w-[170px] shrink-0">
+                            {c.birthday ? (
+                              <span className="text-[8px] font-black text-purple-200 bg-purple-900/50 border border-purple-500/30 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                🎂 {new Date(c.birthday).toLocaleString("en-US", {
+                                  month: "short",
+                                  day: "numeric"
+                                })}
+                              </span>
+                            ) : (
+                              <span className="text-[9px] text-slate-400 font-semibold italic">No birthday set</span>
+                            )}
+                          </div>
+
+                          {/* Address */}
+                          <div className="flex-1 min-w-0 flex items-center gap-2">
+                            {c.address_label && (
+                              <span className="text-[8px] font-black text-amber-200 bg-[#342211] border border-amber-500/30 px-2 py-0.5 rounded uppercase tracking-wider shrink-0">
+                                🏠 {c.address_label}
+                              </span>
+                            )}
+                            <p className="text-[11px] text-slate-200 font-medium truncate flex-1 pr-4" title={c.address}>
+                              {c.address || "No address provided"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setEditingCustomer(c);
+                            setEditCustName(c.name);
+                            setEditCustAddress(c.address);
+                            const parsed = parseAddress(c.address);
+                            setEditAddrHomeNo(parsed.homeNo);
+                            setEditAddrStreet(parsed.street);
+                            setEditAddrPostalArea(parsed.postalArea);
+                            setEditAddrPostalCode(parsed.postalCode);
+                            if (c.birthday) {
+                              const bDate = new Date(c.birthday);
+                              setEditCustBirthMonth(String(bDate.getMonth() + 1).padStart(2, "0"));
+                              setEditCustBirthDay(String(bDate.getDate()).padStart(2, "0"));
+                            } else {
+                              setEditCustBirthMonth("");
+                              setEditCustBirthDay("");
+                            }
+                            setEditCustAddressLabel(c.address_label || "");
+                          }}
+                          className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black active:scale-95 transition-all text-[9px] uppercase tracking-wider cursor-pointer shrink-0 shadow-md"
+                        >
+                          Edit Profile
+                        </button>
+                      </div>
+                    ))}
+                </div>
+
+                <div className="pt-2 shrink-0">
+                  <button
+                    onClick={() => setShowCMSModal(false)}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-700"
+                  >
+                    Close Directory
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // Editing View
+              <div className="flex flex-col h-full justify-between space-y-4">
+                <div className="space-y-4">
+                  <div className="text-center space-y-1">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-slate-100">Edit Customer Profile</h3>
+                    <p className="text-[10px] text-slate-500">Updating details for {editingCustomer.phone}</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Name */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Full Name</label>
+                      <input
+                        type="text"
+                        value={editCustName}
+                        onChange={(e) => setEditCustName(e.target.value)}
+                        className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500/60"
+                      />
+                    </div>
+
+                    {/* Address (Structured) */}
+                    <div className="space-y-2.5">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Address</label>
+                      
+                      {/* Home No & Street Name */}
+                      <div className="flex gap-2">
+                        <div className="w-1/3">
+                          <input
+                            type="text"
+                            placeholder="Home NO"
+                            value={editAddrHomeNo}
+                            onChange={(e) => setEditAddrHomeNo(e.target.value)}
+                            className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500/60"
+                          />
+                        </div>
+                        <div className="w-2/3">
+                          <input
+                            type="text"
+                            placeholder="Street Name"
+                            value={editAddrStreet}
+                            onChange={(e) => setEditAddrStreet(e.target.value)}
+                            className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500/60"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Postal Area & Postal Code */}
+                      <div className="flex gap-2">
+                        <div className="w-2/3">
+                          <select
+                            value={editAddrPostalArea}
+                            onChange={(e) => {
+                              const area = e.target.value;
+                              setEditAddrPostalArea(area);
+                              setEditAddrPostalCode(POSTAL_CODES[area] || "");
+                            }}
+                            className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500/60 cursor-pointer"
+                          >
+                            <option value="">Select Postal Area...</option>
+                            {Object.keys(POSTAL_CODES).sort().map(area => (
+                              <option key={area} value={area}>{area}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="w-1/3">
+                          <input
+                            type="text"
+                            placeholder="Post Code"
+                            value={editAddrPostalCode}
+                            readOnly
+                            className="w-full bg-[#090D1A]/50 border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-slate-400 outline-none cursor-not-allowed"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Combined Preview */}
+                      <div className="bg-[#050814]/40 border border-[#1A2640] p-2 rounded-xl text-[9px] text-slate-400 font-mono flex items-center justify-between">
+                        <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider">Preview:</span>
+                        <span className="truncate flex-1 text-right pl-2 text-slate-300">{editCustAddress || "(empty address)"}</span>
+                      </div>
+                    </div>
+
+                    {/* Birthday (Month & Day - No Year) */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Birthday (Month &amp; Day)</label>
+                      <div className="flex gap-2">
+                        {/* Month Select */}
+                        <div className="w-1/2">
+                          <select
+                            value={editCustBirthMonth}
+                            onChange={(e) => setEditCustBirthMonth(e.target.value)}
+                            className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500/60 cursor-pointer"
+                          >
+                            <option value="">Month</option>
+                            {MONTHS.map(m => (
+                              <option key={m.value} value={m.value}>{m.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        {/* Day Select */}
+                        <div className="w-1/2">
+                          <select
+                            value={editCustBirthDay}
+                            onChange={(e) => setEditCustBirthDay(e.target.value)}
+                            className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500/60 cursor-pointer"
+                          >
+                            <option value="">Day</option>
+                            {DAYS.map(d => (
+                              <option key={d.value} value={d.value}>{d.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <p className="text-[8px] text-slate-500">Optional: Select the birth month and day (no year required).</p>
+                    </div>
+
+                    {/* Address Label (CMS Only) */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Address Label</label>
+                      <select
+                        value={editCustAddressLabel}
+                        onChange={(e) => setEditCustAddressLabel(e.target.value)}
+                        className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500/60 cursor-pointer"
+                      >
+                        <option value="">No Label</option>
+                        <option value="Home">🏠 Home</option>
+                        <option value="Office">💼 Office</option>
+                        <option value="Work">🏢 Work</option>
+                        <option value="Other">📍 Other</option>
+                      </select>
+                      <p className="text-[8px] text-slate-500">Label this address (e.g. Home, Office) to identify it in the directory.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button
+                    disabled={isUpdatingCust}
+                    onClick={handleSaveCustomer}
+                    className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isUpdatingCust ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button
+                    onClick={() => setEditingCustomer(null)}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-700"
+                  >
+                    Back
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
