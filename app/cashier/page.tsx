@@ -26,7 +26,8 @@ import {
   Maximize2,
   Image as ImageIcon,
   BarChart3,
-  Bell
+  Bell,
+  MessageCircle
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -47,6 +48,8 @@ interface MenuItem {
 interface CartItem {
   menuItem: MenuItem;
   quantity: number;
+  isNew?: boolean;
+  comment?: string;
 }
 
 interface CustomerDetails {
@@ -688,6 +691,7 @@ export default function PosPage() {
   const [orderType, setOrderType] = useState<"Take Away" | "Pick Up" | "Delivery" | "3rd Party">("Delivery");
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [commentEditingItemId, setCommentEditingItemId] = useState<number | null>(null);
   
   // Customer CMS States
   const [customers, setCustomers] = useState<{ phone: string; name: string; address: string; birthday?: string | null; address_label?: string | null }[]>([]);
@@ -763,7 +767,7 @@ export default function PosPage() {
       if (lastLoadedIdRef.current !== selectedInvoiceId) {
         const order = orderHistory.find(o => o.id === selectedInvoiceId);
         if (order) {
-          setCart(order.items);
+          setCart(order.items.map(item => ({ ...item, isNew: false })));
           setOrderType(order.type);
         }
         lastLoadedIdRef.current = selectedInvoiceId;
@@ -1208,12 +1212,18 @@ export default function PosPage() {
     const newTax = 0;
     const newTotal = newSubtotal;
 
+    // Strip temporary isNew flag from items before saving
+    const cleanCart = cart.map(item => {
+      const { isNew, ...rest } = item;
+      return rest;
+    });
+
     // 1. Update local state
     const updatedHistory = orderHistory.map(o => {
       if (o.id === selectedInvoiceId) {
         return {
           ...o,
-          items: [...cart],
+          items: cleanCart,
           subtotal: newSubtotal,
           tax: newTax,
           total: newTotal
@@ -1229,7 +1239,7 @@ export default function PosPage() {
       const { error } = await supabase
         .from("orders")
         .update({
-          items: cart,
+          items: cleanCart,
           subtotal: newSubtotal,
           tax: newTax,
           total: newTotal
@@ -1378,24 +1388,34 @@ export default function PosPage() {
       const loadedOrder = orderHistory.find(o => o.id === selectedInvoiceId);
       const isEditable = loadedOrder && (loadedOrder.status === "Preparing" || loadedOrder.status === "Ready");
       if (!isEditable) {
-        setSelectedInvoiceId(null);
-        triggerToast("Switched back to Active Ticket", "info");
+        triggerToast("This settled order cannot be modified", "warning");
+        return;
       }
     }
     setCart(prev => {
-      const existing = prev.find(i => i.menuItem.id === item.id);
+      const isEditingLoadedOrder = !!selectedInvoiceId;
+      const existing = prev.find(i => i.menuItem.id === item.id && (!isEditingLoadedOrder || i.isNew === true));
       if (existing) {
-        return prev.map(i => i.menuItem.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+        return prev.map(i => (i.menuItem.id === item.id && (!isEditingLoadedOrder || i.isNew === true)) ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { menuItem: item, quantity: 1 }];
+      return [...prev, { menuItem: item, quantity: 1, isNew: isEditingLoadedOrder }];
     });
     triggerToast(`Added ${item.title} to ticket`, "success");
   };
 
   const updateQuantity = (itemId: number, delta: number) => {
+    if (selectedInvoiceId) {
+      const loadedOrder = orderHistory.find(o => o.id === selectedInvoiceId);
+      const isEditable = loadedOrder && (loadedOrder.status === "Preparing" || loadedOrder.status === "Ready");
+      if (!isEditable) {
+        triggerToast("This settled order cannot be modified", "warning");
+        return;
+      }
+    }
     setCart(prev => {
+      const isEditingLoadedOrder = !!selectedInvoiceId;
       return prev.map(item => {
-        if (item.menuItem.id === itemId) {
+        if (item.menuItem.id === itemId && (!isEditingLoadedOrder || item.isNew === true)) {
           const newQty = item.quantity + delta;
           return newQty > 0 ? { ...item, quantity: newQty } : null;
         }
@@ -1405,7 +1425,18 @@ export default function PosPage() {
   };
 
   const removeFromCart = (itemId: number) => {
-    setCart(prev => prev.filter(item => item.menuItem.id !== itemId));
+    if (selectedInvoiceId) {
+      const loadedOrder = orderHistory.find(o => o.id === selectedInvoiceId);
+      const isEditable = loadedOrder && (loadedOrder.status === "Preparing" || loadedOrder.status === "Ready");
+      if (!isEditable) {
+        triggerToast("This settled order cannot be modified", "warning");
+        return;
+      }
+    }
+    setCart(prev => {
+      const isEditingLoadedOrder = !!selectedInvoiceId;
+      return prev.filter(item => !(item.menuItem.id === itemId && (!isEditingLoadedOrder || item.isNew === true)));
+    });
     triggerToast("Item removed from ticket", "info");
   };
 
@@ -1419,10 +1450,10 @@ export default function PosPage() {
     return orderHistory.find(o => o.id === selectedInvoiceId) || null;
   }, [selectedInvoiceId, orderHistory]);
 
-  const displayedItems = selectedOrder ? selectedOrder.items : cart;
-  const displayedSubtotal = selectedOrder ? selectedOrder.subtotal : subtotal;
-  const displayedTax = selectedOrder ? selectedOrder.tax : tax;
-  const displayedTotal = selectedOrder ? selectedOrder.total : total;
+  const displayedItems = cart;
+  const displayedSubtotal = subtotal;
+  const displayedTax = tax;
+  const displayedTotal = total;
   const selectedOrderType = selectedOrder ? selectedOrder.type : orderType;
 
   const currentBizDate = useMemo(() => getBusinessDateStr(new Date()), []);
@@ -2014,9 +2045,14 @@ export default function PosPage() {
                                       <p className="text-[8px] font-black uppercase text-[#F26F21] mb-2 tracking-widest border-b border-[#1A2640] pb-1.5">Items Preview</p>
                                       <div className="space-y-1.5 max-h-[160px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
                                         {order.items.map((item, idx) => (
-                                          <div key={idx} className="flex justify-between items-start gap-3 text-[10px] text-slate-300">
-                                            <span className="font-bold flex-1 leading-tight text-left">{item.menuItem.title}</span>
-                                            <span className="font-mono text-[#F26F21] whitespace-nowrap">x{item.quantity}</span>
+                                          <div key={idx} className="text-[10px] text-slate-300">
+                                            <div className="flex justify-between items-start gap-3">
+                                              <span className="font-bold flex-1 leading-tight text-left">{item.menuItem.title}</span>
+                                              <span className="font-mono text-[#F26F21] whitespace-nowrap">x{item.quantity}</span>
+                                            </div>
+                                            {item.comment && (
+                                              <p className="text-[9px] text-amber-400/80 mt-0.5 italic pl-1">💬 {item.comment}</p>
+                                            )}
                                           </div>
                                         ))}
                                       </div>
@@ -2576,7 +2612,10 @@ export default function PosPage() {
                     border: `1px solid ${selectedOrderType === "Take Away" ? "rgba(245,158,11,0.25)" : selectedOrderType === "Pick Up" ? "rgba(168,85,247,0.25)" : "rgba(59,130,246,0.25)"}`
                   }}
                 >
-                  {selectedInvoiceId ? "SETTLED" : "NEW ORDER"}
+                  {selectedInvoiceId ? (() => {
+                    const loadedOrder = orderHistory.find(o => o.id === selectedInvoiceId);
+                    return loadedOrder ? `EDITING (${loadedOrder.status.toUpperCase()})` : "EDITING";
+                  })() : "NEW ORDER"}
                 </span>
               </div>
 
@@ -2654,52 +2693,103 @@ export default function PosPage() {
 
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {displayedItems.map((item) => (
-                <div
-                  key={item.menuItem.id}
-                  className="rounded-xl p-3 flex gap-2 items-start"
-                  style={{ background: "#0E1628", border: "1px solid #1A2640" }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-[11px] leading-snug" style={{ color: "#CBD5E1" }}>{item.menuItem.title}</h4>
-                    <p className="text-[10px] mt-0.5 font-mono" style={{ color: "#4B5E82" }}>
-                      {item.quantity} × Rs {item.menuItem.price.toLocaleString()}
-                    </p>
-                    <p className="text-[10px] font-bold font-mono mt-0.5" style={{ color: "#F26F21" }}>
-                      Rs {(item.quantity * item.menuItem.price).toLocaleString()}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-1.5">
-                    {!selectedInvoiceId && (
-                      <button onClick={() => removeFromCart(item.menuItem.id)} className="cursor-pointer p-0.5 rounded" style={{ color: "#2A3A5A" }}>
-                        <X size={12} className="hover:text-red-400 transition-colors" />
-                      </button>
-                    )}
-                    {selectedInvoiceId ? (
-                      <span className="text-[9px] font-mono font-black text-slate-600 bg-slate-950/40 px-1.5 py-0.5 rounded">QTY: {item.quantity}</span>
-                    ) : (
-                      <div className="flex items-center gap-1 rounded-lg overflow-hidden" style={{ border: "1px solid #1E2D4E" }}>
-                        <button
-                          onClick={() => updateQuantity(item.menuItem.id, -1)}
-                          className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
-                          style={{ background: "#14203A", color: "#6B7BA4" }}
-                        >
-                          <Minus size={9} />
-                        </button>
-                        <span className="text-[11px] font-black font-mono w-5 text-center" style={{ color: "#F2F4F8" }}>{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.menuItem.id, 1)}
-                          className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
-                          style={{ background: "rgba(242,111,33,0.15)", color: "#F26F21" }}
-                        >
-                          <Plus size={9} />
-                        </button>
+              {displayedItems.map((item) => {
+                const isItemEditable = !selectedInvoiceId || item.isNew === true;
+                return (
+                  <div
+                    key={`${item.menuItem.id}-${item.isNew ? "new" : "old"}`}
+                    className="rounded-xl p-3 flex gap-2 items-start"
+                    style={{ background: "#0E1628", border: "1px solid #1A2640" }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="font-semibold text-[11px] leading-snug" style={{ color: "#CBD5E1" }}>{item.menuItem.title}</h4>
+                        {selectedInvoiceId && item.isNew && (
+                          <span className="text-[7px] font-black uppercase bg-emerald-500/10 text-emerald-400 px-1 py-0.5 rounded border border-emerald-500/25">New</span>
+                        )}
                       </div>
-                    )}
+                      {/* Comment display */}
+                      {item.comment && commentEditingItemId !== item.menuItem.id && (
+                        <p className="text-[9px] mt-0.5 italic" style={{ color: "#FBBF24" }}>💬 {item.comment}</p>
+                      )}
+                      {/* Inline comment editor */}
+                      {commentEditingItemId === item.menuItem.id && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="e.g. Black Pork, Extra Spicy..."
+                            defaultValue={item.comment || ""}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                const val = (e.target as HTMLInputElement).value.trim();
+                                setCart(prev => prev.map(ci => ci.menuItem.id === item.menuItem.id && ci.isNew === item.isNew ? { ...ci, comment: val || undefined } : ci));
+                                setCommentEditingItemId(null);
+                              } else if (e.key === "Escape") {
+                                setCommentEditingItemId(null);
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const val = e.target.value.trim();
+                              setCart(prev => prev.map(ci => ci.menuItem.id === item.menuItem.id && ci.isNew === item.isNew ? { ...ci, comment: val || undefined } : ci));
+                              setCommentEditingItemId(null);
+                            }}
+                            className="flex-1 text-[9px] px-2 py-1 rounded-lg border outline-none"
+                            style={{ background: "#0A101F", borderColor: "#FBBF24", color: "#FBBF24" }}
+                          />
+                        </div>
+                      )}
+                      <p className="text-[10px] mt-0.5 font-mono" style={{ color: "#4B5E82" }}>
+                        {item.quantity} × Rs {item.menuItem.price.toLocaleString()}
+                      </p>
+                      <p className="text-[10px] font-bold font-mono mt-0.5" style={{ color: "#F26F21" }}>
+                        Rs {(item.quantity * item.menuItem.price).toLocaleString()}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1.5">
+                      <div className="flex items-center gap-1">
+                        {isItemEditable && (
+                          <button
+                            onClick={() => setCommentEditingItemId(commentEditingItemId === item.menuItem.id ? null : item.menuItem.id)}
+                            className="cursor-pointer p-0.5 rounded transition-colors"
+                            style={{ color: item.comment ? "#FBBF24" : "#2A3A5A" }}
+                            title="Add comment"
+                          >
+                            <MessageCircle size={12} className="hover:text-amber-400 transition-colors" />
+                          </button>
+                        )}
+                        {isItemEditable && (
+                          <button onClick={() => removeFromCart(item.menuItem.id)} className="cursor-pointer p-0.5 rounded" style={{ color: "#2A3A5A" }}>
+                            <X size={12} className="hover:text-red-400 transition-colors" />
+                          </button>
+                        )}
+                      </div>
+                      {!isItemEditable ? (
+                        <span className="text-[9px] font-mono font-black text-slate-600 bg-slate-950/40 px-1.5 py-0.5 rounded">QTY: {item.quantity}</span>
+                      ) : (
+                        <div className="flex items-center gap-1 rounded-lg overflow-hidden" style={{ border: "1px solid #1E2D4E" }}>
+                          <button
+                            onClick={() => updateQuantity(item.menuItem.id, -1)}
+                            className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
+                            style={{ background: "#14203A", color: "#6B7BA4" }}
+                          >
+                            <Minus size={9} />
+                          </button>
+                          <span className="text-[11px] font-black font-mono w-5 text-center" style={{ color: "#F2F4F8" }}>{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.menuItem.id, 1)}
+                            className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
+                            style={{ background: "rgba(242,111,33,0.15)", color: "#F26F21" }}
+                          >
+                            <Plus size={9} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {displayedItems.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-center" style={{ opacity: 0.35 }}>
@@ -2865,9 +2955,14 @@ export default function PosPage() {
 
             <div className="space-y-2 border-b border-dashed border-slate-300 pb-3">
               {latestOrder.items.map(item => (
-                <div key={item.menuItem.id} className="flex justify-between">
-                  <span>{item.menuItem.title} x{item.quantity}</span>
-                  <span>Rs {(item.menuItem.price * item.quantity).toLocaleString()}</span>
+                <div key={item.menuItem.id}>
+                  <div className="flex justify-between">
+                    <span>{item.menuItem.title} x{item.quantity}</span>
+                    <span>Rs {(item.menuItem.price * item.quantity).toLocaleString()}</span>
+                  </div>
+                  {item.comment && (
+                    <p className="text-[8px] text-amber-600 italic ml-2">💬 {item.comment}</p>
+                  )}
                 </div>
               ))}
             </div>
