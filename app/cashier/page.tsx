@@ -704,6 +704,7 @@ export default function PosPage() {
   const [addrPostalArea, setAddrPostalArea] = useState("");
   const [addrPostalCode, setAddrPostalCode] = useState("");
   const [originalAutofilledAddress, setOriginalAutofilledAddress] = useState<string | null>(null);
+  const [showAddressSelector, setShowAddressSelector] = useState(false);
 
 
   // CMS Profiles Modal & Edit States
@@ -1190,12 +1191,14 @@ export default function PosPage() {
       setAddrPostalArea(parsed.postalArea);
       setAddrPostalCode(parsed.postalCode);
       setOriginalAutofilledAddress(existing.address);
+      setShowAddressSelector(false);
     } else {
       setAddrHomeNo("");
       setAddrStreet("");
       setAddrPostalArea("");
       setAddrPostalCode("");
       setOriginalAutofilledAddress(null);
+      setShowAddressSelector(false);
     }
   };
 
@@ -3016,6 +3019,7 @@ export default function PosPage() {
                               setAddrPostalArea(parsed.postalArea);
                               setAddrPostalCode(parsed.postalCode);
                               setOriginalAutofilledAddress(c.address);
+                              setShowAddressSelector(false);
                               
                               setShowNameSuggestions(false);
                             }}
@@ -3047,6 +3051,7 @@ export default function PosPage() {
                         setAddrPostalArea("");
                         setAddrPostalCode("");
                         setCustomerAddress("");
+                        setShowAddressSelector(true);
                       }}
                       className="text-[9px] font-bold text-[#FF6B35] hover:text-[#F26F21] transition-colors uppercase tracking-wider cursor-pointer bg-none border-none p-0"
                     >
@@ -3055,12 +3060,20 @@ export default function PosPage() {
                   )}
                 </div>
 
-                {originalAutofilledAddress && (() => {
+                {showAddressSelector && originalAutofilledAddress && (() => {
                   const currentFullAddress = [addrHomeNo, addrStreet, addrPostalArea, addrPostalCode].filter(Boolean).join(", ");
                   const isSavedActive = currentFullAddress === originalAutofilledAddress;
                   
+                  const currentCustomerObj = customers.find(c => {
+                    let searchPhone = customerCountryCode + customerPhone;
+                    // Check clean version of phone numbers to be safe
+                    return c.phone.replace(/\D/g, "") === searchPhone.replace(/\D/g, "");
+                  });
+                  const addressLabel = currentCustomerObj?.address_label || "Address 1";
+                  const displayLabelText = addressLabel === "Home" ? "🏠 Home" : addressLabel === "Office" ? "💼 Office" : addressLabel === "Work" ? "🏢 Work" : addressLabel === "Other" ? "📍 Other" : `📍 ${addressLabel}`;
+
                   return (
-                    <div className="flex gap-3 items-center py-0.5">
+                    <div className="flex gap-3 items-center py-0.5 animate-fadeIn">
                       {/* Saved Address Circle Selection */}
                       <button
                         type="button"
@@ -3081,7 +3094,7 @@ export default function PosPage() {
                         <span className={`w-2 h-2 rounded-full border flex items-center justify-center ${
                           isSavedActive ? "border-purple-400 bg-purple-400" : "border-slate-500"
                         }`} />
-                        <span>Saved Address</span>
+                        <span>{displayLabelText}</span>
                       </button>
 
                       {/* New Address Circle Selection */}

@@ -260,19 +260,37 @@ export default function BillPage() {
           </p>
         </div>
 
-        {/* Kitchen Contact & Web Link */}
-        <div className="mt-4 bg-slate-50 border border-slate-100 p-3 rounded-xl space-y-1.5 text-[9px] text-slate-500 text-center">
-          <div className="flex items-center justify-center gap-1.5 font-medium">
-            <Phone size={10} className="text-[#FF6B35]" />
-            <span>+94 77 123 4567 / +94 11 234 5678</span>
+        {/* Real Contact & Location Details */}
+        <div className="mt-4 bg-slate-50 border border-slate-100 p-3.5 rounded-xl space-y-2.5 text-[9px] text-slate-500 text-center">
+          {/* Address */}
+          <div className="space-y-0.5">
+            <p className="font-extrabold text-slate-700 uppercase tracking-wider">T-Cloud Eats</p>
+            <p className="font-medium text-slate-500">557/3/5 Godella Rd,</p>
+            <p className="font-medium text-slate-500">Mulleriyawa 10620, Sri Lanka</p>
           </div>
-          <div className="flex items-center justify-center gap-1.5 font-medium">
-            <Mail size={10} className="text-[#FF6B35]" />
-            <span>kitchen@t-cloudeats.com</span>
+
+          {/* Delivery Zones */}
+          <div className="pt-1.5 border-t border-slate-200/60">
+            <p className="font-extrabold text-[8px] text-[#FF6B35] uppercase tracking-widest mb-0.5">Delivery Zones (Within 4km)</p>
+            <p className="font-medium text-slate-500 leading-normal">Mulleriyawa, Angoda, Kotikawatta, Kelanimulla, IDH &amp; surrounding areas.</p>
           </div>
-          <div className="flex items-center justify-center gap-1.5 font-bold pt-1 border-t border-slate-200 text-[#FF6B35] hover:underline">
-            <Globe size={10} />
-            <a href="https://t-cloudeats.com" target="_blank" rel="noopener noreferrer">https://t-cloudeats.com</a>
+
+          {/* Contact Details */}
+          <div className="pt-1.5 border-t border-slate-200/60 grid grid-cols-2 gap-2 text-center">
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="font-black text-[7px] text-slate-400 uppercase tracking-wider">Phone</span>
+              <div className="flex items-center gap-1 font-bold text-slate-700 justify-center">
+                <Phone size={8} className="text-[#FF6B35]" />
+                <span>070 628 8109</span>
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="font-black text-[7px] text-slate-400 uppercase tracking-wider">WhatsApp Order</span>
+              <div className="flex items-center gap-1 font-bold text-slate-700 justify-center">
+                <Globe size={8} className="text-[#FF6B35]" />
+                <span>+94 70 628 8109</span>
+              </div>
+            </div>
           </div>
         </div>
 
