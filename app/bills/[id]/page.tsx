@@ -80,10 +80,34 @@ export default function BillPage() {
         } else if (data.status === "Ignored") {
           setErrorMsg("This order has been ignored. Invoice is not generated.");
         } else {
+          const parsedCustomer = typeof data.customer === "string" ? JSON.parse(data.customer) : data.customer;
+          let latestCustomer = parsedCustomer;
+          
+          if (parsedCustomer && parsedCustomer.phone) {
+            try {
+              const { data: customerDb } = await supabase
+                .from("customers")
+                .select("*")
+                .eq("phone", parsedCustomer.phone)
+                .maybeSingle();
+              
+              if (customerDb) {
+                latestCustomer = {
+                  ...parsedCustomer,
+                  name: customerDb.name || parsedCustomer.name,
+                  address: customerDb.address || parsedCustomer.address,
+                  address_label: customerDb.address_label || parsedCustomer.address_label
+                };
+              }
+            } catch (err) {
+              console.error("Failed to fetch latest customer details for bill:", err);
+            }
+          }
+
           setOrder({
             ...data,
             items: typeof data.items === "string" ? JSON.parse(data.items) : data.items,
-            customer: typeof data.customer === "string" ? JSON.parse(data.customer) : data.customer,
+            customer: latestCustomer,
             subtotal: Number(data.subtotal),
             tax: Number(data.tax),
             total: Number(data.total)

@@ -765,6 +765,7 @@ export default function PosPage() {
   // Realtime Broadcast Session ID and Sync Channel Refs
   const sessionIdRef = useRef<string>("");
   const syncChannelRef = useRef<any>(null);
+  const isNetworkUpdateRef = useRef<boolean>(false);
   
   useEffect(() => {
     sessionIdRef.current = Math.random().toString(36).substring(2, 15);
@@ -1029,6 +1030,9 @@ export default function PosPage() {
         
         console.log("[Broadcast Sync] Received state update:", payload);
         
+        // Block outgoing sync triggers during network state updates to prevent loopback/echoes
+        isNetworkUpdateRef.current = true;
+        
         if (payload.cart !== undefined) setCart(payload.cart);
         if (payload.selectedInvoiceId !== undefined) setSelectedInvoiceId(payload.selectedInvoiceId);
         if (payload.activeSidebar !== undefined) setActiveSidebar(payload.activeSidebar);
@@ -1037,6 +1041,11 @@ export default function PosPage() {
         if (payload.customerName !== undefined) setCustomerName(payload.customerName);
         if (payload.customerAddress !== undefined) setCustomerAddress(payload.customerAddress);
         if (payload.showCustomerModal !== undefined) setShowCustomerModal(payload.showCustomerModal);
+        
+        // Reset the update block once layout/rendering cycles complete
+        setTimeout(() => {
+          isNetworkUpdateRef.current = false;
+        }, 100);
       })
       .subscribe();
 
@@ -1050,10 +1059,12 @@ export default function PosPage() {
   // Realtime Broadcast Sync Sender (Send local state drafts to other tabs/devices)
   useEffect(() => {
     if (!sessionIdRef.current || !syncChannelRef.current) return;
+    if (isNetworkUpdateRef.current) return; // Do not broadcast state updates received from network
 
     const channel = syncChannelRef.current;
     
     const timeoutId = setTimeout(() => {
+      if (isNetworkUpdateRef.current) return;
       channel.send({
         type: "broadcast",
         event: "draft-update",
