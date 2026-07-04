@@ -692,6 +692,7 @@ export default function PosPage() {
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [commentEditingItemId, setCommentEditingItemId] = useState<number | null>(null);
+  const [isDatabaseSyncing, setIsDatabaseSyncing] = useState(false);
   
   // Customer CMS States
   const [customers, setCustomers] = useState<{ phone: string; name: string; address: string; birthday?: string | null; address_label?: string | null }[]>([]);
@@ -792,6 +793,114 @@ export default function PosPage() {
     sku: ""
   });
 
+  const loadOrdersAndCMS = useCallback(async () => {
+    // 1. Clean up ignored orders older than 2 days in Supabase
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    try {
+      await supabase
+        .from("orders")
+        .delete()
+        .eq("status", "Ignored")
+        .lt("timestamp", twoDaysAgo);
+    } catch (e) {
+      console.error("Failed to prune expired ignored orders from database", e);
+    }
+
+    // 2. Fetch Orders
+    try {
+      const { data: dbOrders, error: ordersErr } = await supabase
+        .from("orders")
+        .select("*")
+        .order("timestamp", { ascending: false });
+
+      if (ordersErr) {
+        console.error("Supabase orders fetch error, falling back to localStorage", ordersErr);
+        const saved = localStorage.getItem("t-cloud-eats-orders");
+        if (saved) {
+          const list = JSON.parse(saved);
+          const filtered = list.filter((o: any) => {
+            if (o.status === "Ignored") {
+              const ageMs = Date.now() - new Date(o.timestamp).getTime();
+              return ageMs <= 2 * 24 * 60 * 60 * 1000;
+            }
+            return true;
+          });
+          setOrderHistory(filtered);
+        }
+      } else if (dbOrders) {
+        const formatted = dbOrders.map(o => ({
+          ...o,
+          items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
+          customer: typeof o.customer === 'string' ? JSON.parse(o.customer) : o.customer,
+          subtotal: Number(o.subtotal),
+          tax: Number(o.tax),
+          total: Number(o.total)
+        }));
+        const filtered = formatted.filter(o => {
+          if (o.status === "Ignored") {
+            const ageMs = Date.now() - new Date(o.timestamp).getTime();
+            return ageMs <= 2 * 24 * 60 * 60 * 1000;
+          }
+          return true;
+        });
+        
+        // Smart Merge: retrieve offline/unsynced orders from localStorage
+        const localSavedStr = localStorage.getItem("t-cloud-eats-orders");
+        let merged = [...filtered];
+        if (localSavedStr) {
+          try {
+            const localOrders = JSON.parse(localSavedStr) as Order[];
+            const dbIds = new Set(filtered.map(o => o.id));
+            const offlineUnsynced = localOrders.filter(lo => lo && lo.id && !dbIds.has(lo.id));
+            if (offlineUnsynced.length > 0) {
+              merged = [...merged, ...offlineUnsynced].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+              console.log("Preserved offline unsynced orders:", offlineUnsynced);
+            }
+          } catch (err) {
+            console.error("Failed to parse local orders during merge", err);
+          }
+        }
+        
+        setOrderHistory(merged);
+        localStorage.setItem("t-cloud-eats-orders", JSON.stringify(merged));
+      }
+    } catch (e) {
+      console.error("Network error fetching orders", e);
+      const saved = localStorage.getItem("t-cloud-eats-orders");
+      if (saved) {
+        const list = JSON.parse(saved);
+        const filtered = list.filter((o: any) => {
+          if (o.status === "Ignored") {
+            const ageMs = Date.now() - new Date(o.timestamp).getTime();
+            return ageMs <= 2 * 24 * 60 * 60 * 1000;
+          }
+          return true;
+        });
+        setOrderHistory(filtered);
+      }
+    }
+
+    // 3. Fetch Customers
+    try {
+      const { data: dbCustomers, error: custErr } = await supabase
+        .from("customers")
+        .select("*");
+
+      if (custErr) {
+        console.error("Supabase customers fetch error, falling back to localStorage", custErr);
+        const savedCms = localStorage.getItem("t-cloud-eats-cms");
+        if (savedCms) setCustomers(JSON.parse(savedCms));
+      } else if (dbCustomers) {
+        setCustomers(dbCustomers);
+        localStorage.setItem("t-cloud-eats-cms", JSON.stringify(dbCustomers));
+      }
+    } catch (e) {
+      console.error("Network error fetching customers", e);
+      const savedCms = localStorage.getItem("t-cloud-eats-cms");
+      if (savedCms) setCustomers(JSON.parse(savedCms));
+    }
+  }, []);
+
   // Load order history and CMS from database on mount, fallback to localStorage
   useEffect(() => {
     let currentUser = localStorage.getItem("t-cloud-eats-user");
@@ -837,96 +946,6 @@ export default function PosPage() {
       localStorage.setItem(`t-cloud-eats-notifications-${currentUser}`, JSON.stringify(defaults));
     }
 
-    async function loadOrdersAndCMS() {
-      // 1. Clean up ignored orders older than 2 days in Supabase
-      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-      try {
-        await supabase
-          .from("orders")
-          .delete()
-          .eq("status", "Ignored")
-          .lt("timestamp", twoDaysAgo);
-      } catch (e) {
-        console.error("Failed to prune expired ignored orders from database", e);
-      }
-
-      // 2. Fetch Orders
-      try {
-        const { data: dbOrders, error: ordersErr } = await supabase
-          .from("orders")
-          .select("*")
-          .order("timestamp", { ascending: false });
-
-        if (ordersErr) {
-          console.error("Supabase orders fetch error, falling back to localStorage", ordersErr);
-          const saved = localStorage.getItem("t-cloud-eats-orders");
-          if (saved) {
-            const list = JSON.parse(saved);
-            const filtered = list.filter((o: any) => {
-              if (o.status === "Ignored") {
-                const ageMs = Date.now() - new Date(o.timestamp).getTime();
-                return ageMs <= 2 * 24 * 60 * 60 * 1000;
-              }
-              return true;
-            });
-            setOrderHistory(filtered);
-          }
-        } else if (dbOrders) {
-          const formatted = dbOrders.map(o => ({
-            ...o,
-            items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
-            customer: typeof o.customer === 'string' ? JSON.parse(o.customer) : o.customer,
-            subtotal: Number(o.subtotal),
-            tax: Number(o.tax),
-            total: Number(o.total)
-          }));
-          const filtered = formatted.filter(o => {
-            if (o.status === "Ignored") {
-              const ageMs = Date.now() - new Date(o.timestamp).getTime();
-              return ageMs <= 2 * 24 * 60 * 60 * 1000;
-            }
-            return true;
-          });
-          setOrderHistory(filtered);
-          localStorage.setItem("t-cloud-eats-orders", JSON.stringify(filtered));
-        }
-      } catch (e) {
-        console.error("Network error fetching orders", e);
-        const saved = localStorage.getItem("t-cloud-eats-orders");
-        if (saved) {
-          const list = JSON.parse(saved);
-          const filtered = list.filter((o: any) => {
-            if (o.status === "Ignored") {
-              const ageMs = Date.now() - new Date(o.timestamp).getTime();
-              return ageMs <= 2 * 24 * 60 * 60 * 1000;
-            }
-            return true;
-          });
-          setOrderHistory(filtered);
-        }
-      }
-
-      // 3. Fetch Customers
-      try {
-        const { data: dbCustomers, error: custErr } = await supabase
-          .from("customers")
-          .select("*");
-
-        if (custErr) {
-          console.error("Supabase customers fetch error, falling back to localStorage", custErr);
-          const savedCms = localStorage.getItem("t-cloud-eats-cms");
-          if (savedCms) setCustomers(JSON.parse(savedCms));
-        } else if (dbCustomers) {
-          setCustomers(dbCustomers);
-          localStorage.setItem("t-cloud-eats-cms", JSON.stringify(dbCustomers));
-        }
-      } catch (e) {
-        console.error("Network error fetching customers", e);
-        const savedCms = localStorage.getItem("t-cloud-eats-cms");
-        if (savedCms) setCustomers(JSON.parse(savedCms));
-      }
-    }
-
     loadOrdersAndCMS();
 
     // Subscribe to realtime changes on orders & customers!
@@ -951,7 +970,7 @@ export default function PosPage() {
     return () => {
       supabase.removeChannel(ordersChannel);
     };
-  }, []);
+  }, [loadOrdersAndCMS]);
 
   // Load menu items from database on mount and subscribe to Realtime updates
   useEffect(() => {
@@ -1801,11 +1820,27 @@ export default function PosPage() {
 
               {/* Refresh */}
               <button
-                onClick={() => triggerToast("Dashboard refreshed", "info")}
-                className="w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer"
+                onClick={async () => {
+                  if (isDatabaseSyncing) return;
+                  setIsDatabaseSyncing(true);
+                  // Reset cache time to force cache override
+                  localStorage.setItem("t-cloud-eats-cache-time", Date.now().toString());
+                  try {
+                    await loadOrdersAndCMS();
+                    triggerToast("POS synced with Database successfully", "success");
+                  } catch (err) {
+                    console.error("Sync error:", err);
+                    triggerToast("Sync failed. Check connection.", "error");
+                  } finally {
+                    setIsDatabaseSyncing(false);
+                  }
+                }}
+                disabled={isDatabaseSyncing}
+                className="w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
                 style={{ background: "#0E1628", border: "1px solid #1E2D4E", color: "#4B5E82" }}
+                title="Force Sync with Cloud Database"
               >
-                <RotateCw size={14} />
+                <RotateCw size={14} className={isDatabaseSyncing ? "animate-spin text-amber-500" : "hover:text-slate-200 transition-colors"} />
               </button>
 
               {/* Notification Button */}
