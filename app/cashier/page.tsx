@@ -710,6 +710,7 @@ export default function PosPage() {
   const [addrPostalCode, setAddrPostalCode] = useState("");
   const [originalAutofilledAddress, setOriginalAutofilledAddress] = useState<string | null>(null);
   const [showAddressSelector, setShowAddressSelector] = useState(false);
+  const [activeAddressTab, setActiveAddressTab] = useState<"saved" | "new">("saved");
 
 
   // CMS Profiles Modal & Edit States
@@ -1041,6 +1042,7 @@ export default function PosPage() {
         if (payload.customerName !== undefined) setCustomerName(payload.customerName);
         if (payload.customerAddress !== undefined) setCustomerAddress(payload.customerAddress);
         if (payload.showCustomerModal !== undefined) setShowCustomerModal(payload.showCustomerModal);
+        if (payload.activeAddressTab !== undefined) setActiveAddressTab(payload.activeAddressTab);
         
         // Reset the update block once layout/rendering cycles complete
         setTimeout(() => {
@@ -1077,13 +1079,14 @@ export default function PosPage() {
           customerPhone,
           customerName,
           customerAddress,
-          showCustomerModal
+          showCustomerModal,
+          activeAddressTab
         }
       });
     }, 800); // 800ms debounce to minimize network usage and avoid duplicate echo loops
 
     return () => clearTimeout(timeoutId);
-  }, [cart, selectedInvoiceId, activeSidebar, orderType, customerPhone, customerName, customerAddress, showCustomerModal]);
+  }, [cart, selectedInvoiceId, activeSidebar, orderType, customerPhone, customerName, customerAddress, showCustomerModal, activeAddressTab]);
 
   // Security Admin PIN State
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
@@ -1333,6 +1336,7 @@ export default function PosPage() {
       setAddrPostalCode(parsed.postalCode);
       setOriginalAutofilledAddress(existing.address);
       setShowAddressSelector(false);
+      setActiveAddressTab("saved");
     } else {
       setAddrHomeNo("");
       setAddrStreet("");
@@ -1340,6 +1344,7 @@ export default function PosPage() {
       setAddrPostalCode("");
       setOriginalAutofilledAddress(null);
       setShowAddressSelector(false);
+      setActiveAddressTab("new");
     }
   };
 
@@ -3145,7 +3150,7 @@ export default function PosPage() {
                   value={getBillUrl(latestOrder.id)}
                   className="bg-white border border-slate-200 text-[9px] px-2 py-1.5 rounded-lg flex-1 font-mono text-slate-600 truncate focus:outline-none"
                 />
-                <button
+                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(getBillUrl(latestOrder.id));
                     triggerToast("E-Bill URL copied!", "success");
@@ -3154,14 +3159,30 @@ export default function PosPage() {
                 >
                   Copy
                 </button>
-                <a
-                  href={getBillUrl(latestOrder.id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => {
+                    router.push(`/bills/${latestOrder.id}${getBillHash(latestOrder.id)}`);
+                  }}
                   className="bg-slate-200 text-slate-700 font-bold px-2 py-1.5 rounded-lg text-[9px] hover:bg-slate-300 transition-all text-center cursor-pointer active:scale-95"
                 >
                   Open
-                </a>
+                </button>
+                {(() => {
+                  const currentCustomer = customers.find(x => x.phone === latestOrder.customer?.phone);
+                  const customerName = currentCustomer ? currentCustomer.name : latestOrder.customer?.name || "Customer";
+                  const messageText = `Hi ${customerName},\n\nThank you for your order! We are preparing it now and hope you enjoy your meal.\n\nYou can view your bill and track your order status here:\n${getBillUrl(latestOrder.id)}\n\nHave a great day!\n\nBest regards,\nThe T-Cloud Eats Team`;
+                  return (
+                    <a
+                      href={`https://wa.me/${latestOrder.customer?.phone?.replace(/\D/g, "")}?text=${encodeURIComponent(messageText)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-bold px-2 py-1.5 rounded-lg text-[9px] hover:text-emerald-400 transition-all text-center cursor-pointer active:scale-95 whitespace-nowrap"
+                      title="Send via WhatsApp"
+                    >
+                      WhatsApp
+                    </a>
+                  );
+                })()}
               </div>
             </div>
 
@@ -3311,6 +3332,7 @@ export default function PosPage() {
                         setAddrPostalCode("");
                         setCustomerAddress("");
                         setShowAddressSelector(true);
+                        setActiveAddressTab("new");
                       }}
                       className="text-[9px] font-bold text-[#FF6B35] hover:text-[#F26F21] transition-colors uppercase tracking-wider cursor-pointer bg-none border-none p-0"
                     >
@@ -3320,8 +3342,7 @@ export default function PosPage() {
                 </div>
 
                 {showAddressSelector && originalAutofilledAddress && (() => {
-                  const currentFullAddress = [addrHomeNo, addrStreet, addrPostalArea, addrPostalCode].filter(Boolean).join(", ");
-                  const isSavedActive = currentFullAddress === originalAutofilledAddress;
+                  const isSavedActive = activeAddressTab === "saved";
                   
                   const currentCustomerObj = customers.find(c => {
                     let searchPhone = customerCountryCode + customerPhone;
@@ -3343,15 +3364,16 @@ export default function PosPage() {
                           setAddrPostalArea(parsed.postalArea);
                           setAddrPostalCode(parsed.postalCode);
                           setCustomerAddress(originalAutofilledAddress);
+                          setActiveAddressTab("saved");
                         }}
                         className={`flex items-center gap-1.5 text-[9px] font-extrabold px-3 py-1 rounded-full border transition-all cursor-pointer ${
                           isSavedActive
-                            ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                            ? "bg-[#FF6B35]/15 text-[#FF6B35] border-[#FF6B35]/30"
                             : "bg-[#090D1A] text-slate-400 border-[#222E4E] hover:border-slate-700 hover:text-slate-300"
                         }`}
                       >
                         <span className={`w-2 h-2 rounded-full border flex items-center justify-center ${
-                          isSavedActive ? "border-purple-400 bg-purple-400" : "border-slate-500"
+                          isSavedActive ? "border-[#FF6B35] bg-[#FF6B35]" : "border-slate-500"
                         }`} />
                         <span>{displayLabelText}</span>
                       </button>
@@ -3365,10 +3387,11 @@ export default function PosPage() {
                           setAddrPostalArea("");
                           setAddrPostalCode("");
                           setCustomerAddress("");
+                          setActiveAddressTab("new");
                         }}
                         className={`flex items-center gap-1.5 text-[9px] font-extrabold px-3 py-1 rounded-full border transition-all cursor-pointer ${
                           !isSavedActive
-                            ? "bg-[#FF6B35]/10 text-[#FF6B35] border-[#FF6B35]/30"
+                            ? "bg-[#FF6B35]/15 text-[#FF6B35] border-[#FF6B35]/30"
                             : "bg-[#090D1A] text-slate-400 border-[#222E4E] hover:border-slate-700 hover:text-slate-300"
                         }`}
                       >
@@ -3388,7 +3411,10 @@ export default function PosPage() {
                       type="text"
                       placeholder="Home NO"
                       value={addrHomeNo}
-                      onChange={(e) => setAddrHomeNo(e.target.value)}
+                      onChange={(e) => {
+                        setAddrHomeNo(e.target.value);
+                        setActiveAddressTab("new");
+                      }}
                       className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60"
                     />
                   </div>
@@ -3397,7 +3423,10 @@ export default function PosPage() {
                       type="text"
                       placeholder="Street Name"
                       value={addrStreet}
-                      onChange={(e) => setAddrStreet(e.target.value)}
+                      onChange={(e) => {
+                        setAddrStreet(e.target.value);
+                        setActiveAddressTab("new");
+                      }}
                       className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60"
                     />
                   </div>
@@ -3412,6 +3441,7 @@ export default function PosPage() {
                         const area = e.target.value;
                         setAddrPostalArea(area);
                         setAddrPostalCode(POSTAL_CODES[area] || "");
+                        setActiveAddressTab("new");
                       }}
                       className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60 cursor-pointer"
                     >
@@ -3508,18 +3538,60 @@ export default function PosPage() {
                             <p className="text-[9px] font-mono font-bold text-[#FF9F1C] mt-0.5">{c.phone}</p>
                           </div>
                           
-                          {/* Birthday */}
-                          <div className="w-[170px] shrink-0">
-                            {c.birthday ? (
-                              <span className="text-[8px] font-black text-purple-200 bg-purple-900/50 border border-purple-500/30 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                                🎂 {new Date(c.birthday).toLocaleString("en-US", {
-                                  month: "short",
-                                  day: "numeric"
-                                })}
-                              </span>
-                            ) : (
-                              <span className="text-[9px] text-slate-400 font-semibold italic">No birthday set</span>
-                            )}
+                          {/* Birthday & Last Order */}
+                          <div className="w-[170px] shrink-0 flex flex-col gap-1.5 justify-center">
+                            {/* Birthday Row */}
+                            <div>
+                              {c.birthday ? (
+                                <span className="text-[8px] font-black text-purple-200 bg-purple-900/50 border border-purple-500/30 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                  🎂 {new Date(c.birthday).toLocaleString("en-US", {
+                                    month: "short",
+                                    day: "numeric"
+                                  })}
+                                </span>
+                              ) : (
+                                <span className="text-[9px] text-slate-400 font-semibold italic">No birthday set</span>
+                              )}
+                            </div>
+                            
+                            {/* Last Order Row with Hover Tooltip */}
+                            {(() => {
+                              const lastOrder = orderHistory.find(o => o.customer && o.customer.phone === c.phone && o.status !== "Ignored");
+                              return (
+                                <div className="relative group inline-block">
+                                  {lastOrder ? (
+                                    <>
+                                      <span className="text-[8px] font-black text-orange-200 bg-[#342211] border border-orange-500/30 px-2 py-0.5 rounded inline-flex items-center gap-1 cursor-pointer">
+                                        🛒 {new Date(lastOrder.timestamp).toLocaleDateString("en-US", {
+                                          month: "short",
+                                          day: "numeric",
+                                          year: "numeric"
+                                        })}
+                                      </span>
+                                      
+                                      {/* Hover Tooltip (Shown on Hover) */}
+                                      <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:flex flex-col z-50 bg-[#0E1628] border border-[#1E2D4E] rounded-xl p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-w-[200px] pointer-events-none transition-all text-left">
+                                        <p className="text-[8px] font-black uppercase text-[#FF6B35] mb-1.5 border-b border-[#1E2D4E] pb-1 tracking-wider">Last Order Items</p>
+                                        <div className="space-y-1 max-h-[140px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                                          {lastOrder.items.map((item, idx) => (
+                                            <div key={idx} className="flex justify-between items-start gap-2 text-[10px] text-slate-300">
+                                              <span className="font-bold flex-1 leading-tight">{item.menuItem.title}</span>
+                                              <span className="font-mono text-[#F26F21] whitespace-nowrap">x{item.quantity}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                        <div className="mt-1.5 pt-1 border-t border-[#1E2D4E] flex justify-between text-[8px] text-slate-400 font-mono">
+                                          <span>Total:</span>
+                                          <span className="font-bold text-orange-400">Rs {lastOrder.total.toLocaleString()}</span>
+                                        </div>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <span className="text-[9px] text-slate-500 font-semibold italic">Never ordered</span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           {/* Address */}
