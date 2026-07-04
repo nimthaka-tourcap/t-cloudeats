@@ -762,6 +762,14 @@ export default function PosPage() {
   }, [editAddrHomeNo, editAddrStreet, editAddrPostalArea, editAddrPostalCode]);
 
   // Sync loaded invoice items to cart for editing
+  // Realtime Broadcast Session ID and Sync Channel Refs
+  const sessionIdRef = useRef<string>("");
+  const syncChannelRef = useRef<any>(null);
+  
+  useEffect(() => {
+    sessionIdRef.current = Math.random().toString(36).substring(2, 15);
+  }, []);
+
   const lastLoadedIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (selectedInvoiceId) {
@@ -1007,6 +1015,65 @@ export default function PosPage() {
     };
   }, []);
 
+  // Realtime Broadcast Sync Listener (Receive state drafts from other tabs/devices)
+  useEffect(() => {
+    const channel = supabase.channel("pos-draft-sync", {
+      config: {
+        broadcast: { self: false }
+      }
+    });
+
+    channel
+      .on("broadcast", { event: "draft-update" }, ({ payload }) => {
+        if (!payload || payload.senderId === sessionIdRef.current) return;
+        
+        console.log("[Broadcast Sync] Received state update:", payload);
+        
+        if (payload.cart !== undefined) setCart(payload.cart);
+        if (payload.selectedInvoiceId !== undefined) setSelectedInvoiceId(payload.selectedInvoiceId);
+        if (payload.activeSidebar !== undefined) setActiveSidebar(payload.activeSidebar);
+        if (payload.orderType !== undefined) setOrderType(payload.orderType);
+        if (payload.customerPhone !== undefined) setCustomerPhone(payload.customerPhone);
+        if (payload.customerName !== undefined) setCustomerName(payload.customerName);
+        if (payload.customerAddress !== undefined) setCustomerAddress(payload.customerAddress);
+        if (payload.showCustomerModal !== undefined) setShowCustomerModal(payload.showCustomerModal);
+      })
+      .subscribe();
+
+    syncChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Realtime Broadcast Sync Sender (Send local state drafts to other tabs/devices)
+  useEffect(() => {
+    if (!sessionIdRef.current || !syncChannelRef.current) return;
+
+    const channel = syncChannelRef.current;
+    
+    const timeoutId = setTimeout(() => {
+      channel.send({
+        type: "broadcast",
+        event: "draft-update",
+        payload: {
+          senderId: sessionIdRef.current,
+          cart,
+          selectedInvoiceId,
+          activeSidebar,
+          orderType,
+          customerPhone,
+          customerName,
+          customerAddress,
+          showCustomerModal
+        }
+      });
+    }, 800); // 800ms debounce to minimize network usage and avoid duplicate echo loops
+
+    return () => clearTimeout(timeoutId);
+  }, [cart, selectedInvoiceId, activeSidebar, orderType, customerPhone, customerName, customerAddress, showCustomerModal]);
+
   // Security Admin PIN State
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
@@ -1184,6 +1251,46 @@ export default function PosPage() {
               : c
           )
         );
+        
+        // Update customer details in all past orders locally
+        const updatedHistory = orderHistory.map(o => {
+          if (o.customer && o.customer.phone === editingCustomer.phone) {
+            return {
+              ...o,
+              customer: {
+                ...o.customer,
+                name: editCustName,
+                address: editCustAddress,
+                address_label: editCustAddressLabel || null
+              }
+            };
+          }
+          return o;
+        });
+        setOrderHistory(updatedHistory);
+        localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
+
+        // Update customer details in all past orders in Supabase
+        const updatedCustObj = {
+          phone: editingCustomer.phone,
+          name: editCustName,
+          address: editCustAddress,
+          address_label: editCustAddressLabel || null
+        };
+        
+        try {
+          const { error: orderUpdateErr } = await supabase
+            .from("orders")
+            .update({ customer: updatedCustObj })
+            .eq("customer->>phone", editingCustomer.phone);
+
+          if (orderUpdateErr) {
+            console.error("Supabase order customer info update error:", orderUpdateErr);
+          }
+        } catch (dbErr) {
+          console.error("Error updating orders table for customer profile change:", dbErr);
+        }
+
         setEditingCustomer(null);
       }
     } catch (e) {
@@ -2042,7 +2149,12 @@ export default function PosPage() {
                                 <td className="px-4 py-3 text-left">
                                   {order.customer ? (
                                     <div className="flex flex-col">
-                                      <span className="font-bold text-slate-200">{order.customer.name}</span>
+                                      <span className="font-bold text-slate-200">
+                                        {(() => {
+                                          const c = customers.find(x => x.phone === order.customer?.phone);
+                                          return c ? c.name : order.customer?.name;
+                                        })()}
+                                      </span>
                                       <span className="text-[9px] text-slate-500 font-mono">{order.customer.phone}</span>
                                     </div>
                                   ) : (
@@ -2980,7 +3092,13 @@ export default function PosPage() {
             {latestOrder.customer && (
               <div className="border-b border-dashed border-slate-300 pb-3 text-[9px] space-y-0.5 text-slate-700 text-left">
                 <p className="font-bold uppercase tracking-wider text-slate-900">Customer Profile:</p>
-                <p><span className="font-semibold text-slate-600">Name:</span> {latestOrder.customer.name}</p>
+                <p>
+                  <span className="font-semibold text-slate-600">Name:</span>{" "}
+                  {(() => {
+                    const c = customers.find(x => x.phone === latestOrder.customer?.phone);
+                    return c ? c.name : latestOrder.customer?.name;
+                  })()}
+                </p>
                 <p><span className="font-semibold text-slate-600">Phone:</span> {latestOrder.customer.phone}</p>
                 {latestOrder.customer.address && (
                   <p className="line-clamp-2"><span className="font-semibold text-slate-600">Address:</span> {latestOrder.customer.address}</p>
