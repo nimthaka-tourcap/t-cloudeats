@@ -1620,6 +1620,118 @@ export default function PosPage() {
     return orderHistory.filter(order => getBusinessDateStr(order.timestamp) === selectedLogBizDateStr);
   }, [orderHistory, selectedLogBizDateStr]);
 
+  // --- SHIFT CLOSING TALLY STATE & LOGIC ---
+  const EXPENSE_CATEGORIES = useMemo(() => [
+    "Ingredients / Groceries",
+    "Supplier Payments",
+    "Utilities (Gas/Water/Electricity)",
+    "Fuel & Transport",
+    "Staff Meals & Expenses",
+    "Repairs & Maintenance",
+    "Cleaning & Shop Supplies",
+    "Petty Cash / Miscellaneous",
+    "Others"
+  ], []);
+
+  const [openingBalance, setOpeningBalance] = useState<number>(0);
+  const [bankTransfer, setBankTransfer] = useState<number>(0);
+  const [actualCash, setActualCash] = useState<number>(0);
+  const [operationalExpenses, setOperationalExpenses] = useState<{ id: string; category: string; description: string; amount: number }[]>([]);
+  const [newExpenseCategory, setNewExpenseCategory] = useState<string>("Ingredients / Groceries");
+  const [newExpenseDesc, setNewExpenseDesc] = useState<string>("");
+  const [newExpenseAmt, setNewExpenseAmt] = useState<string>("");
+  const [tallySubmitted, setTallySubmitted] = useState<boolean>(false);
+
+  // Load shift tally when date changes
+  useEffect(() => {
+    try {
+      const allTalliesStr = localStorage.getItem("t-cloud-eats-shift-tallies");
+      if (allTalliesStr) {
+        const allTallies = JSON.parse(allTalliesStr);
+        const dayTally = allTallies[selectedLogBizDateStr];
+        if (dayTally) {
+          setOpeningBalance(dayTally.openingBalance ?? 0);
+          setBankTransfer(dayTally.bankTransfer ?? 0);
+          setActualCash(dayTally.actualCash ?? 0);
+          setOperationalExpenses(dayTally.expenses ?? []);
+          setTallySubmitted(dayTally.submitted ?? false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("Error loading shift tallies", e);
+    }
+    // Reset to defaults if no record exists
+    setOpeningBalance(0);
+    setBankTransfer(0);
+    setActualCash(0);
+    setOperationalExpenses([]);
+    setTallySubmitted(false);
+  }, [selectedLogBizDateStr]);
+
+  // Helper to save shift tally
+  const saveShiftTally = (
+    op: number,
+    bt: number,
+    ac: number,
+    expList: { id: string; category: string; description: string; amount: number }[],
+    sub?: boolean
+  ) => {
+    try {
+      const allTalliesStr = localStorage.getItem("t-cloud-eats-shift-tallies") || "{}";
+      const allTallies = JSON.parse(allTalliesStr);
+      const isSub = sub !== undefined ? sub : tallySubmitted;
+      allTallies[selectedLogBizDateStr] = {
+        openingBalance: op,
+        bankTransfer: bt,
+        actualCash: ac,
+        expenses: expList,
+        submitted: isSub,
+      };
+      localStorage.setItem("t-cloud-eats-shift-tallies", JSON.stringify(allTallies));
+    } catch (e) {
+      console.error("Error saving shift tally", e);
+    }
+  };
+
+  const handleAddExpense = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (tallySubmitted) return;
+    const amt = parseFloat(newExpenseAmt) || 0;
+    if (amt <= 0) return;
+
+    const newExp = {
+      id: Date.now().toString(),
+      category: newExpenseCategory,
+      description: newExpenseDesc.trim(),
+      amount: amt
+    };
+    const updated = [...operationalExpenses, newExp];
+    setOperationalExpenses(updated);
+    saveShiftTally(openingBalance, bankTransfer, actualCash, updated);
+    setNewExpenseDesc("");
+    setNewExpenseAmt("");
+  };
+
+  const handleRemoveExpense = (id: string) => {
+    if (tallySubmitted) return;
+    const updated = operationalExpenses.filter(exp => exp.id !== id);
+    setOperationalExpenses(updated);
+    saveShiftTally(openingBalance, bankTransfer, actualCash, updated);
+  };
+
+  const handleSubmitTally = () => {
+    setTallySubmitted(true);
+    saveShiftTally(openingBalance, bankTransfer, actualCash, operationalExpenses, true);
+    triggerToast("Closing balance tally submitted & locked!", "success");
+  };
+
+  const handleUnlockTally = () => {
+    setTallySubmitted(false);
+    saveShiftTally(openingBalance, bankTransfer, actualCash, operationalExpenses, false);
+    triggerToast("Tally unlocked for editing", "info");
+  };
+
   const reportData = useMemo(() => {
     const groups: Record<string, { dateStr: string; orderCount: number; revenue: number }> = {};
     
@@ -2539,6 +2651,269 @@ export default function PosPage() {
                     <div className="bg-[#090D1A] p-3 rounded-lg border border-[#1A2640] text-[9px] text-slate-400 space-y-1">
                       <p className="font-bold text-red-400 uppercase">🛡️ Loss Prevention Report</p>
                       <p>Monitors voided or ignored orders to verify transaction compliance and cashier integrity.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Closing Balance Tally Section */}
+                <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-6 relative overflow-hidden">
+                  {tallySubmitted && (
+                    <div className="absolute top-0 right-0 left-0 bg-[#10B981]/15 border-b border-[#10B981]/30 py-2 px-5 flex items-center justify-between z-10">
+                      <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Tally Sheet Submitted & Locked
+                      </span>
+                      <button
+                        onClick={handleUnlockTally}
+                        className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded px-2.5 py-1 cursor-pointer transition-colors"
+                      >
+                        Unlock to Edit
+                      </button>
+                    </div>
+                  )}
+
+                  <div className={`flex items-center justify-between border-b border-[#222E4E] pb-3 ${tallySubmitted ? "pt-8" : ""}`}>
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                      <ShoppingBag size={14} className="text-[#FF6B35]" />
+                      Closing Balance Tally
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Select Date:</span>
+                      <input
+                        type="date"
+                        value={selectedLogDate}
+                        onChange={(e) => setSelectedLogDate(e.target.value)}
+                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-[#FF6B35] cursor-pointer font-mono"
+                        style={{ colorScheme: "dark" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Inputs Column */}
+                    <div className="space-y-4 lg:col-span-2">
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tally Inputs</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] text-slate-500 uppercase font-black tracking-wider block">Opening Balance (Float)</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 font-mono">LKR</span>
+                            <input
+                              type="number"
+                              disabled={tallySubmitted}
+                              value={openingBalance || ""}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setOpeningBalance(val);
+                                saveShiftTally(val, bankTransfer, actualCash, operationalExpenses);
+                              }}
+                              placeholder="0.00"
+                              className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl pl-10 pr-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] font-mono disabled:opacity-40 disabled:cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] text-slate-500 uppercase font-black tracking-wider block">Bank Transfer (Actual)</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 font-mono">LKR</span>
+                            <input
+                              type="number"
+                              disabled={tallySubmitted}
+                              value={bankTransfer || ""}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setBankTransfer(val);
+                                saveShiftTally(openingBalance, val, actualCash, operationalExpenses);
+                              }}
+                              placeholder="0.00"
+                              className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl pl-10 pr-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] font-mono disabled:opacity-40 disabled:cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] text-slate-500 uppercase font-black tracking-wider block">Actual Cash Counted</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 font-mono">LKR</span>
+                            <input
+                              type="number"
+                              disabled={tallySubmitted}
+                              value={actualCash || ""}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setActualCash(val);
+                                saveShiftTally(openingBalance, bankTransfer, val, operationalExpenses);
+                              }}
+                              placeholder="0.00"
+                              className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl pl-10 pr-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] font-mono disabled:opacity-40 disabled:cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Operational Expenses Sub-Section */}
+                      <div className="bg-[#090D1A] border border-[#222E4E] rounded-xl p-4 space-y-4">
+                        <div className="flex items-center justify-between border-b border-[#14203A] pb-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operational Expenses (Shopping / Payouts)</span>
+                          <span className="text-xs font-black text-rose-400 font-mono">
+                            - LKR {operationalExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
+                          </span>
+                        </div>
+
+                        {/* List of current expenses */}
+                        {operationalExpenses.length === 0 ? (
+                          <p className="text-[10px] text-slate-600 italic">No operational expenses logged for this shift.</p>
+                        ) : (
+                          <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                            {operationalExpenses.map(exp => (
+                              <div key={exp.id} className="flex items-center justify-between bg-[#111625] border border-[#1E2D4E] rounded-lg px-3 py-2 text-xs">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[10px] text-[#FF6B35] font-black uppercase tracking-wider">{exp.category}</span>
+                                  {exp.description && <span className="text-slate-300 font-medium">{exp.description}</span>}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="font-mono text-rose-400 font-bold">LKR {exp.amount.toLocaleString()}</span>
+                                  <button
+                                    disabled={tallySubmitted}
+                                    onClick={() => handleRemoveExpense(exp.id)}
+                                    className="text-slate-500 hover:text-rose-400 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors p-1 cursor-pointer disabled:cursor-not-allowed animate-none"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add Expense Form */}
+                        <form onSubmit={handleAddExpense} className="flex flex-col sm:flex-row gap-2">
+                          {/* Category select dropdown */}
+                          <select
+                            disabled={tallySubmitted}
+                            value={newExpenseCategory}
+                            onChange={(e) => setNewExpenseCategory(e.target.value)}
+                            className="bg-[#111625] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-sans font-bold"
+                          >
+                            {EXPENSE_CATEGORIES.map(cat => (
+                              <option key={cat} value={cat} className="bg-[#111625]">
+                                {cat}
+                              </option>
+                            ))}
+                          </select>
+
+                          {/* Custom Description (Optional) */}
+                          <input
+                            type="text"
+                            disabled={tallySubmitted}
+                            placeholder="Optional Details (e.g. Shop name, bill #)"
+                            value={newExpenseDesc}
+                            onChange={(e) => setNewExpenseDesc(e.target.value)}
+                            className="flex-1 bg-[#111625] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] disabled:opacity-40 disabled:cursor-not-allowed"
+                          />
+
+                          {/* Amount */}
+                          <div className="relative w-full sm:w-32">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-600 font-mono">LKR</span>
+                            <input
+                              type="number"
+                              disabled={tallySubmitted}
+                              placeholder="Amount"
+                              value={newExpenseAmt}
+                              onChange={(e) => setNewExpenseAmt(e.target.value)}
+                              className="w-full bg-[#111625] border border-[#222E4E] rounded-xl pl-10 pr-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] font-mono disabled:opacity-40 disabled:cursor-not-allowed"
+                            />
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={tallySubmitted}
+                            className="bg-[#FF6B35] hover:bg-[#F26F21] disabled:bg-[#1E2D4E] disabled:text-[#4B5E82] text-white p-2 rounded-xl transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center shrink-0"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+
+                    {/* Formula & Tally Summary Column */}
+                    <div className="bg-[#090D1A] border border-[#222E4E] rounded-xl p-4 flex flex-col justify-between space-y-4">
+                      <div className="space-y-3">
+                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-[#14203A] pb-2">Tally Calculations</h4>
+                        
+                        {(() => {
+                          const shiftRevenue = todaysOrders.reduce((sum, o) => sum + o.total, 0);
+                          const totalExp = operationalExpenses.reduce((sum, e) => sum + e.amount, 0);
+                          // Expected closing cash = Opening Balance + (Shift Revenue - Bank Transfer) - Operational Costs
+                          const expectedCashRevenue = Math.max(0, shiftRevenue - bankTransfer);
+                          const expectedClosingCash = openingBalance + expectedCashRevenue - totalExp;
+                          const discrepancy = actualCash - expectedClosingCash;
+                          const totalClosingBalance = actualCash + bankTransfer;
+
+                          return (
+                            <div className="space-y-2 text-[11px] text-slate-400 font-mono">
+                              <div className="flex justify-between">
+                                <span>Opening Balance:</span>
+                                <span className="text-slate-300">+ LKR {openingBalance.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between" title="Calculated as (Shift Revenue - Bank Transfer)">
+                                <span className="flex items-center gap-1">
+                                  Expected Cash Rev:
+                                </span>
+                                <span className="text-slate-300">+ LKR {expectedCashRevenue.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Operational Costs:</span>
+                                <span className="text-rose-400">- LKR {totalExp.toLocaleString()}</span>
+                              </div>
+                              
+                              <div className="border-t border-dashed border-[#222E4E] pt-2 flex justify-between font-bold text-slate-200">
+                                <span>Expected Closing Cash:</span>
+                                <span>LKR {expectedClosingCash.toLocaleString()}</span>
+                              </div>
+
+                              <div className="flex justify-between">
+                                <span>Actual Cash Counted:</span>
+                                <span className="text-slate-200">LKR {actualCash.toLocaleString()}</span>
+                              </div>
+
+                              <div className="border-t border-[#222E4E] pt-2 space-y-1.5 font-sans">
+                                <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black block">Tally Status</span>
+                                {discrepancy === 0 ? (
+                                  <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg p-2 text-center text-xs font-bold">
+                                    Perfect Tally (Balanced)
+                                  </div>
+                                ) : discrepancy > 0 ? (
+                                  <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg p-2 text-center text-xs font-bold">
+                                    Overage: +LKR {discrepancy.toLocaleString()}
+                                  </div>
+                                ) : (
+                                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-2 text-center text-xs font-bold">
+                                    Shortage: -LKR {Math.abs(discrepancy).toLocaleString()}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="bg-[#111625] border border-[#1E2D4E] rounded-lg p-3 space-y-1 font-sans mt-2">
+                                <span className="text-[8px] uppercase tracking-wider text-slate-500 font-black block">Total Shift Assets (Cash + Bank)</span>
+                                <span className="text-sm font-black text-slate-100 font-mono">
+                                  LKR {totalClosingBalance.toLocaleString()}
+                                </span>
+                              </div>
+
+                              {!tallySubmitted && (
+                                <button
+                                  onClick={handleSubmitTally}
+                                  className="w-full font-black py-2.5 px-4 mt-2 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-[10px] cursor-pointer bg-[#10B981] hover:bg-[#059669] text-white uppercase tracking-widest active:scale-95 font-sans shadow-lg shadow-emerald-500/10"
+                                >
+                                  Submit & Lock Tally
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </div>
                 </div>
