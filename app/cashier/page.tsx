@@ -78,7 +78,7 @@ interface ToastMessage {
   type: ToastType;
 }
 
-const CATEGORIES = ["All Categories", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Beverages"];
+const CATEGORIES = ["All Categories", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Pasta", "Beverages"];
 
 const MONTHS = [
   { value: "01", label: "January" },
@@ -453,6 +453,7 @@ function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
       case "Fried Rice":   return { emoji: "🍚", accent: "#F59E0B", bg: "rgba(245,158,11,0.08)" };
       case "Chopsuey":     return { emoji: "🥗", accent: "#06B6D4", bg: "rgba(6,182,212,0.08)" };
       case "Beverages":    return { emoji: "🥤", accent: "#3B82F6", bg: "rgba(59,130,246,0.08)" };
+      case "Pasta":        return { emoji: "🍝", accent: "#EC4899", bg: "rgba(236,72,153,0.08)" };
       default:             return { emoji: "🍽️", accent: "#10B981", bg: "rgba(16,185,129,0.08)" };
     }
   };
@@ -2171,6 +2172,7 @@ export default function PosPage() {
                     {category === "Chopsuey" && <span>🥗</span>}
                     {category === "Kottu" && <span>🥘</span>}
                     {category === "Ultimate Bites" && <span>🍗</span>}
+                    {category === "Pasta" && <span>🍝</span>}
                     {category === "Beverages" && <span>🥤</span>}
                     {category}
                   </button>

@@ -21,7 +21,7 @@ const HomeIcon = () => (
 );
 
 
-const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Beverages"];
+const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Pasta", "Beverages"];
 
 function getFallbackDescription(title: string, category: string): string {
   if (category === "Beverages") {
