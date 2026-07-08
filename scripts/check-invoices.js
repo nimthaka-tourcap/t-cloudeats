@@ -8,17 +8,17 @@ async function main() {
   await client.connect();
   console.log("Connected to PG!");
 
-  // Query all orders ending with -003, -004, -007 or containing it
   const res = await client.query(`
-    SELECT id, timestamp, status, total, customer 
+    SELECT id, timestamp, status, total, customer, items 
     FROM orders 
-    WHERE id LIKE '%-003' OR id LIKE '%-004' OR id LIKE '%-007'
+    WHERE customer->>'phone' = '+94719236781' OR customer->>'name' ILIKE '%Dilhani%'
     ORDER BY timestamp DESC;
   `);
 
-  console.log(`Found ${res.rows.length} matching orders:`);
+  console.log(`Found ${res.rows.length} orders for Dilhani:`);
   res.rows.forEach(row => {
-    console.log(`ID: ${row.id} | Status: ${row.status} | Total: ${row.total} | Timestamp: ${row.timestamp} | Customer: ${JSON.stringify(row.customer)}`);
+    console.log(`ID: ${row.id} | Total: ${row.total} | Timestamp: ${row.timestamp}`);
+    console.log(`  Items: ${JSON.stringify(row.items)}`);
   });
 
   await client.end();
