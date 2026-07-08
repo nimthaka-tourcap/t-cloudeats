@@ -27,7 +27,9 @@ import {
   Image as ImageIcon,
   BarChart3,
   Bell,
-  MessageCircle
+  MessageCircle,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -647,6 +649,15 @@ function getBillUrl(invoiceId: string): string {
   return `https://t-cloudeats.com/bills/${invoiceId}${hash}`;
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 5000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Database connection timed out")), timeoutMs)
+    )
+  ]);
+}
+
 // ============================================================================
 // --- MAIN PAGE COMPONENT ---
 // ============================================================================
@@ -694,6 +705,23 @@ export default function PosPage() {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [commentEditingItemId, setCommentEditingItemId] = useState<number | null>(null);
   const [isDatabaseSyncing, setIsDatabaseSyncing] = useState(false);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const isLoadingRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsOnline(window.navigator.onLine);
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+      window.addEventListener("online", handleOnline);
+      window.addEventListener("offline", handleOffline);
+      return () => {
+        window.removeEventListener("online", handleOnline);
+        window.removeEventListener("offline", handleOffline);
+      };
+    }
+  }, []);
   
   // Customer CMS States
   const [customers, setCustomers] = useState<{ phone: string; name: string; address: string; birthday?: string | null; address_label?: string | null }[]>([]);
@@ -804,28 +832,145 @@ export default function PosPage() {
     sku: ""
   });
 
-  const loadOrdersAndCMS = useCallback(async () => {
-    // 1. Clean up ignored orders older than 2 days in Supabase
-    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-    try {
-      await supabase
-        .from("orders")
-        .delete()
-        .eq("status", "Ignored")
-        .lt("timestamp", twoDaysAgo);
-    } catch (e) {
-      console.error("Failed to prune expired ignored orders from database", e);
+  const syncOfflineOrders = useCallback(async (offlineOrders: Order[]) => {
+    console.log("[Sync] Triggering sync for offline orders:", offlineOrders);
+    let successfullySynced = 0;
+    
+    for (const order of offlineOrders) {
+      try {
+        const { error } = await supabase
+          .from("orders")
+          .insert({
+            id: order.id,
+            timestamp: order.timestamp,
+            items: order.items,
+            subtotal: order.subtotal,
+            tax: order.tax,
+            total: order.total,
+            status: order.status,
+            type: order.type,
+            customer: order.customer
+          });
+        
+        if (error) {
+          console.error(`[Sync] Failed to sync order ${order.id}:`, error);
+        } else {
+          console.log(`[Sync] Successfully synced order ${order.id} to database.`);
+          successfullySynced++;
+        }
+      } catch (e) {
+        console.error(`[Sync] Network error syncing order ${order.id}:`, e);
+      }
     }
+    
+    if (successfullySynced > 0) {
+      triggerToast(`Synced ${successfullySynced} offline orders with database`, "success");
+    }
+  }, []);
 
-    // 2. Fetch Orders
+  const loadOrdersAndCMS = useCallback(async () => {
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
+    setLoadingOrders(true);
+
     try {
-      const { data: dbOrders, error: ordersErr } = await supabase
-        .from("orders")
-        .select("*")
-        .order("timestamp", { ascending: false });
+      // 1. Clean up ignored orders older than 2 days in Supabase (non-blocking / 4s timeout)
+      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+      try {
+        await withTimeout(
+          Promise.resolve(
+            supabase
+              .from("orders")
+              .delete()
+              .eq("status", "Ignored")
+              .lt("timestamp", twoDaysAgo)
+          ),
+          4000
+        );
+      } catch (e) {
+        console.error("Failed to prune expired ignored orders from database:", e);
+      }
 
-      if (ordersErr) {
-        console.error("Supabase orders fetch error, falling back to localStorage", ordersErr);
+      // 2. Concurrently fetch orders and customers with 5s timeout
+      const [ordersRes, customersRes] = await Promise.allSettled([
+        withTimeout(
+          Promise.resolve(
+            supabase
+              .from("orders")
+              .select("*")
+              .order("timestamp", { ascending: false })
+          ),
+          5000
+        ),
+        withTimeout(
+          Promise.resolve(
+            supabase
+              .from("customers")
+              .select("*")
+          ),
+          5000
+        )
+      ]);
+
+      // Handle Orders response
+      if (ordersRes.status === "fulfilled") {
+        const { data: dbOrders, error: ordersErr } = ordersRes.value as { data: any[] | null; error: any };
+        if (ordersErr) {
+          console.error("Supabase orders fetch error, falling back to localStorage", ordersErr);
+          const saved = localStorage.getItem("t-cloud-eats-orders");
+          if (saved) {
+            const list = JSON.parse(saved);
+            const filtered = list.filter((o: any) => {
+              if (o.status === "Ignored") {
+                const ageMs = Date.now() - new Date(o.timestamp).getTime();
+                return ageMs <= 2 * 24 * 60 * 60 * 1000;
+              }
+              return true;
+            });
+            setOrderHistory(filtered);
+          }
+        } else if (dbOrders) {
+          const formatted = dbOrders.map((o: any) => ({
+            ...o,
+            items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
+            customer: typeof o.customer === 'string' ? JSON.parse(o.customer) : o.customer,
+            subtotal: Number(o.subtotal),
+            tax: Number(o.tax),
+            total: Number(o.total)
+          }));
+          const filtered = formatted.filter((o: any) => {
+            if (o.status === "Ignored") {
+              const ageMs = Date.now() - new Date(o.timestamp).getTime();
+              return ageMs <= 2 * 24 * 60 * 60 * 1000;
+            }
+            return true;
+          });
+          
+          // Smart Merge: retrieve offline/unsynced orders from localStorage
+          const localSavedStr = localStorage.getItem("t-cloud-eats-orders");
+          let merged = [...filtered];
+          if (localSavedStr) {
+            try {
+              const localOrders = JSON.parse(localSavedStr) as Order[];
+              const dbIds = new Set(filtered.map((o: any) => o.id));
+              const offlineUnsynced = localOrders.filter(lo => lo && lo.id && !dbIds.has(lo.id));
+              if (offlineUnsynced.length > 0) {
+                merged = [...merged, ...offlineUnsynced].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                console.log("Preserved offline unsynced orders:", offlineUnsynced);
+                
+                // Trigger sync in the background
+                syncOfflineOrders(offlineUnsynced);
+              }
+            } catch (err) {
+              console.error("Failed to parse local orders during merge", err);
+            }
+          }
+          
+          setOrderHistory(merged);
+          localStorage.setItem("t-cloud-eats-orders", JSON.stringify(merged));
+        }
+      } else {
+        console.error("Orders query timed out or failed:", ordersRes.reason);
         const saved = localStorage.getItem("t-cloud-eats-orders");
         if (saved) {
           const list = JSON.parse(saved);
@@ -838,79 +983,29 @@ export default function PosPage() {
           });
           setOrderHistory(filtered);
         }
-      } else if (dbOrders) {
-        const formatted = dbOrders.map(o => ({
-          ...o,
-          items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
-          customer: typeof o.customer === 'string' ? JSON.parse(o.customer) : o.customer,
-          subtotal: Number(o.subtotal),
-          tax: Number(o.tax),
-          total: Number(o.total)
-        }));
-        const filtered = formatted.filter(o => {
-          if (o.status === "Ignored") {
-            const ageMs = Date.now() - new Date(o.timestamp).getTime();
-            return ageMs <= 2 * 24 * 60 * 60 * 1000;
-          }
-          return true;
-        });
-        
-        // Smart Merge: retrieve offline/unsynced orders from localStorage
-        const localSavedStr = localStorage.getItem("t-cloud-eats-orders");
-        let merged = [...filtered];
-        if (localSavedStr) {
-          try {
-            const localOrders = JSON.parse(localSavedStr) as Order[];
-            const dbIds = new Set(filtered.map(o => o.id));
-            const offlineUnsynced = localOrders.filter(lo => lo && lo.id && !dbIds.has(lo.id));
-            if (offlineUnsynced.length > 0) {
-              merged = [...merged, ...offlineUnsynced].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-              console.log("Preserved offline unsynced orders:", offlineUnsynced);
-            }
-          } catch (err) {
-            console.error("Failed to parse local orders during merge", err);
-          }
+      }
+
+      // Handle Customers response
+      if (customersRes.status === "fulfilled") {
+        const { data: dbCustomers, error: custErr } = customersRes.value as { data: any[] | null; error: any };
+        if (custErr) {
+          console.error("Supabase customers fetch error, falling back to localStorage", custErr);
+          const savedCms = localStorage.getItem("t-cloud-eats-cms");
+          if (savedCms) setCustomers(JSON.parse(savedCms));
+        } else if (dbCustomers) {
+          setCustomers(dbCustomers);
+          localStorage.setItem("t-cloud-eats-cms", JSON.stringify(dbCustomers));
         }
-        
-        setOrderHistory(merged);
-        localStorage.setItem("t-cloud-eats-orders", JSON.stringify(merged));
-      }
-    } catch (e) {
-      console.error("Network error fetching orders", e);
-      const saved = localStorage.getItem("t-cloud-eats-orders");
-      if (saved) {
-        const list = JSON.parse(saved);
-        const filtered = list.filter((o: any) => {
-          if (o.status === "Ignored") {
-            const ageMs = Date.now() - new Date(o.timestamp).getTime();
-            return ageMs <= 2 * 24 * 60 * 60 * 1000;
-          }
-          return true;
-        });
-        setOrderHistory(filtered);
-      }
-    }
-
-    // 3. Fetch Customers
-    try {
-      const { data: dbCustomers, error: custErr } = await supabase
-        .from("customers")
-        .select("*");
-
-      if (custErr) {
-        console.error("Supabase customers fetch error, falling back to localStorage", custErr);
+      } else {
+        console.error("Customers query timed out or failed:", customersRes.reason);
         const savedCms = localStorage.getItem("t-cloud-eats-cms");
         if (savedCms) setCustomers(JSON.parse(savedCms));
-      } else if (dbCustomers) {
-        setCustomers(dbCustomers);
-        localStorage.setItem("t-cloud-eats-cms", JSON.stringify(dbCustomers));
       }
-    } catch (e) {
-      console.error("Network error fetching customers", e);
-      const savedCms = localStorage.getItem("t-cloud-eats-cms");
-      if (savedCms) setCustomers(JSON.parse(savedCms));
+    } finally {
+      isLoadingRef.current = false;
+      setLoadingOrders(false);
     }
-  }, []);
+  }, [syncOfflineOrders]);
 
   // Load order history and CMS from database on mount, fallback to localStorage
   useEffect(() => {
@@ -920,19 +1015,15 @@ export default function PosPage() {
       localStorage.setItem("t-cloud-eats-user", currentUser);
     }
 
-    const savedOrdersStr = localStorage.getItem("t-cloud-eats-orders");
-    if (savedOrdersStr && savedOrdersStr.includes('"status":"Ignored"')) {
-      localStorage.removeItem("t-cloud-eats-orders");
-    }
-
     const cacheTimeStr = localStorage.getItem("t-cloud-eats-cache-time");
     const cacheTime = cacheTimeStr ? Number(cacheTimeStr) : 0;
     const now = Date.now();
     if (now - cacheTime > 10 * 60 * 1000) {
-      localStorage.removeItem("t-cloud-eats-orders");
+      // We do NOT clear t-cloud-eats-orders to prevent losing unsynced offline orders.
+      // loadOrdersAndCMS will safely fetch from DB and merge with any unsynced local orders.
       localStorage.removeItem("t-cloud-eats-cms");
       localStorage.removeItem(`t-cloud-eats-notifications-${currentUser}`);
-      console.log("Cache expired (10 minutes). Wiping cache & loading fresh from database.");
+      console.log("Cache expired (10 minutes). Wiping CMS and notification caches.");
     }
     localStorage.setItem("t-cloud-eats-cache-time", now.toString());
 
@@ -1193,28 +1284,30 @@ export default function PosPage() {
       }
     }
 
-    // 3. Update Supabase
-    try {
-      const updatePayload: any = { status: newStatus };
-      if (isIgnoring) {
-        updatePayload.id = newOrderId;
-      }
+    // 3. Update Supabase in background
+    const updatePayload: any = { status: newStatus };
+    if (isIgnoring) {
+      updatePayload.id = newOrderId;
+    }
 
-      const { error } = await supabase
+    Promise.resolve(
+      supabase
         .from("orders")
         .update(updatePayload)
-        .eq("id", orderId);
-      
-      if (error) {
-        console.error("Supabase order status update error:", error);
-        triggerToast("Saved locally, database update failed", "warning");
-      } else {
-        triggerToast(isIgnoring ? `Order ignored & invoice number removed` : `Order ${orderId} marked as ${newStatus}`, "success");
-      }
-    } catch (e) {
-      console.error("Network error updating order status:", e);
-      triggerToast("Saved locally, offline mode active", "warning");
-    }
+        .eq("id", orderId)
+    )
+      .then(({ error }) => {
+        if (error) {
+          console.error("Supabase order status update error:", error);
+          triggerToast("Saved locally, database update failed", "warning");
+        } else {
+          triggerToast(isIgnoring ? `Order ignored & invoice number removed` : `Order ${orderId} marked as ${newStatus}`, "success");
+        }
+      })
+      .catch((e: any) => {
+        console.error("Network error updating order status:", e);
+        triggerToast("Saved locally, offline mode active", "warning");
+      });
   };
 
   const handleStatusAdvance = () => {
@@ -1238,13 +1331,50 @@ export default function PosPage() {
   const handleSaveCustomer = async () => {
     if (!editingCustomer) return;
     setIsUpdatingCust(true);
-    try {
-      let birthdayIso = null;
-      if (editCustBirthMonth && editCustBirthDay) {
-        birthdayIso = new Date(`2000-${editCustBirthMonth}-${editCustBirthDay}T00:00:00`).toISOString();
-      }
+    
+    let birthdayIso = null;
+    if (editCustBirthMonth && editCustBirthDay) {
+      birthdayIso = new Date(`2000-${editCustBirthMonth}-${editCustBirthDay}T00:00:00`).toISOString();
+    }
 
-      const { error } = await supabase
+    const updatedCmsCustomer = {
+      phone: editingCustomer.phone,
+      name: editCustName,
+      address: editCustAddress,
+      birthday: birthdayIso,
+      address_label: editCustAddressLabel || null
+    };
+
+    // Update locally immediately
+    setCustomers(prev => 
+      prev.map(c => c.phone === editingCustomer.phone ? updatedCmsCustomer : c)
+    );
+    
+    // Update customer details in all past orders locally
+    const updatedHistory = orderHistory.map(o => {
+      if (o.customer && o.customer.phone === editingCustomer.phone) {
+        return {
+          ...o,
+          customer: {
+            ...o.customer,
+            name: editCustName,
+            address: editCustAddress,
+            address_label: editCustAddressLabel || null
+          }
+        };
+      }
+      return o;
+    });
+    setOrderHistory(updatedHistory);
+    localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
+    
+    // Close modal
+    setEditingCustomer(null);
+    setIsUpdatingCust(false);
+
+    // Save to Supabase in background
+    Promise.resolve(
+      supabase
         .from("customers")
         .update({
           name: editCustName,
@@ -1252,68 +1382,43 @@ export default function PosPage() {
           birthday: birthdayIso,
           address_label: editCustAddressLabel || null
         })
-        .eq("phone", editingCustomer.phone);
-
-      if (error) {
-        console.error("Supabase customer update error", error);
-        triggerToast("Failed to update customer profile", "error");
-      } else {
-        triggerToast("Customer profile updated successfully!", "success");
-        setCustomers(prev => 
-          prev.map(c => 
-            c.phone === editingCustomer.phone 
-              ? { ...c, name: editCustName, address: editCustAddress, birthday: birthdayIso, address_label: editCustAddressLabel || null }
-              : c
+        .eq("phone", editingCustomer.phone)
+    )
+      .then(({ error }) => {
+        if (error) {
+          console.error("Supabase customer update error", error);
+          triggerToast("Saved locally, cloud update failed", "warning");
+        } else {
+          triggerToast("Customer profile updated successfully!", "success");
+          
+          // Update customer details in all past orders in Supabase
+          const updatedCustObj = {
+            phone: editingCustomer.phone,
+            name: editCustName,
+            address: editCustAddress,
+            address_label: editCustAddressLabel || null
+          };
+          
+          Promise.resolve(
+            supabase
+              .from("orders")
+              .update({ customer: updatedCustObj })
+              .eq("customer->>phone", editingCustomer.phone)
           )
-        );
-        
-        // Update customer details in all past orders locally
-        const updatedHistory = orderHistory.map(o => {
-          if (o.customer && o.customer.phone === editingCustomer.phone) {
-            return {
-              ...o,
-              customer: {
-                ...o.customer,
-                name: editCustName,
-                address: editCustAddress,
-                address_label: editCustAddressLabel || null
+            .then(({ error: orderUpdateErr }) => {
+              if (orderUpdateErr) {
+                console.error("Supabase order customer info update error:", orderUpdateErr);
               }
-            };
-          }
-          return o;
-        });
-        setOrderHistory(updatedHistory);
-        localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
-
-        // Update customer details in all past orders in Supabase
-        const updatedCustObj = {
-          phone: editingCustomer.phone,
-          name: editCustName,
-          address: editCustAddress,
-          address_label: editCustAddressLabel || null
-        };
-        
-        try {
-          const { error: orderUpdateErr } = await supabase
-            .from("orders")
-            .update({ customer: updatedCustObj })
-            .eq("customer->>phone", editingCustomer.phone);
-
-          if (orderUpdateErr) {
-            console.error("Supabase order customer info update error:", orderUpdateErr);
-          }
-        } catch (dbErr) {
-          console.error("Error updating orders table for customer profile change:", dbErr);
+            })
+            .catch((dbErr: any) => {
+              console.error("Error updating orders table for customer profile change:", dbErr);
+            });
         }
-
-        setEditingCustomer(null);
-      }
-    } catch (e) {
-      console.error(e);
-      triggerToast("Failed to connect to database", "error");
-    } finally {
-      setIsUpdatingCust(false);
-    }
+      })
+      .catch((e: any) => {
+        console.error("Network error updating customer:", e);
+        triggerToast("Saved locally, offline mode active", "warning");
+      });
   };
 
   const handlePhoneChange = (val: string, cc: string = customerCountryCode) => {
@@ -1377,9 +1482,9 @@ export default function PosPage() {
     setOrderHistory(updatedHistory);
     localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
 
-    // 2. Update Supabase
-    try {
-      const { error } = await supabase
+    // 2. Update Supabase in background
+    Promise.resolve(
+      supabase
         .from("orders")
         .update({
           items: cleanCart,
@@ -1387,18 +1492,20 @@ export default function PosPage() {
           tax: newTax,
           total: newTotal
         })
-        .eq("id", selectedInvoiceId);
-
-      if (error) {
-        console.error("Supabase order update error:", error);
-        triggerToast("Saved locally, database update failed", "warning");
-      } else {
-        triggerToast("Order updated successfully", "success");
-      }
-    } catch (e) {
-      console.error("Network error updating order:", e);
-      triggerToast("Saved locally, offline mode active", "warning");
-    }
+        .eq("id", selectedInvoiceId)
+    )
+      .then(({ error }) => {
+        if (error) {
+          console.error("Supabase order update error:", error);
+          triggerToast("Saved locally, database update failed", "warning");
+        } else {
+          triggerToast("Order updated successfully", "success");
+        }
+      })
+      .catch((e: any) => {
+        console.error("Network error updating order:", e);
+        triggerToast("Saved locally, offline mode active", "warning");
+      });
 
     slideCacheWindow();
     setCart([]);
@@ -1441,18 +1548,18 @@ export default function PosPage() {
     setCustomers(updatedCms);
     localStorage.setItem("t-cloud-eats-cms", JSON.stringify(updatedCms));
 
-    // 2. Upsert customer in Supabase
-    try {
-      const { error: custErr } = await supabase
+    // 2. Upsert customer in Supabase (in background)
+    Promise.resolve(
+      supabase
         .from("customers")
-        .upsert(newCustomer, { onConflict: "phone" });
-      
-      if (custErr) {
-        console.error("Supabase customer upsert error:", custErr);
-      }
-    } catch (e) {
-      console.error("Network error saving customer:", e);
-    }
+        .upsert(newCustomer, { onConflict: "phone" })
+    )
+      .then(({ error: custErr }) => {
+        if (custErr) console.error("Supabase customer upsert error:", custErr);
+      })
+      .catch((e: any) => {
+        console.error("Network error saving customer:", e);
+      });
 
     // 3. Create new order in "Preparing" status
     const currentBizDateStr = getBusinessDateStr(new Date());
@@ -1479,7 +1586,7 @@ export default function PosPage() {
     const newOrder: Order = {
       id: newInvoiceId,
       timestamp: new Date().toISOString(),
-      items: [...cart],
+      items: cart,
       subtotal,
       tax,
       total,
@@ -1493,9 +1600,9 @@ export default function PosPage() {
     setOrderHistory(updatedHistory);
     localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
 
-    // 5. Insert order into Supabase
-    try {
-      const { error: orderErr } = await supabase
+    // 5. Insert order into Supabase (in background)
+    Promise.resolve(
+      supabase
         .from("orders")
         .insert({
           id: newInvoiceId,
@@ -1507,18 +1614,20 @@ export default function PosPage() {
           status: newOrder.status,
           type: newOrder.type,
           customer: newOrder.customer
-        });
-      
-      if (orderErr) {
-        console.error("Supabase order insertion error:", orderErr);
-        triggerToast("Saved locally, database insert failed", "warning");
-      } else {
-        triggerToast("Order placed & sent to kitchen", "success");
-      }
-    } catch (e) {
-      console.error("Network error saving order:", e);
-      triggerToast("Saved locally, offline mode active", "warning");
-    }
+        })
+    )
+      .then(({ error: orderErr }) => {
+        if (orderErr) {
+          console.error("Supabase order insertion error:", orderErr);
+          triggerToast("Saved locally, database insert failed", "warning");
+        } else {
+          triggerToast("Order placed & sent to kitchen", "success");
+        }
+      })
+      .catch((e: any) => {
+        console.error("Network error saving order:", e);
+        triggerToast("Saved locally, offline mode active", "warning");
+      });
 
     slideCacheWindow();
     setCart([]);
@@ -2054,6 +2163,28 @@ export default function PosPage() {
               {/* Live Clock */}
               <LiveClock />
 
+              {/* Connection Status Indicator */}
+              <div 
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold tracking-wider uppercase transition-all duration-300 ${
+                  isOnline 
+                    ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400" 
+                    : "bg-red-500/5 border-red-500/10 text-red-400"
+                }`}
+                title={isOnline ? "System Online" : "System Offline - Offline Mode Active"}
+              >
+                {isOnline ? (
+                  <>
+                    <Wifi size={12} className="animate-pulse" />
+                    <span className="hidden sm:inline">Online</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff size={12} className="animate-bounce" />
+                    <span className="hidden sm:inline">Offline</span>
+                  </>
+                )}
+              </div>
+
               {/* Refresh */}
               <button
                 onClick={async () => {
@@ -2076,7 +2207,7 @@ export default function PosPage() {
                 style={{ background: "#0E1628", border: "1px solid #1E2D4E", color: "#4B5E82" }}
                 title="Force Sync with Cloud Database"
               >
-                <RotateCw size={14} className={isDatabaseSyncing ? "animate-spin text-amber-500" : "hover:text-slate-200 transition-colors"} />
+                <RotateCw size={14} className={isDatabaseSyncing || loadingOrders ? "animate-spin text-amber-500" : "hover:text-slate-200 transition-colors"} />
               </button>
 
               {/* Notification Button */}
@@ -2242,7 +2373,12 @@ export default function PosPage() {
                     Shift Orders List
                   </h3>
                   
-                  {todaysAllOrders.length === 0 ? (
+                  {loadingOrders ? (
+                    <div className="text-center py-10 text-xs text-slate-500 flex flex-col items-center justify-center gap-3">
+                      <RotateCw className="animate-spin text-amber-500" size={24} />
+                      <span>Loading shift orders...</span>
+                    </div>
+                  ) : todaysAllOrders.length === 0 ? (
                     <div className="text-center py-10 text-xs text-slate-500">
                       No invoices settled during today's shift yet.
                     </div>
@@ -2324,7 +2460,7 @@ export default function PosPage() {
                                         {order.items.map((item, idx) => (
                                           <div key={idx} className="text-[10px] text-slate-300">
                                             <div className="flex justify-between items-start gap-3">
-                                              <span className="font-bold flex-1 leading-tight text-left">{item.menuItem.title}</span>
+                                              <span className="font-bold flex-1 leading-tight text-left">{item.menuItem ? item.menuItem.title : (item as any).title}</span>
                                               <span className="font-mono text-[#F26F21] whitespace-nowrap">x{item.quantity}</span>
                                             </div>
                                             {item.comment && (
@@ -3060,7 +3196,8 @@ export default function PosPage() {
                           .filter(o => o.status !== "Voided" && o.status !== "Ignored")
                           .forEach(order => {
                             order.items.forEach(item => {
-                              counts[item.menuItem.title] = (counts[item.menuItem.title] || 0) + item.quantity;
+                              const title = item.menuItem ? item.menuItem.title : (item as any).title;
+                              counts[title] = (counts[title] || 0) + item.quantity;
                             });
                           });
 
@@ -3243,7 +3380,7 @@ export default function PosPage() {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="font-semibold text-[11px] leading-snug" style={{ color: "#CBD5E1" }}>{item.menuItem.title}</h4>
+                        <h4 className="font-semibold text-[11px] leading-snug" style={{ color: "#CBD5E1" }}>{item.menuItem ? item.menuItem.title : (item as any).title}</h4>
                         {selectedInvoiceId && item.isNew && (
                           <span className="text-[7px] font-black uppercase bg-emerald-500/10 text-emerald-400 px-1 py-0.5 rounded border border-emerald-500/25">New</span>
                         )}
@@ -3280,10 +3417,10 @@ export default function PosPage() {
                         </div>
                       )}
                       <p className="text-[10px] mt-0.5 font-mono" style={{ color: "#4B5E82" }}>
-                        {item.quantity} × Rs {item.menuItem.price.toLocaleString()}
+                        {item.quantity} × Rs {(item.menuItem ? item.menuItem.price : (item as any).price || 0).toLocaleString()}
                       </p>
                       <p className="text-[10px] font-bold font-mono mt-0.5" style={{ color: "#F26F21" }}>
-                        Rs {(item.quantity * item.menuItem.price).toLocaleString()}
+                        Rs {(item.quantity * (item.menuItem ? item.menuItem.price : (item as any).price || 0)).toLocaleString()}
                       </p>
                     </div>
 
@@ -3500,17 +3637,22 @@ export default function PosPage() {
             )}
 
             <div className="space-y-2 border-b border-dashed border-slate-300 pb-3">
-              {latestOrder.items.map(item => (
-                <div key={item.menuItem.id}>
-                  <div className="flex justify-between">
-                    <span>{item.menuItem.title} x{item.quantity}</span>
-                    <span>Rs {(item.menuItem.price * item.quantity).toLocaleString()}</span>
+              {latestOrder.items.map((item, idx) => {
+                const itemId = item.menuItem ? item.menuItem.id : (item as any).id;
+                const itemTitle = item.menuItem ? item.menuItem.title : (item as any).title;
+                const itemPrice = item.menuItem ? item.menuItem.price : (item as any).price;
+                return (
+                  <div key={`${itemId}-${idx}`}>
+                    <div className="flex justify-between">
+                      <span>{itemTitle} x{item.quantity}</span>
+                      <span>Rs {((itemPrice || 0) * item.quantity).toLocaleString()}</span>
+                    </div>
+                    {item.comment && (
+                      <p className="text-[8px] text-amber-600 italic ml-2">💬 {item.comment}</p>
+                    )}
                   </div>
-                  {item.comment && (
-                    <p className="text-[8px] text-amber-600 italic ml-2">💬 {item.comment}</p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="flex justify-between font-black text-sm">
               <span>Total Amount</span>
@@ -3952,7 +4094,7 @@ export default function PosPage() {
                                         <div className="space-y-1 max-h-[140px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
                                           {lastOrder.items.map((item, idx) => (
                                             <div key={idx} className="flex justify-between items-start gap-2 text-[10px] text-slate-300">
-                                              <span className="font-bold flex-1 leading-tight">{item.menuItem.title}</span>
+                                              <span className="font-bold flex-1 leading-tight">{item.menuItem ? item.menuItem.title : (item as any).title}</span>
                                               <span className="font-mono text-[#F26F21] whitespace-nowrap">x{item.quantity}</span>
                                             </div>
                                           ))}

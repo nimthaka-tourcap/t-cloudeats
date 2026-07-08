@@ -247,24 +247,28 @@ export default function BillPage() {
         <div className="py-4 border-b border-dashed border-slate-200 space-y-2.5">
           <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Bought Items List</p>
           <div className="space-y-2">
-            {order.items.map((item, idx) => (
-              <div key={idx} className="text-xs">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1">
-                    <p className="font-bold text-slate-900 leading-tight">{item.menuItem.title}</p>
-                    {item.comment && (
-                      <p className="text-[10px] text-amber-600 italic mt-0.5">💬 {item.comment}</p>
-                    )}
-                    <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                      {item.quantity} x LKR {item.menuItem.price.toLocaleString()}
-                    </p>
+            {order.items.map((item, idx) => {
+              const itemTitle = item.menuItem ? item.menuItem.title : (item as any).title;
+              const itemPrice = item.menuItem ? item.menuItem.price : (item as any).price;
+              return (
+                <div key={idx} className="text-xs">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <p className="font-bold text-slate-900 leading-tight">{itemTitle}</p>
+                      {item.comment && (
+                        <p className="text-[10px] text-amber-600 italic mt-0.5">💬 {item.comment}</p>
+                      )}
+                      <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
+                        {item.quantity} x LKR {(itemPrice || 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <span className="font-mono font-bold text-slate-950 whitespace-nowrap">
+                      LKR {((itemPrice || 0) * item.quantity).toLocaleString()}
+                    </span>
                   </div>
-                  <span className="font-mono font-bold text-slate-950 whitespace-nowrap">
-                    LKR {(item.menuItem.price * item.quantity).toLocaleString()}
-                  </span>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
