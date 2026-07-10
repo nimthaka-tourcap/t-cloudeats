@@ -29,7 +29,9 @@ import {
   Bell,
   MessageCircle,
   Wifi,
-  WifiOff
+  WifiOff,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -1185,6 +1187,47 @@ export default function PosPage() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
+  const [pinPurpose, setPinPurpose] = useState<"menu" | "prices">("menu");
+
+  const renderAdminMetric = (value: React.ReactNode, textClass: string = "") => {
+    if (isAdminUnlocked) {
+      return (
+        <span className={`inline-flex items-center gap-1.5 ${textClass}`}>
+          {value}
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAdminUnlocked(false);
+              triggerToast("Data locked", "info");
+            }}
+            className="text-slate-500 hover:text-slate-300 transition-colors p-0.5 cursor-pointer flex items-center justify-center"
+            title="Lock sensitive data"
+          >
+            <Eye size={12} />
+          </button>
+        </span>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setPinPurpose("prices");
+          setShowPinModal(true);
+          setPinInput("");
+          setPinError("");
+        }}
+        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800/40 hover:bg-slate-700/60 transition-colors cursor-pointer border border-[#222E4E]/40 ${textClass}`}
+        title="Click to enter PIN to unlock data"
+      >
+        <span className="font-mono tracking-widest text-slate-500 text-xs">••••</span>
+        <EyeOff size={11} className="text-slate-500" />
+      </button>
+    );
+  };
 
   // Receipt Modal State
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -1885,6 +1928,7 @@ export default function PosPage() {
       if (isAdminUnlocked) {
         setActiveSidebar("menu_management");
       } else {
+        setPinPurpose("menu");
         setShowPinModal(true);
         setPinInput("");
         setPinError("");
@@ -1903,7 +1947,9 @@ export default function PosPage() {
           if (newPin === "1234") {
             setIsAdminUnlocked(true);
             setShowPinModal(false);
-            setActiveSidebar("menu_management");
+            if (pinPurpose === "menu") {
+              setActiveSidebar("menu_management");
+            }
             triggerToast("Admin unlocked", "success");
           } else {
             setPinError("Incorrect PIN");
@@ -2354,15 +2400,21 @@ export default function PosPage() {
                     </div>
                     <div className="bg-[#090D1A] p-4 rounded-xl border border-[#222E4E]">
                       <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Shift Revenue</p>
-                      <p className="text-lg font-black mt-1 text-emerald-400 font-mono">
-                        LKR {todaysOrders.reduce((sum, o) => sum + o.total, 0).toLocaleString()}
-                      </p>
+                      <div className="mt-1">
+                        {renderAdminMetric(
+                          `LKR ${todaysOrders.reduce((sum, o) => sum + o.total, 0).toLocaleString()}`,
+                          "text-lg font-black text-emerald-400 font-mono"
+                        )}
+                      </div>
                     </div>
                     <div className="bg-[#090D1A] p-4 rounded-xl border border-[#222E4E]">
                       <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Avg Ticket Size</p>
-                      <p className="text-lg font-black mt-1 text-slate-200 font-mono">
-                        LKR {todaysOrders.length > 0 ? Math.round(todaysOrders.reduce((sum, o) => sum + o.total, 0) / todaysOrders.length).toLocaleString() : "0"}
-                      </p>
+                      <div className="mt-1">
+                        {renderAdminMetric(
+                          `LKR ${todaysOrders.length > 0 ? Math.round(todaysOrders.reduce((sum, o) => sum + o.total, 0) / todaysOrders.length).toLocaleString() : "0"}`,
+                          "text-lg font-black text-slate-200 font-mono"
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2449,31 +2501,94 @@ export default function PosPage() {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 text-slate-400 relative">
-                                  <div className="group inline-block cursor-pointer">
-                                    <span className="underline decoration-dotted hover:text-slate-200 transition-colors">
-                                      {order.items.reduce((sum, item) => sum + item.quantity, 0)} items
-                                    </span>
-                                    {/* Hover Preview Tooltip */}
-                                    <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2.5 hidden group-hover:flex flex-col z-50 bg-[#0E1628] border border-[#1A2640] rounded-xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-w-[220px] pointer-events-none transition-all">
-                                      <p className="text-[8px] font-black uppercase text-[#F26F21] mb-2 tracking-widest border-b border-[#1A2640] pb-1.5">Items Preview</p>
-                                      <div className="space-y-1.5 max-h-[160px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
-                                        {order.items.map((item, idx) => (
-                                          <div key={idx} className="text-[10px] text-slate-300">
-                                            <div className="flex justify-between items-start gap-3">
-                                              <span className="font-bold flex-1 leading-tight text-left">{item.menuItem ? item.menuItem.title : (item as any).title}</span>
-                                              <span className="font-mono text-[#F26F21] whitespace-nowrap">x{item.quantity}</span>
+                                  {(() => {
+                                    const isToday = selectedLogBizDateStr === currentBizDate;
+                                    if (isToday) {
+                                      return (
+                                        <div className="space-y-1 text-[10px] text-slate-300 max-w-[220px]">
+                                          {order.items.map((item, idx) => {
+                                            const itemTitle = item.menuItem ? item.menuItem.title : (item as any).title;
+                                            const itemPrice = item.menuItem ? item.menuItem.price : (item as any).price;
+                                            const itemQty = item.quantity;
+                                            const itemTotal = (itemPrice || 0) * itemQty;
+                                            return (
+                                              <div key={idx} className="flex justify-between gap-4 border-b border-white/[0.03] pb-0.5 last:border-b-0">
+                                                <span className="truncate" title={itemTitle}>{itemTitle} x{itemQty}</span>
+                                                <span className="font-mono text-slate-400 whitespace-nowrap">Rs {itemTotal.toLocaleString()}</span>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    } else {
+                                      if (isAdminUnlocked) {
+                                        return (
+                                          <div className="group relative inline-block cursor-pointer">
+                                            <span className="underline decoration-dotted hover:text-slate-200 transition-colors">
+                                              {order.items.reduce((sum, item) => sum + item.quantity, 0)} items
+                                            </span>
+                                            {/* Hover Preview Tooltip */}
+                                            <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2.5 hidden group-hover:flex flex-col z-50 bg-[#0E1628] border border-[#1A2640] rounded-xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-w-[220px] pointer-events-none transition-all">
+                                              <p className="text-[8px] font-black uppercase text-[#F26F21] mb-2 tracking-widest border-b border-[#1A2640] pb-1.5">Items Preview</p>
+                                              <div className="space-y-1.5 max-h-[160px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                                                {order.items.map((item, idx) => {
+                                                  const itemTitle = item.menuItem ? item.menuItem.title : (item as any).title;
+                                                  const itemQty = item.quantity;
+                                                  return (
+                                                    <div key={idx} className="text-[10px] text-slate-300">
+                                                      <div className="flex justify-between items-start gap-3">
+                                                        <span className="font-bold flex-1 leading-tight text-left">{itemTitle}</span>
+                                                        <span className="font-mono text-[#F26F21] whitespace-nowrap">x{itemQty}</span>
+                                                      </div>
+                                                      {item.comment && (
+                                                        <p className="text-[9px] text-amber-400/80 mt-0.5 italic pl-1">💬 {item.comment}</p>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
                                             </div>
-                                            {item.comment && (
-                                              <p className="text-[9px] text-amber-400/80 mt-0.5 italic pl-1">💬 {item.comment}</p>
-                                            )}
                                           </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  </div>
+                                        );
+                                      } else {
+                                        return (
+                                          <span className="text-slate-500 italic flex items-center gap-1">
+                                            <Lock size={10} /> Locked
+                                          </span>
+                                        );
+                                      }
+                                    }
+                                  })()}
                                 </td>
                                 <td className="px-4 py-3 font-bold text-[#FF6B35]">
-                                  LKR {order.total.toLocaleString()}
+                                  {(() => {
+                                    const isToday = selectedLogBizDateStr === currentBizDate;
+                                    if (isToday || isAdminUnlocked) {
+                                      return (
+                                        <span className="font-mono">
+                                          LKR {order.total.toLocaleString()}
+                                        </span>
+                                      );
+                                    } else {
+                                      return (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setPinPurpose("prices");
+                                            setShowPinModal(true);
+                                            setPinInput("");
+                                            setPinError("");
+                                          }}
+                                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-800/40 hover:bg-slate-700/60 transition-colors cursor-pointer border border-[#222E4E]/40 font-mono text-[10px] text-slate-500"
+                                          title="Click to enter PIN to unlock amount"
+                                        >
+                                          <span>••••</span>
+                                          <EyeOff size={10} />
+                                        </button>
+                                      );
+                                    }
+                                  })()}
                                 </td>
                                 <td className="px-4 py-3 text-right">
                                   <div className="flex gap-1.5 justify-end">
@@ -3060,9 +3175,12 @@ export default function PosPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-xl">
                     <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Total Sales Revenue</p>
-                    <p className="text-lg font-black mt-1 text-emerald-400 font-mono">
-                      LKR {orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored").reduce((sum, o) => sum + o.total, 0).toLocaleString()}
-                    </p>
+                    <div className="mt-1">
+                      {renderAdminMetric(
+                        `LKR ${orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored").reduce((sum, o) => sum + o.total, 0).toLocaleString()}`,
+                        "text-lg font-black text-emerald-400 font-mono"
+                      )}
+                    </div>
                   </div>
                   <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-xl">
                     <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Settled Orders</p>
@@ -3087,14 +3205,17 @@ export default function PosPage() {
                   </button>
                   <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-xl">
                     <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Average Order Value</p>
-                    <p className="text-lg font-black mt-1 text-slate-200 font-mono">
-                      LKR {(() => {
-                        const settled = orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored");
-                        if (settled.length === 0) return "0";
-                        const totalRev = settled.reduce((sum, o) => sum + o.total, 0);
-                        return Math.round(totalRev / settled.length).toLocaleString();
-                      })()}
-                    </p>
+                    <div className="mt-1">
+                      {renderAdminMetric(
+                        `LKR ${(() => {
+                          const settled = orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored");
+                          if (settled.length === 0) return "0";
+                          const totalRev = settled.reduce((sum, o) => sum + o.total, 0);
+                          return Math.round(totalRev / settled.length).toLocaleString();
+                        })()}`,
+                        "text-lg font-black text-slate-200 font-mono"
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -3124,8 +3245,18 @@ export default function PosPage() {
                               <tr key={row.dateStr} className="hover:bg-white/[0.01] transition-colors">
                                 <td className="px-4 py-3 font-mono font-bold text-slate-300">{row.dateStr}</td>
                                 <td className="px-4 py-3 font-bold text-slate-400">{row.orderCount} orders</td>
-                                <td className="px-4 py-3 font-bold text-[#FF6B35] font-mono">LKR {row.revenue.toLocaleString()}</td>
-                                <td className="px-4 py-3 text-slate-300 font-mono">LKR {Math.round(row.revenue / row.orderCount).toLocaleString()}</td>
+                                <td className="px-4 py-3 font-bold text-[#FF6B35] font-mono">
+                                  {renderAdminMetric(
+                                    `LKR ${row.revenue.toLocaleString()}`,
+                                    "font-bold text-[#FF6B35] font-mono"
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-slate-300 font-mono">
+                                  {renderAdminMetric(
+                                    `LKR ${Math.round(row.revenue / row.orderCount).toLocaleString()}`,
+                                    "text-slate-300 font-mono"
+                                  )}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
