@@ -144,8 +144,8 @@ export default function BillPage() {
         </div>
         <h2 className="font-black tracking-wider uppercase text-slate-200">Access Denied</h2>
         <p className="text-xs text-slate-400 max-w-sm leading-relaxed">{errorMsg || "Invalid E-Bill reference"}</p>
-        <a href="https://t-cloudeats.com" className="text-[10px] uppercase font-bold text-[#FF6B35] tracking-widest hover:underline mt-2">
-          Back to T-Cloud Eats
+        <a href="https://t-cloudeats.com" className="text-[10px] font-bold text-[#FF6B35] tracking-widest hover:underline mt-2">
+          Back to t-cloud eats
         </a>
       </div>
     );
@@ -187,13 +187,13 @@ export default function BillPage() {
           <div className="relative w-20 h-20 mb-2 rounded-full overflow-hidden border border-slate-100 bg-white">
             <Image 
               src="/Round Logo.png"
-              alt="T-Cloud Eats Logo"
+              alt="t-cloud eats logo"
               fill
               className="object-cover"
               priority
             />
           </div>
-          <h1 className="text-base font-black tracking-widest uppercase">T-Cloud Eats</h1>
+          <h1 className="text-base font-black tracking-widest">t-cloud eats</h1>
           <p className="text-[9px] text-slate-500 font-medium mt-0.5">Premium Cloud Kitchen POS Terminal</p>
         </div>
 
@@ -296,7 +296,7 @@ export default function BillPage() {
             <Heart size={16} fill="currentColor" />
           </div>
           <p className="text-[10px] font-bold text-slate-800 leading-relaxed max-w-[280px] mx-auto">
-            Thank you for ordering with T-Cloud Eats! We love preparing your delicious meals. Hope to serve you again soon!
+            Thank you for ordering with t-cloud eats! We love preparing your delicious meals. Hope to serve you again soon!
           </p>
         </div>
 
@@ -304,7 +304,7 @@ export default function BillPage() {
         <div className="mt-4 bg-slate-50 border border-slate-100 p-3.5 rounded-xl space-y-2.5 text-[9px] text-slate-500 text-center">
           {/* Address */}
           <div className="space-y-0.5">
-            <p className="font-extrabold text-slate-700 uppercase tracking-wider">T-Cloud Eats</p>
+            <p className="font-extrabold text-slate-700 tracking-wider">t-cloud eats</p>
             <p className="font-medium text-slate-500">557/3/5 Godella Rd,</p>
             <p className="font-medium text-slate-500">Mulleriyawa 10620, Sri Lanka</p>
           </div>

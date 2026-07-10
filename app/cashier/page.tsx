@@ -2065,7 +2065,7 @@ export default function PosPage() {
             <div className="w-12 h-12 rounded-full border-2 border-[#F26F21]/30 bg-[#0E1628] flex items-center justify-center p-1.5 overflow-hidden cursor-pointer" style={{ boxShadow: "0 0 20px rgba(242,111,33,0.18)" }}>
               <Image 
                 src="/Round Logo.png" 
-                alt="T-Cloud Eats Logo" 
+                alt="t-cloud eats logo" 
                 width={44} 
                 height={44} 
                 className="w-auto h-auto max-w-full max-h-full object-contain"
@@ -3599,20 +3599,20 @@ export default function PosPage() {
         <div className="fixed inset-0 bg-[#050814]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white text-slate-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 font-mono text-xs">
             <div className="text-center border-b border-dashed border-slate-300 pb-3">
-              <h3 className="font-black text-sm uppercase">T-Cloud Eats</h3>
+              <h3 className="font-black text-sm">t-cloud eats</h3>
               <p className="text-[10px] text-slate-500">Order: {latestOrder.id}</p>
-              <div className="mt-1.5 px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider inline-block"
+              <div className="mt-1.5 px-2 py-0.5 rounded text-[8px] font-bold tracking-wider inline-block"
                 style={{
                   background: latestOrder.type === "Take Away" ? "rgba(245,158,11,0.1)" : latestOrder.type === "Pick Up" ? "rgba(168,85,247,0.1)" : "rgba(59,130,246,0.1)",
                   color: latestOrder.type === "Take Away" ? "#D97706" : latestOrder.type === "Pick Up" ? "#7C3AED" : "#2563EB",
                   border: `1px solid ${latestOrder.type === "Take Away" ? "rgba(245,158,11,0.2)" : latestOrder.type === "Pick Up" ? "rgba(168,85,247,0.2)" : "rgba(59,130,246,0.2)"}`
                 }}
               >
-                {latestOrder.type} — {
+                {latestOrder.type.toUpperCase()} — {
                   latestOrder.type === "Take Away" 
-                    ? "Customer Collect" 
+                    ? "CUSTOMER COLLECT" 
                     : latestOrder.type === "Pick Up" 
-                      ? "Uber/PickMe Rider" 
+                      ? "UBER/PICKME RIDER" 
                       : "t-cloud eats Rider"
                 }
               </div>
@@ -3689,7 +3689,7 @@ export default function PosPage() {
                 {(() => {
                   const currentCustomer = customers.find(x => x.phone === latestOrder.customer?.phone);
                   const customerName = currentCustomer ? currentCustomer.name : latestOrder.customer?.name || "Customer";
-                  const messageText = `Hi ${customerName},\n\nThank you for your order! We are preparing it now and hope you enjoy your meal.\n\nYou can view your bill and track your order status here:\n${getBillUrl(latestOrder.id)}\n\nHave a great day!\n\nBest regards,\nThe T-Cloud Eats Team`;
+                  const messageText = `Hi ${customerName},\n\nThank you for your order! We are preparing it now and hope you enjoy your meal.\n\nYou can view your bill and track your order status here:\n${getBillUrl(latestOrder.id)}\n\nHave a great day!\n\nBest regards,\nthe t-cloud eats Team`;
                   return (
                     <a
                       href={`https://wa.me/${latestOrder.customer?.phone?.replace(/\D/g, "")}?text=${encodeURIComponent(messageText)}`}
