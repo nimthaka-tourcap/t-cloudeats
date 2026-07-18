@@ -70,7 +70,7 @@ interface Order {
   tax: number;
   total: number;
   status: "Preparing" | "Ready" | "Dispatched" | "Completed" | "Voided" | "Ignored";
-  type: "Take Away" | "Pick Up" | "Delivery" | "3rd Party";
+  type: "POS" | "Direct" | "3rd Party" | "Take Away" | "Pick Up" | "Delivery";
   customer?: CustomerDetails;
 }
 
@@ -702,7 +702,7 @@ export default function PosPage() {
   const [activeCategory, setActiveCategory] = useState("All Categories");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [orderType, setOrderType] = useState<"Take Away" | "Pick Up" | "Delivery" | "3rd Party">("Delivery");
+  const [orderType, setOrderType] = useState<"POS" | "Direct" | "3rd Party">("POS");
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [commentEditingItemId, setCommentEditingItemId] = useState<number | null>(null);
@@ -810,7 +810,13 @@ export default function PosPage() {
         const order = orderHistory.find(o => o.id === selectedInvoiceId);
         if (order) {
           setCart(order.items.map(item => ({ ...item, isNew: false })));
-          setOrderType(order.type);
+          let mappedType: "POS" | "Direct" | "3rd Party" = "POS";
+          if (order.type === "Delivery" || order.type === "Direct") {
+            mappedType = "Direct";
+          } else if (order.type === "3rd Party") {
+            mappedType = "3rd Party";
+          }
+          setOrderType(mappedType);
         }
         lastLoadedIdRef.current = selectedInvoiceId;
       }
@@ -1131,7 +1137,15 @@ export default function PosPage() {
         if (payload.cart !== undefined) setCart(payload.cart);
         if (payload.selectedInvoiceId !== undefined) setSelectedInvoiceId(payload.selectedInvoiceId);
         if (payload.activeSidebar !== undefined) setActiveSidebar(payload.activeSidebar);
-        if (payload.orderType !== undefined) setOrderType(payload.orderType);
+        if (payload.orderType !== undefined) {
+          let mappedType: "POS" | "Direct" | "3rd Party" = "POS";
+          if (payload.orderType === "Delivery" || payload.orderType === "Direct") {
+            mappedType = "Direct";
+          } else if (payload.orderType === "3rd Party") {
+            mappedType = "3rd Party";
+          }
+          setOrderType(mappedType);
+        }
         if (payload.customerPhone !== undefined) setCustomerPhone(payload.customerPhone);
         if (payload.customerName !== undefined) setCustomerName(payload.customerName);
         if (payload.customerAddress !== undefined) setCustomerAddress(payload.customerAddress);
@@ -1359,7 +1373,7 @@ export default function PosPage() {
     if (selectedOrder.status === "Preparing") {
       nextStatus = "Ready";
     } else if (selectedOrder.status === "Ready") {
-      if (selectedOrder.type === "Delivery") {
+      if (selectedOrder.type === "Delivery" || selectedOrder.type === "Direct") {
         nextStatus = "Dispatched";
       } else {
         nextStatus = "Completed";
@@ -2482,8 +2496,8 @@ export default function PosPage() {
                                 <td className="px-4 py-3">
                                   <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
                                     style={{
-                                      background: order.type === "Take Away" ? "rgba(245,158,11,0.12)" : order.type === "Pick Up" ? "rgba(168,85,247,0.12)" : "rgba(59,130,246,0.12)",
-                                      color: order.type === "Take Away" ? "#F59E0B" : order.type === "Pick Up" ? "#A855F7" : "#3B82F6",
+                                      background: (order.type === "Take Away" || order.type === "POS") ? "rgba(245,158,11,0.12)" : (order.type === "Pick Up" || order.type === "3rd Party") ? "rgba(168,85,247,0.12)" : "rgba(59,130,246,0.12)",
+                                      color: (order.type === "Take Away" || order.type === "POS") ? "#F59E0B" : (order.type === "Pick Up" || order.type === "3rd Party") ? "#A855F7" : "#3B82F6",
                                     }}
                                   >
                                     {order.type}
@@ -3273,44 +3287,44 @@ export default function PosPage() {
                       {(() => {
                         const settled = orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored");
                         const totalO = settled.length || 1;
-                        const takeAway = settled.filter(o => o.type === "Take Away").length;
-                        const pickUp = settled.filter(o => o.type === "Pick Up" || o.type === "3rd Party").length;
-                        const delivery = settled.filter(o => o.type === "Delivery").length;
+                        const posOrders = settled.filter(o => o.type === "Take Away" || o.type === "POS").length;
+                        const thirdParty = settled.filter(o => o.type === "Pick Up" || o.type === "3rd Party").length;
+                        const directOrders = settled.filter(o => o.type === "Delivery" || o.type === "Direct").length;
 
-                        const pctTA = Math.round((takeAway / totalO) * 100);
-                        const pctPU = Math.round((pickUp / totalO) * 100);
-                        const pctDL = Math.round((delivery / totalO) * 100);
+                        const pctPOS = Math.round((posOrders / totalO) * 100);
+                        const pct3P = Math.round((thirdParty / totalO) * 100);
+                        const pctDir = Math.round((directOrders / totalO) * 100);
 
                         return (
                           <div className="space-y-3.5">
-                            {/* Take Away */}
+                            {/* POS Orders */}
                             <div className="space-y-1">
                               <div className="flex justify-between text-[10px] font-bold">
-                                <span className="text-amber-400">Take Away (Customer Collect)</span>
-                                <span className="text-slate-300">{takeAway} ({pctTA}%)</span>
+                                <span className="text-amber-400">POS Orders</span>
+                                <span className="text-slate-300">{posOrders} ({pctPOS}%)</span>
                               </div>
                               <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
-                                <div className="bg-amber-400 h-full rounded-full transition-all duration-500" style={{ width: `${pctTA}%` }} />
+                                <div className="bg-amber-400 h-full rounded-full transition-all duration-500" style={{ width: `${pctPOS}%` }} />
+                              </div>
+                            </div>
+                            {/* Direct Orders */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] font-bold">
+                                <span className="text-blue-400">Direct Orders (Website)</span>
+                                <span className="text-slate-300">{directOrders} ({pctDir}%)</span>
+                              </div>
+                              <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
+                                <div className="bg-blue-400 h-full rounded-full transition-all duration-500" style={{ width: `${pctDir}%` }} />
                               </div>
                             </div>
                             {/* 3rd Party */}
                             <div className="space-y-1">
                               <div className="flex justify-between text-[10px] font-bold">
                                 <span className="text-purple-400">3rd Party (Uber / PickMe)</span>
-                                <span className="text-slate-300">{pickUp} ({pctPU}%)</span>
+                                <span className="text-slate-300">{thirdParty} ({pct3P}%)</span>
                               </div>
                               <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
-                                <div className="bg-purple-400 h-full rounded-full transition-all duration-500" style={{ width: `${pctPU}%` }} />
-                              </div>
-                            </div>
-                            {/* Delivery */}
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[10px] font-bold">
-                                <span className="text-blue-400">Delivery (T-Cloud Rider)</span>
-                                <span className="text-slate-300">{delivery} ({pctDL}%)</span>
-                              </div>
-                              <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
-                                <div className="bg-blue-400 h-full rounded-full transition-all duration-500" style={{ width: `${pctDL}%` }} />
+                                <div className="bg-purple-400 h-full rounded-full transition-all duration-500" style={{ width: `${pct3P}%` }} />
                               </div>
                             </div>
                           </div>
@@ -3415,9 +3429,9 @@ export default function PosPage() {
                 </div>
                 <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded" 
                   style={{ 
-                    background: selectedOrderType === "Take Away" ? "rgba(245,158,11,0.12)" : selectedOrderType === "Pick Up" ? "rgba(168,85,247,0.12)" : "rgba(59,130,246,0.12)",
-                    color: selectedOrderType === "Take Away" ? "#F59E0B" : selectedOrderType === "Pick Up" ? "#A855F7" : "#3B82F6",
-                    border: `1px solid ${selectedOrderType === "Take Away" ? "rgba(245,158,11,0.25)" : selectedOrderType === "Pick Up" ? "rgba(168,85,247,0.25)" : "rgba(59,130,246,0.25)"}`
+                    background: (selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "rgba(245,158,11,0.12)" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "rgba(168,85,247,0.12)" : "rgba(59,130,246,0.12)",
+                    color: (selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "#F59E0B" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "#A855F7" : "#3B82F6",
+                    border: `1px solid ${(selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "rgba(245,158,11,0.25)" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "rgba(168,85,247,0.25)" : "rgba(59,130,246,0.25)"}`
                   }}
                 >
                   {selectedInvoiceId ? (() => {
@@ -3459,31 +3473,35 @@ export default function PosPage() {
                 <div className="flex bg-[#0E1628] p-1 rounded-xl border border-[#1E2D4E] w-full">
                   <button
                     type="button"
-                    onClick={() => setOrderType("Delivery")}
+                    onClick={() => setOrderType("POS")}
                     className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
-                      orderType === "Delivery" 
-                        ? "bg-[#3B82F6] text-white shadow-lg shadow-blue-500/20" 
-                        : "text-[#4B5E82] hover:text-slate-300"
-                    }`}
-                  >
-                    Delivery
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOrderType("Take Away")}
-                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
-                      orderType === "Take Away" 
+                      orderType === "POS" 
                         ? "bg-[#F26F21] text-white shadow-lg shadow-orange-500/20" 
                         : "text-[#4B5E82] hover:text-slate-300"
                     }`}
                   >
-                    Take Away
+                    POS
                   </button>
                   <button
                     type="button"
-                    disabled
-                    className="flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg text-slate-600 bg-slate-800/40 border border-slate-800/50 cursor-not-allowed opacity-40 text-center"
-                    title="3rd Party Delivery (Uber Eats & PickMe Food integration coming soon)"
+                    onClick={() => setOrderType("Direct")}
+                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
+                      orderType === "Direct" 
+                        ? "bg-[#3B82F6] text-white shadow-lg shadow-blue-500/20" 
+                        : "text-[#4B5E82] hover:text-slate-300"
+                    }`}
+                  >
+                    Direct
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrderType("3rd Party")}
+                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
+                      orderType === "3rd Party" 
+                        ? "bg-[#8B5CF6] text-white shadow-lg shadow-purple-500/20" 
+                        : "text-[#4B5E82] hover:text-slate-300"
+                    }`}
+                    title="3rd Party Delivery (Uber Eats & PickMe Food)"
                   >
                     3rd Party
                   </button>
@@ -3491,9 +3509,9 @@ export default function PosPage() {
               ) : (
                 <div className="text-[9px] font-bold text-center uppercase tracking-wider text-slate-500">
                   Fulfillment: <span style={{
-                    color: selectedOrderType === "Take Away" ? "#F59E0B" : selectedOrderType === "Pick Up" ? "#A855F7" : "#3B82F6"
+                    color: (selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "#F59E0B" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "#A855F7" : "#3B82F6"
                   }}>{selectedOrderType} ({
-                    selectedOrderType === "Take Away" ? "Collect" : selectedOrderType === "Pick Up" ? "Rider" : "Delivery"
+                    (selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "POS" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "3rd Party" : "Direct"
                   })</span>
                 </div>
               )}
@@ -3734,17 +3752,17 @@ export default function PosPage() {
               <p className="text-[10px] text-slate-500">Order: {latestOrder.id}</p>
               <div className="mt-1.5 px-2 py-0.5 rounded text-[8px] font-bold tracking-wider inline-block"
                 style={{
-                  background: latestOrder.type === "Take Away" ? "rgba(245,158,11,0.1)" : latestOrder.type === "Pick Up" ? "rgba(168,85,247,0.1)" : "rgba(59,130,246,0.1)",
-                  color: latestOrder.type === "Take Away" ? "#D97706" : latestOrder.type === "Pick Up" ? "#7C3AED" : "#2563EB",
-                  border: `1px solid ${latestOrder.type === "Take Away" ? "rgba(245,158,11,0.2)" : latestOrder.type === "Pick Up" ? "rgba(168,85,247,0.2)" : "rgba(59,130,246,0.2)"}`
+                  background: (latestOrder.type === "Take Away" || latestOrder.type === "POS") ? "rgba(245,158,11,0.1)" : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") ? "rgba(168,85,247,0.1)" : "rgba(59,130,246,0.1)",
+                  color: (latestOrder.type === "Take Away" || latestOrder.type === "POS") ? "#D97706" : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") ? "#7C3AED" : "#2563EB",
+                  border: `1px solid ${(latestOrder.type === "Take Away" || latestOrder.type === "POS") ? "rgba(245,158,11,0.2)" : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") ? "rgba(168,85,247,0.2)" : "rgba(59,130,246,0.2)"}`
                 }}
               >
                 {latestOrder.type.toUpperCase()} — {
-                  latestOrder.type === "Take Away" 
-                    ? "CUSTOMER COLLECT" 
-                    : latestOrder.type === "Pick Up" 
-                      ? "UBER/PICKME RIDER" 
-                      : "t-cloud eats Rider"
+                  (latestOrder.type === "Take Away" || latestOrder.type === "POS") 
+                    ? "POS ORDER" 
+                    : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") 
+                      ? "3RD PARTY (UBER & PICK ME)" 
+                      : "DIRECT ORDER (WEBSITE)"
                 }
               </div>
               <p className="text-[8px] font-bold text-orange-600 uppercase mt-1">Status: {latestOrder.status}</p>

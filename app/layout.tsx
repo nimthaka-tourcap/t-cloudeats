@@ -19,7 +19,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "t-cloud eats POS",
   description:
-    "Craving delicious, hot street-style food? t-cloud eats is your premier cloud kitchen delivering fresh Kottu, Fried Rice, Noodles, and Devilled dishes to Mulleriyawa, Angoda, Kotikawatta, Kelanimulla, and IDH (within a 4km radius). Order now on WhatsApp!",
+    "Craving delicious, hot street-style food? t-cloud eats is your premier cloud kitchen delivering fresh Kottu, Fried Rice, Noodles, and Devilled dishes to Mulleriyawa, Angoda, Kotikawatta, Kelanimulla, and IDH (within a 3km radius). Order now on WhatsApp!",
   keywords: [
     "t-cloud eats",
     "food delivery Mulleriyawa",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "t-cloud eats POS",
     description:
-      "Premier cloud kitchen delivering fresh Kottu, Fried Rice, Noodles, and Devilled dishes to Mulleriyawa, Angoda, Kotikawatta, and IDH (within a 4km radius).",
+      "Premier cloud kitchen delivering fresh Kottu, Fried Rice, Noodles, and Devilled dishes to Mulleriyawa, Angoda, Kotikawatta, and IDH (within a 3km radius).",
     type: "website",
     url: "http://t-cloudeats.com/",
   },

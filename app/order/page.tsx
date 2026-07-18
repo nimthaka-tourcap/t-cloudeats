@@ -255,6 +255,15 @@ export default function OrderPage() {
           <div className="menu-grid">
             {filteredItems.map((item) => (
           <div key={item.id} className="menu-card" style={{ padding: "24px" }} data-category={item.category}>
+                {item.image && (
+                  <div className="menu-card-image-wrapper">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="menu-card-image"
+                    />
+                  </div>
+                )}
                 <div className="menu-card-header">
                   <h3 className="menu-card-title">{item.title}</h3>
                   <span className="menu-card-price">Rs {Number(item.price).toLocaleString()}</span>

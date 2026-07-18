@@ -128,7 +128,9 @@ const TOP_10_MENU = [
     portion: "Full Portion",
     tags: ["Popular"],
     description: "Basmati Rice, Fried Chicken Strip, Vegetable serve with Sunny side up, Onion Pickles, Homemade Chili Paste.",
-    category: "Fried Rice"
+    category: "Fried Rice",
+    sku: "FR-02",
+    image: "/Product Images/FR-02.avif"
   },
   {
     id: 2,
@@ -137,7 +139,9 @@ const TOP_10_MENU = [
     portion: "Full Portion",
     tags: ["Popular", "Spicy"],
     description: "Tender Chicken, Prawns, Beef, Basmati Rice, Vegetable Served With Fried Egg And Served With Crispy Crackers.",
-    category: "Fried Rice"
+    category: "Fried Rice",
+    sku: "FR-07",
+    image: "/Product Images/FR-07.avif"
   },
   {
     id: 3,
@@ -146,7 +150,8 @@ const TOP_10_MENU = [
     portion: "Full Portion",
     tags: [],
     description: "Stir Fried Prawns, Basmati rice, Vegetable, serve with Sunny side up, Onion Pickle, Homemade Chili paste.",
-    category: "Fried Rice"
+    category: "Fried Rice",
+    sku: "FR-03"
   },
   {
     id: 4,
@@ -155,7 +160,8 @@ const TOP_10_MENU = [
     portion: "Full Portion",
     tags: ["Chef Special"],
     description: "Aromatic Fried Rice And Colorful Stir-Fried Vegetables With Tender Chicken Finished In A Rich Savory Sauce.",
-    category: "Chopsuey"
+    category: "Chopsuey",
+    sku: "CS-01"
   },
   {
     id: 5,
@@ -164,7 +170,8 @@ const TOP_10_MENU = [
     portion: "1050ml",
     tags: [],
     description: "Refreshing cold Coca Cola bottle.",
-    category: "Beverages"
+    category: "Beverages",
+    sku: "BV-03"
   },
   {
     id: 6,
@@ -173,7 +180,9 @@ const TOP_10_MENU = [
     portion: "Full Portion",
     tags: ["Popular"],
     description: "Black Chicken Curry, Chopped Roti, Vegetables, Aromatic Spices, Serve with Sunny Side Up, Onion Pickle, Homemade Chili Paste.",
-    category: "Kottu"
+    category: "Kottu",
+    sku: "KT-02",
+    image: "/Product Images/KT-02.avif"
   },
   {
     id: 7,
@@ -459,6 +468,15 @@ export default function Home() {
                 const tags = item.tags || [item.category];
                 return (
                   <div key={item.id} className="menu-card" data-category={item.category}>
+                    {item.image && (
+                      <div className="menu-card-image-wrapper">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="menu-card-image"
+                        />
+                      </div>
+                    )}
                     <div className="menu-card-header">
                       <h3 className="menu-card-title">{item.title}</h3>
                       <span className="menu-card-price">{priceText}</span>
@@ -764,7 +782,7 @@ export default function Home() {
                 <TruckIcon />
               </div>
               <div>
-                <p className="map-detail-label">Delivery Zones (Within 4km)</p>
+                <p className="map-detail-label">Delivery Zones (Within 3km)</p>
                 <p className="map-detail-value">
                   Mulleriyawa, Angoda, Kotikawatta, Kelanimulla, IDH &amp; surrounding areas.
                 </p>
