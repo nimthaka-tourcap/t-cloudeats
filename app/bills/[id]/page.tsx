@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { RotateCw, AlertTriangle, Printer, Phone, Globe, Mail, Heart, Check, Upload, MapPin, Star, X, CreditCard, Landmark, DollarSign } from "lucide-react";
+import { RotateCw, AlertTriangle, Printer, Phone, Globe, Mail, Heart, Check, Upload, MapPin, Star, X, CreditCard, Landmark, DollarSign, Copy } from "lucide-react";
 import Image from "next/image";
 
 interface OrderItem {
@@ -65,12 +65,36 @@ export default function BillPage() {
   const [submittingRating, setSubmittingRating] = useState(false);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
 
+  const [copiedName, setCopiedName] = useState(false);
+  const [copiedAccount, setCopiedAccount] = useState(false);
+
   const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
 
+  const copyToClipboard = async (text: string, label: string, removeSpaces = false) => {
+    try {
+      const cleanText = removeSpaces ? text.replace(/\s+/g, "") : text;
+      await navigator.clipboard.writeText(cleanText);
+      showToast(`${label} copied to clipboard!`, "success");
+      if (label === "Account Name") {
+        setCopiedName(true);
+        setTimeout(() => setCopiedName(false), 2000);
+      } else if (label === "Account Number") {
+        setCopiedAccount(true);
+        setTimeout(() => setCopiedAccount(false), 2000);
+      }
+    } catch (err) {
+      showToast("Failed to copy.", "error");
+    }
+  };
+
   const updateOrderInDb = async (updatedCustomer: any) => {
+    const originalCustomer = order?.customer;
+    // Optimistically update the state immediately for zero-latency visual updates
+    setOrder(prev => prev ? { ...prev, customer: updatedCustomer } : null);
+
     try {
       const { error } = await supabase
         .from("orders")
@@ -80,12 +104,14 @@ export default function BillPage() {
       if (error) {
         console.error("Error updating order:", error);
         showToast("Failed to update payment information.", "error");
-      } else {
-        setOrder(prev => prev ? { ...prev, customer: updatedCustomer } : null);
+        // Revert on failure
+        setOrder(prev => prev ? { ...prev, customer: originalCustomer } : null);
       }
     } catch (err) {
       console.error("Failed to sync payment info:", err);
       showToast("Failed to connect to database.", "error");
+      // Revert on failure
+      setOrder(prev => prev ? { ...prev, customer: originalCustomer } : null);
     }
   };
 
@@ -107,8 +133,8 @@ export default function BillPage() {
     const file = e.target.files?.[0];
     if (!file || !order) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      showToast("File size too large. Maximum size is 2MB.", "error");
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("File size too large. Maximum size is 5MB.", "error");
       return;
     }
 
@@ -346,124 +372,154 @@ export default function BillPage() {
 
       {/* Interactive Customer Panel */}
       {showPaymentSection && (
-        <div id="payment-section" className="no-print w-full max-w-[400px] bg-[#0E1628]/95 border border-[#1E2D4E] p-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-5 mb-6 z-10 text-white scroll-mt-6">
-          
-          {/* Title */}
-          <div className="border-b border-[#1E2D4E] pb-3">
-            <h2 className="text-sm font-black uppercase tracking-wider text-slate-200">Payment &amp; Order Options</h2>
-            <p className="text-[10px] text-slate-400 mt-0.5">Please finalize your payment and actions below.</p>
-          </div>
-
-          {/* Payment Selection */}
-          <div className="space-y-3">
-            <p className="text-[10px] font-bold text-[#FF6B35] uppercase tracking-wider">Select Payment Method</p>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: "Cash on delivery (COD)", label: "COD", desc: "Cash on Delivery", icon: DollarSign },
-                { id: "Bank transfer", label: "Bank", desc: "Bank Transfer", icon: Landmark },
-                { id: "Credit Order", label: "Credit", desc: "Credit Order", icon: CreditCard }
-              ].map((method) => {
-                const Icon = method.icon;
-                const isSelected = order.customer?.payment_method === method.id;
-                return (
-                  <button
-                    key={method.id}
-                    onClick={() => handlePaymentMethodChange(method.id)}
-                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all duration-200 cursor-pointer w-full gap-2 ${
-                      isSelected 
-                        ? "border-[#FF6B35] bg-[#FF6B35]/10 shadow-[0_0_15px_rgba(255,107,53,0.15)]" 
-                        : "border-[#1E2D4E] bg-white/5 hover:border-slate-500/30 hover:bg-white/10"
-                    }`}
-                  >
-                    <div className={`p-2 rounded-lg ${isSelected ? "bg-[#FF6B35] text-white" : "bg-white/5 text-slate-400"}`}>
-                      <Icon size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className={`text-[10px] font-black uppercase tracking-wider ${isSelected ? "text-white" : "text-slate-200"}`}>{method.label}</p>
-                      <p className="text-[8px] text-slate-400 mt-0.5 leading-tight">{method.desc}</p>
-                    </div>
-                    {isSelected && (
-                      <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-[#FF6B35] flex items-center justify-center text-white shrink-0">
-                        <Check size={8} strokeWidth={3} />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+        <div className="fixed inset-0 bg-[#050814]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 no-print">
+          <div id="payment-section" className="relative w-full max-w-[400px] bg-[#0E1628]/95 border border-[#1E2D4E] p-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-5 text-white max-h-[90vh] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            <button 
+              onClick={() => setShowPaymentSection(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer bg-transparent border-none outline-none"
+              aria-label="Close payment options"
+            >
+              <X size={18} />
+            </button>
+            
+            {/* Title */}
+            <div className="border-b border-[#1E2D4E] pb-3">
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-200">Payment &amp; Order Options</h2>
+              <p className="text-[10px] text-slate-400 mt-0.5">Please finalize your payment and actions below.</p>
             </div>
-          </div>
 
-          {/* Bank Transfer Details & Receipt Upload */}
-          {order.customer?.payment_method === "Bank transfer" && (
-            <div className="border border-[#1E2D4E] bg-white/[0.02] p-4 rounded-xl space-y-4">
-              <div className="space-y-2">
-                <p className="text-[9px] font-black uppercase text-[#FF6B35] tracking-wider">NDB Bank Details</p>
-                <div className="bg-[#090D1A] border border-[#1E2D4E] p-3 rounded-lg text-xs space-y-1.5 font-mono text-slate-300">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Bank:</span>
-                    <span className="font-bold text-white text-right">National Development Bank (NDB)</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Account Name:</span>
-                    <span className="font-bold text-white text-right">W M T I Thilakarathna</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-500">Account No:</span>
-                    <span className="font-bold text-[#FF6B35] text-right text-sm">1060 0229 3137</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Branch Code:</span>
-                    <span className="font-bold text-white text-right">1</span>
+            {/* Payment Selection */}
+            <div className="space-y-3">
+              <p className="text-[10px] font-bold text-[#FF6B35] uppercase tracking-wider">Select Payment Method</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: "Cash on delivery (COD)", label: "COD", desc: "Cash on Delivery", icon: DollarSign },
+                  { id: "Bank transfer", label: "Bank", desc: "Bank Transfer", icon: Landmark }
+                ].map((method) => {
+                  const Icon = method.icon;
+                  const isSelected = order.customer?.payment_method === method.id;
+                  return (
+                    <button
+                      key={method.id}
+                      onClick={() => handlePaymentMethodChange(method.id)}
+                      className={`relative flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all duration-200 cursor-pointer w-full gap-2 ${
+                        isSelected 
+                          ? "border-[#FF6B35] bg-[#FF6B35]/10 shadow-[0_0_15px_rgba(255,107,53,0.15)]" 
+                          : "border-[#1E2D4E] bg-white/5 hover:border-slate-500/30 hover:bg-white/10"
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${isSelected ? "bg-[#FF6B35] text-white" : "bg-white/5 text-slate-400"}`}>
+                        <Icon size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className={`text-[10px] font-black uppercase tracking-wider ${isSelected ? "text-white" : "text-slate-200"}`}>{method.label}</p>
+                        <p className="text-[8px] text-slate-400 mt-0.5 leading-tight">{method.desc}</p>
+                      </div>
+                      {isSelected && (
+                        <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-[#FF6B35] flex items-center justify-center text-white shrink-0">
+                          <Check size={8} strokeWidth={3} />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bank Transfer Details & Receipt Upload */}
+            {order.customer?.payment_method === "Bank transfer" && (
+              <div className="border border-[#1E2D4E] bg-white/[0.02] p-4 rounded-xl space-y-4">
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black uppercase text-[#FF6B35] tracking-wider">NDB Bank Details</p>
+                  <div className="bg-[#090D1A] border border-[#1E2D4E] p-3 rounded-lg text-xs space-y-1.5 font-mono text-slate-300">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Bank:</span>
+                      <span className="font-bold text-white text-right">National Development Bank (NDB)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Branch Name:</span>
+                      <span className="font-bold text-white text-right">Nawam Mawatha</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Account Name:</span>
+                      <span className="font-bold text-white text-right flex items-center gap-1">
+                        <button 
+                          onClick={() => copyToClipboard("W M T I Thilakarathna", "Account Name")}
+                          className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-colors border-none bg-transparent cursor-pointer flex items-center"
+                          title="Copy Account Name"
+                        >
+                          {copiedName ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                        </button>
+                        <span>W M T I Thilakarathna</span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Account No:</span>
+                      <span className="font-bold text-[#FF6B35] text-right text-sm flex items-center gap-1">
+                        <button 
+                          onClick={() => copyToClipboard("1060 0229 3137", "Account Number", true)}
+                          className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-[#FF6B35] transition-colors border-none bg-transparent cursor-pointer flex items-center"
+                          title="Copy Account Number"
+                        >
+                          {copiedAccount ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                        </button>
+                        <span>1060 0229 3137</span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Branch Code:</span>
+                      <span className="font-bold text-white text-right">1</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Receipt Upload Button */}
-              <div className="space-y-2">
-                <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Upload Transfer Invoice / Slip</p>
-                
-                <label className="flex items-center justify-center gap-2 w-full bg-[#FF6B35]/10 border border-dashed border-[#FF6B35]/30 hover:border-[#FF6B35] hover:bg-[#FF6B35]/15 py-3 px-4 rounded-xl text-xs font-bold text-slate-200 cursor-pointer transition-all duration-200">
-                  <Upload size={14} className="text-[#FF6B35]" />
-                  <span>Upload Invoice Slip</span>
-                  <input 
-                    type="file" 
-                    accept="image/*,application/pdf" 
-                    className="hidden" 
-                    onChange={handleFileChange}
-                  />
-                </label>
+                {/* Receipt Upload Button */}
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Upload Transfer Invoice / Slip</p>
+                  
+                  <label className="flex items-center justify-center gap-2 w-full bg-[#FF6B35]/10 border border-dashed border-[#FF6B35]/30 hover:border-[#FF6B35] hover:bg-[#FF6B35]/15 py-3 px-4 rounded-xl text-xs font-bold text-slate-200 cursor-pointer transition-all duration-200">
+                    <Upload size={14} className="text-[#FF6B35]" />
+                    <span>Upload Invoice Slip</span>
+                    <input 
+                      type="file" 
+                      accept="image/*,application/pdf" 
+                      className="hidden" 
+                      onChange={handleFileChange}
+                    />
+                  </label>
 
-                {/* Upload Status / Preview */}
-                {order.customer?.payment_receipt && (
-                  <div className="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl mt-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
-                      <Check size={16} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-bold text-emerald-400">Invoice uploaded successfully</p>
-                      <p className="text-[9px] text-slate-400 truncate mt-0.5">
-                        {order.customer?.payment_receipt_filename || "Receipt invoice file"}
-                      </p>
-                    </div>
-                    {order.customer?.payment_receipt.startsWith("data:image/") && (
-                      <div className="relative w-10 h-10 rounded border border-white/10 overflow-hidden shrink-0">
-                        <img 
-                          src={order.customer.payment_receipt} 
-                          alt="Receipt preview" 
-                          className="object-cover w-full h-full cursor-zoom-in"
-                          onClick={() => {
-                            const w = window.open();
-                            w?.document.write(`<img src="${order.customer?.payment_receipt}" style="max-width: 100%; height: auto;" />`);
-                          }}
-                        />
+                  {/* Upload Status / Preview */}
+                  {order.customer?.payment_receipt && (
+                    <div className="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl mt-2">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
+                        <Check size={16} />
                       </div>
-                    )}
-                  </div>
-                )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold text-emerald-400">Invoice uploaded successfully</p>
+                        <p className="text-[9px] text-slate-400 truncate mt-0.5">
+                          {order.customer?.payment_receipt_filename || "Receipt invoice file"}
+                        </p>
+                      </div>
+                      {order.customer?.payment_receipt.startsWith("data:image/") && (
+                        <div className="relative w-10 h-10 rounded border border-white/10 overflow-hidden shrink-0">
+                          <img 
+                            src={order.customer.payment_receipt} 
+                            alt="Receipt preview" 
+                            className="object-cover w-full h-full cursor-zoom-in"
+                            onClick={() => {
+                              const w = window.open();
+                              w?.document.write(`<img src="${order.customer?.payment_receipt}" style="max-width: 100%; height: auto;" />`);
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
+          </div>
         </div>
       )}
 

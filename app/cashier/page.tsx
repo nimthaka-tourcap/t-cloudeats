@@ -60,6 +60,9 @@ interface CustomerDetails {
   phone: string;
   name: string;
   address: string;
+  payment_method?: string;
+  payment_receipt?: string;
+  payment_receipt_filename?: string;
 }
 
 interface Order {
@@ -976,6 +979,34 @@ export default function PosPage() {
           
           setOrderHistory(merged);
           localStorage.setItem("t-cloud-eats-orders", JSON.stringify(merged));
+
+          // Clean up payment receipts older than 7 days in the database to clear storage
+          const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+          const oldReceiptOrders = filtered.filter((o: any) => {
+            const orderDate = new Date(o.timestamp);
+            return orderDate < sevenDaysAgo && o.customer && o.customer.payment_receipt;
+          });
+
+          if (oldReceiptOrders.length > 0) {
+            console.log(`[Cleanup] Found ${oldReceiptOrders.length} orders older than 7 days with payment receipts. Clearing...`);
+            oldReceiptOrders.forEach((o: any) => {
+              const cleanedCustomer = { ...o.customer };
+              delete cleanedCustomer.payment_receipt;
+              delete cleanedCustomer.payment_receipt_filename;
+
+              supabase
+                .from("orders")
+                .update({ customer: cleanedCustomer })
+                .eq("id", o.id)
+                .then(({ error }) => {
+                  if (error) {
+                    console.error(`[Cleanup] Failed to clear receipt for order ${o.id}:`, error);
+                  } else {
+                    console.log(`[Cleanup] Cleared receipt for order ${o.id}`);
+                  }
+                });
+            });
+          }
         }
       } else {
         console.error("Orders query timed out or failed:", ordersRes.reason);
@@ -2488,6 +2519,30 @@ export default function PosPage() {
                                         })()}
                                       </span>
                                       <span className="text-[9px] text-slate-500 font-mono">{order.customer.phone}</span>
+                                      {order.customer.payment_receipt && (
+                                        <div className="mt-1 flex items-center gap-1.5">
+                                          <span className="text-[8px] font-black uppercase text-emerald-400 px-1 bg-emerald-500/10 border border-emerald-500/20 rounded">
+                                            Slip Uploaded
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              const w = window.open();
+                                              w?.document.write(`
+                                                <html>
+                                                  <body style="margin: 0; background: #060B18; display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+                                                    <img src="${order.customer?.payment_receipt}" style="max-width: 90%; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+                                                  </body>
+                                                </html>
+                                              `);
+                                            }}
+                                            className="text-[9px] text-emerald-400 hover:text-emerald-300 underline font-bold cursor-pointer bg-transparent border-none p-0"
+                                          >
+                                            View Receipt
+                                          </button>
+                                        </div>
+                                      )}
                                     </div>
                                   ) : (
                                     <span className="text-slate-500 italic">No customer details</span>
