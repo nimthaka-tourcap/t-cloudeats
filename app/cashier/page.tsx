@@ -54,6 +54,7 @@ interface CartItem {
   quantity: number;
   isNew?: boolean;
   comment?: string;
+  addonPrice?: number;
 }
 
 interface CustomerDetails {
@@ -63,6 +64,9 @@ interface CustomerDetails {
   payment_method?: string;
   payment_receipt?: string;
   payment_receipt_filename?: string;
+  discount_type?: "percentage" | "fixed";
+  discount_value?: number;
+  discount_amount?: number;
 }
 
 interface Order {
@@ -709,6 +713,8 @@ export default function PosPage() {
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [commentEditingItemId, setCommentEditingItemId] = useState<number | null>(null);
+  const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
+  const [discountValue, setDiscountValue] = useState<number>(0);
   const [isDatabaseSyncing, setIsDatabaseSyncing] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
@@ -813,6 +819,8 @@ export default function PosPage() {
         const order = orderHistory.find(o => o.id === selectedInvoiceId);
         if (order) {
           setCart(order.items.map(item => ({ ...item, isNew: false })));
+          setDiscountType(order.customer?.discount_type || "percentage");
+          setDiscountValue(order.customer?.discount_value || 0);
           let mappedType: "POS" | "Direct" | "3rd Party" = "POS";
           if (order.type === "Delivery" || order.type === "Direct") {
             mappedType = "Direct";
@@ -826,6 +834,8 @@ export default function PosPage() {
     } else {
       if (lastLoadedIdRef.current !== null) {
         setCart([]);
+        setDiscountType("percentage");
+        setDiscountValue(0);
         lastLoadedIdRef.current = null;
       }
     }
@@ -1544,15 +1554,24 @@ export default function PosPage() {
 
   const handleUpdateOrder = async () => {
     if (!selectedInvoiceId) return;
-    const newSubtotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+    const newSubtotal = cart.reduce((sum, item) => sum + (item.menuItem.price + (item.addonPrice || 0)) * item.quantity, 0);
     const newTax = 0;
-    const newTotal = newSubtotal;
+    const newDiscountAmount = discountType === "percentage" ? (newSubtotal * discountValue) / 100 : discountValue;
+    const newTotal = Math.max(0, newSubtotal - newDiscountAmount);
 
     // Strip temporary isNew flag from items before saving
     const cleanCart = cart.map(item => {
       const { isNew, ...rest } = item;
       return rest;
     });
+
+    const existingOrder = orderHistory.find(o => o.id === selectedInvoiceId);
+    const updatedCustomer = existingOrder ? {
+      ...existingOrder.customer,
+      discount_type: discountType,
+      discount_value: discountValue,
+      discount_amount: newDiscountAmount
+    } : undefined;
 
     // 1. Update local state
     const updatedHistory = orderHistory.map(o => {
@@ -1562,7 +1581,8 @@ export default function PosPage() {
           items: cleanCart,
           subtotal: newSubtotal,
           tax: newTax,
-          total: newTotal
+          total: newTotal,
+          customer: updatedCustomer as any
         };
       }
       return o;
@@ -1578,7 +1598,8 @@ export default function PosPage() {
           items: cleanCart,
           subtotal: newSubtotal,
           tax: newTax,
-          total: newTotal
+          total: newTotal,
+          customer: updatedCustomer
         })
         .eq("id", selectedInvoiceId)
     )
@@ -1597,6 +1618,8 @@ export default function PosPage() {
 
     slideCacheWindow();
     setCart([]);
+    setDiscountType("percentage");
+    setDiscountValue(0);
     setSelectedInvoiceId(null);
   };
 
@@ -1680,7 +1703,12 @@ export default function PosPage() {
       total,
       status: "Preparing",
       type: orderType,
-      customer: newCustomer
+      customer: {
+        ...newCustomer,
+        discount_type: discountType,
+        discount_value: discountValue,
+        discount_amount: discountAmount
+      }
     };
 
     // 4. Update local order logs state and localStorage
@@ -1719,6 +1747,8 @@ export default function PosPage() {
 
     slideCacheWindow();
     setCart([]);
+    setDiscountType("percentage");
+    setDiscountValue(0);
     setShowCustomerModal(false);
   };
 
@@ -1781,9 +1811,16 @@ export default function PosPage() {
   };
 
   // Financial Calculations
-  const subtotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + (item.menuItem.price + (item.addonPrice || 0)) * item.quantity, 0);
   const tax = 0;
-  const total = subtotal;
+  const discountAmount = useMemo(() => {
+    if (discountType === "percentage") {
+      return (subtotal * discountValue) / 100;
+    } else {
+      return discountValue;
+    }
+  }, [subtotal, discountType, discountValue]);
+  const total = Math.max(0, subtotal - discountAmount);
 
   const selectedOrder = useMemo(() => {
     if (!selectedInvoiceId) return null;
@@ -2577,13 +2614,27 @@ export default function PosPage() {
                                         <div className="space-y-1 text-[10px] text-slate-300 max-w-[220px]">
                                           {order.items.map((item, idx) => {
                                             const itemTitle = item.menuItem ? item.menuItem.title : (item as any).title;
-                                            const itemPrice = item.menuItem ? item.menuItem.price : (item as any).price;
+                                            const itemPrice = (item.menuItem ? item.menuItem.price : (item as any).price || 0) + ((item as any).addonPrice || 0);
                                             const itemQty = item.quantity;
-                                            const itemTotal = (itemPrice || 0) * itemQty;
+                                            const itemTotal = itemPrice * itemQty;
                                             return (
-                                              <div key={idx} className="flex justify-between gap-4 border-b border-white/[0.03] pb-0.5 last:border-b-0">
-                                                <span className="truncate" title={itemTitle}>{itemTitle} x{itemQty}</span>
-                                                <span className="font-mono text-slate-400 whitespace-nowrap">Rs {itemTotal.toLocaleString()}</span>
+                                              <div key={idx} className="flex flex-col border-b border-white/[0.03] pb-0.5 last:border-b-0">
+                                                <div className="flex justify-between gap-4">
+                                                  <span className="truncate font-medium text-slate-200" title={itemTitle}>{itemTitle} x{itemQty}</span>
+                                                  <span className="font-mono text-slate-400 whitespace-nowrap">Rs {itemTotal.toLocaleString()}</span>
+                                                </div>
+                                                {(item.comment || (item as any).addonPrice) && (
+                                                  <div className="flex items-center gap-1 mt-0.5 pl-1 flex-wrap">
+                                                    {item.comment && (
+                                                      <span className="text-[9px] text-amber-400/80 italic">💬 {item.comment}</span>
+                                                    )}
+                                                    {(item as any).addonPrice ? (
+                                                      <span className="text-[8px] font-bold text-amber-500 bg-amber-500/10 px-0.5 border border-amber-500/20 rounded">
+                                                        + Rs {(item as any).addonPrice}
+                                                      </span>
+                                                    ) : null}
+                                                  </div>
+                                                )}
                                               </div>
                                             );
                                           })}
@@ -2609,8 +2660,17 @@ export default function PosPage() {
                                                         <span className="font-bold flex-1 leading-tight text-left">{itemTitle}</span>
                                                         <span className="font-mono text-[#F26F21] whitespace-nowrap">x{itemQty}</span>
                                                       </div>
-                                                      {item.comment && (
-                                                        <p className="text-[9px] text-amber-400/80 mt-0.5 italic pl-1">💬 {item.comment}</p>
+                                                      {(item.comment || (item as any).addonPrice) && (
+                                                        <div className="flex items-center gap-1 mt-0.5 pl-1 flex-wrap">
+                                                          {item.comment && (
+                                                            <span className="text-[9px] text-amber-400/80 italic">💬 {item.comment}</span>
+                                                          )}
+                                                          {(item as any).addonPrice ? (
+                                                            <span className="text-[8px] font-bold text-amber-500 bg-amber-500/10 px-0.5 border border-amber-500/20 rounded">
+                                                              + Rs {(item as any).addonPrice}
+                                                            </span>
+                                                          ) : null}
+                                                        </div>
                                                       )}
                                                     </div>
                                                   );
@@ -3589,42 +3649,79 @@ export default function PosPage() {
                           <span className="text-[7px] font-black uppercase bg-emerald-500/10 text-emerald-400 px-1 py-0.5 rounded border border-emerald-500/25">New</span>
                         )}
                       </div>
-                      {/* Comment display */}
-                      {item.comment && commentEditingItemId !== item.menuItem.id && (
-                        <p className="text-[9px] mt-0.5 italic" style={{ color: "#FBBF24" }}>💬 {item.comment}</p>
+                      {/* Comment & Addon display */}
+                      {commentEditingItemId !== item.menuItem.id && (item.comment || item.addonPrice) && (
+                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                          {item.comment && (
+                            <span className="text-[9px] italic text-amber-400">💬 {item.comment}</span>
+                          )}
+                          {item.addonPrice ? (
+                            <span className="text-[8px] font-black uppercase text-amber-500 bg-amber-500/10 px-1 border border-amber-500/20 rounded">
+                              + Rs {item.addonPrice.toLocaleString()}
+                            </span>
+                          ) : null}
+                        </div>
                       )}
-                      {/* Inline comment editor */}
+                      {/* Inline comment & addon editor */}
                       {commentEditingItemId === item.menuItem.id && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <input
-                            autoFocus
-                            type="text"
-                            placeholder="e.g. Black Pork, Extra Spicy..."
-                            defaultValue={item.comment || ""}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                const val = (e.target as HTMLInputElement).value.trim();
-                                setCart(prev => prev.map(ci => ci.menuItem.id === item.menuItem.id && ci.isNew === item.isNew ? { ...ci, comment: val || undefined } : ci));
+                        <div className="flex flex-col gap-1.5 mt-1.5 p-2 rounded-lg border border-[#FBBF24]/30 bg-[#0A101F]/80">
+                          <div className="flex gap-1.5">
+                            <input
+                              id={`desc-edit-${item.menuItem.id}`}
+                              type="text"
+                              placeholder="Addon (e.g. Extra Rice)"
+                              defaultValue={item.comment || ""}
+                              className="flex-1 text-[10px] px-2 py-1 rounded border outline-none bg-[#0E1628] border-slate-700 text-slate-200"
+                              onKeyDown={(e) => {
+                                if (e.key === "Escape") setCommentEditingItemId(null);
+                              }}
+                            />
+                            <input
+                              id={`price-edit-${item.menuItem.id}`}
+                              type="number"
+                              placeholder="Price"
+                              defaultValue={item.addonPrice || ""}
+                              className="w-16 text-[10px] px-2 py-1 rounded border outline-none bg-[#0E1628] border-slate-700 text-slate-200"
+                              onKeyDown={(e) => {
+                                if (e.key === "Escape") setCommentEditingItemId(null);
+                              }}
+                            />
+                          </div>
+                          <div className="flex justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setCommentEditingItemId(null)}
+                              className="text-[9px] font-black uppercase text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-white/5 cursor-pointer bg-transparent border-none"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const descInput = document.getElementById(`desc-edit-${item.menuItem.id}`) as HTMLInputElement;
+                                const priceInput = document.getElementById(`price-edit-${item.menuItem.id}`) as HTMLInputElement;
+                                const descVal = descInput?.value.trim();
+                                const priceVal = parseFloat(priceInput?.value) || 0;
+                                
+                                setCart(prev => prev.map(ci => 
+                                  ci.menuItem.id === item.menuItem.id && ci.isNew === item.isNew 
+                                    ? { ...ci, comment: descVal || undefined, addonPrice: priceVal || undefined } 
+                                    : ci
+                                ));
                                 setCommentEditingItemId(null);
-                              } else if (e.key === "Escape") {
-                                setCommentEditingItemId(null);
-                              }
-                            }}
-                            onBlur={(e) => {
-                              const val = e.target.value.trim();
-                              setCart(prev => prev.map(ci => ci.menuItem.id === item.menuItem.id && ci.isNew === item.isNew ? { ...ci, comment: val || undefined } : ci));
-                              setCommentEditingItemId(null);
-                            }}
-                            className="flex-1 text-[9px] px-2 py-1 rounded-lg border outline-none"
-                            style={{ background: "#0A101F", borderColor: "#FBBF24", color: "#FBBF24" }}
-                          />
+                              }}
+                              className="text-[9px] font-black uppercase text-white bg-[#FBBF24] hover:bg-[#D97706] px-2.5 py-1 rounded cursor-pointer border-none"
+                            >
+                              Save Addon
+                            </button>
+                          </div>
                         </div>
                       )}
                       <p className="text-[10px] mt-0.5 font-mono" style={{ color: "#4B5E82" }}>
-                        {item.quantity} × Rs {(item.menuItem ? item.menuItem.price : (item as any).price || 0).toLocaleString()}
+                        {item.quantity} × Rs {(item.menuItem.price + (item.addonPrice || 0)).toLocaleString()}
                       </p>
                       <p className="text-[10px] font-bold font-mono mt-0.5" style={{ color: "#F26F21" }}>
-                        Rs {(item.quantity * (item.menuItem ? item.menuItem.price : (item as any).price || 0)).toLocaleString()}
+                        Rs {(item.quantity * (item.menuItem.price + (item.addonPrice || 0))).toLocaleString()}
                       </p>
                     </div>
 
@@ -3685,8 +3782,47 @@ export default function PosPage() {
 
             {/* Totals & Pay Button */}
             <div className="p-4 shrink-0 space-y-3" style={{ borderTop: "1px solid #14203A", background: "#060B18" }}>
-              <div className="rounded-xl p-4 space-y-2.5" style={{ background: "#0E1628", border: "1px solid #1A2640" }}>
-                <div className="flex justify-between items-center">
+              <div className="rounded-xl p-3.5 space-y-2.5" style={{ background: "#0E1628", border: "1px solid #1A2640" }}>
+                <div className="flex justify-between items-center text-[10px]" style={{ color: "#8E9BB5" }}>
+                  <span>Subtotal</span>
+                  <span className="font-mono">Rs {displayedSubtotal.toLocaleString()}</span>
+                </div>
+                
+                {/* Discount Inputs */}
+                <div className="space-y-1.5 pt-1.5 border-t border-[#14203A]">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-black uppercase text-slate-400">Discount</span>
+                    <div className="flex items-center gap-1 bg-[#060B18] border border-[#1E2D4E] p-0.5 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => setDiscountType("percentage")}
+                        className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md transition-colors cursor-pointer border-none bg-transparent ${discountType === "percentage" ? "bg-[#FF6B35] text-white" : "text-slate-400 hover:text-white"}`}
+                      >
+                        %
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDiscountType("fixed")}
+                        className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md transition-colors cursor-pointer border-none bg-transparent ${discountType === "fixed" ? "bg-[#FF6B35] text-white" : "text-slate-400 hover:text-white"}`}
+                      >
+                        LKR
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder={discountType === "percentage" ? "Enter % (e.g. 10)" : "Enter LKR (e.g. 500)"}
+                      value={discountValue || ""}
+                      onChange={(e) => setDiscountValue(Math.max(0, parseFloat(e.target.value) || 0))}
+                      className="w-full text-[10px] px-2 py-1.5 rounded-lg border outline-none text-slate-200"
+                      style={{ background: "#060B18", borderColor: "#1E2D4E" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-2 border-t border-[#14203A]">
                   <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: "#F2F4F8" }}>Total</span>
                   <span className="text-xl font-black font-mono" style={{ color: "#F26F21" }}>Rs {displayedTotal.toLocaleString()}</span>
                 </div>

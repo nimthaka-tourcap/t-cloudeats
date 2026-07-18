@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { RotateCw, AlertTriangle, Printer, Phone, Globe, Mail, Heart, Check, Upload, MapPin, Star, X, CreditCard, Landmark, DollarSign, Copy } from "lucide-react";
+import { RotateCw, AlertTriangle, Printer, Phone, Globe, Mail, Heart, Check, Upload, MapPin, Star, X, CreditCard, Landmark, DollarSign, Copy, FileText } from "lucide-react";
 import Image from "next/image";
 
 interface OrderItem {
@@ -13,6 +13,7 @@ interface OrderItem {
     price: number;
   };
   comment?: string;
+  addonPrice?: number;
 }
 
 interface Order {
@@ -34,6 +35,9 @@ interface Order {
     rating?: number;
     review?: string;
     rated_at?: string;
+    discount_type?: "percentage" | "fixed";
+    discount_value?: number;
+    discount_amount?: number;
   };
 }
 
@@ -67,6 +71,7 @@ export default function BillPage() {
 
   const [copiedName, setCopiedName] = useState(false);
   const [copiedAccount, setCopiedAccount] = useState(false);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
 
   const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
     setToast({ message, type });
@@ -138,6 +143,7 @@ export default function BillPage() {
       return;
     }
 
+    setIsUploadingReceipt(true);
     const reader = new FileReader();
     reader.onload = async () => {
       const base64String = reader.result as string;
@@ -151,11 +157,26 @@ export default function BillPage() {
       showToast("Uploading receipt...", "info");
       await updateOrderInDb(updatedCustomer);
       showToast("Receipt uploaded successfully!", "success");
+      setIsUploadingReceipt(false);
     };
     reader.onerror = () => {
       showToast("Failed to read receipt file.", "error");
+      setIsUploadingReceipt(false);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleRemoveReceipt = async () => {
+    if (!order) return;
+    const updatedCustomer = {
+      ...order.customer
+    };
+    delete updatedCustomer.payment_receipt;
+    delete updatedCustomer.payment_receipt_filename;
+
+    showToast("Removing receipt...", "info");
+    await updateOrderInDb(updatedCustomer);
+    showToast("Receipt removed.", "success");
   };
 
   const handleRatingSubmit = async () => {
@@ -482,14 +503,19 @@ export default function BillPage() {
                     <span>Upload Invoice Slip</span>
                     <input 
                       type="file" 
-                      accept="image/*,application/pdf" 
+                      accept="image/*,application/pdf,.heic,.heif" 
                       className="hidden" 
                       onChange={handleFileChange}
                     />
                   </label>
 
                   {/* Upload Status / Preview */}
-                  {order.customer?.payment_receipt && (
+                  {isUploadingReceipt ? (
+                    <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl mt-2">
+                      <RotateCw className="animate-spin text-[#FF6B35]" size={16} />
+                      <span className="text-[10px] text-slate-400">Uploading receipt invoice slip...</span>
+                    </div>
+                  ) : order.customer?.payment_receipt ? (
                     <div className="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl mt-2">
                       <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
                         <Check size={16} />
@@ -500,8 +526,9 @@ export default function BillPage() {
                           {order.customer?.payment_receipt_filename || "Receipt invoice file"}
                         </p>
                       </div>
-                      {order.customer?.payment_receipt.startsWith("data:image/") && (
-                        <div className="relative w-10 h-10 rounded border border-white/10 overflow-hidden shrink-0">
+                      {/* Preview / Download Box */}
+                      <div className="relative w-10 h-10 rounded border border-white/10 overflow-hidden shrink-0 flex items-center justify-center bg-white/5">
+                        {order.customer.payment_receipt.startsWith("data:image/") && !order.customer.payment_receipt.includes("image/heic") && !order.customer.payment_receipt.includes("image/heif") ? (
                           <img 
                             src={order.customer.payment_receipt} 
                             alt="Receipt preview" 
@@ -511,10 +538,41 @@ export default function BillPage() {
                               w?.document.write(`<img src="${order.customer?.payment_receipt}" style="max-width: 100%; height: auto;" />`);
                             }}
                           />
-                        </div>
-                      )}
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const w = window.open();
+                              if (order.customer?.payment_receipt?.startsWith("data:application/pdf")) {
+                                w?.document.write(`<embed src="${order.customer?.payment_receipt || ''}" type="application/pdf" width="100%" height="100%" />`);
+                              } else {
+                                w?.document.write(`
+                                  <html>
+                                    <body style="margin: 0; background: #060B18; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; color: white; font-family: sans-serif;">
+                                      <p style="font-size: 14px; font-weight: bold; margin-bottom: 20px;">Download/View File: ${order.customer?.payment_receipt_filename || 'Receipt'}</p>
+                                      <a href="${order.customer?.payment_receipt || ''}" download="${order.customer?.payment_receipt_filename || 'receipt'}" style="padding: 10px 20px; background: #FF6B35; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Download Attachment</a>
+                                    </body>
+                                  </html>
+                                `);
+                              }
+                            }}
+                            className="w-full h-full flex items-center justify-center text-slate-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
+                          >
+                            <FileText size={16} />
+                          </button>
+                        )}
+                      </div>
+                      {/* Remove Button */}
+                      <button
+                        type="button"
+                        onClick={handleRemoveReceipt}
+                        className="p-1.5 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-400 transition-colors border-none bg-transparent cursor-pointer shrink-0"
+                        title="Remove Receipt"
+                      >
+                        <X size={16} />
+                      </button>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             )}
@@ -605,7 +663,9 @@ export default function BillPage() {
           <div className="space-y-2">
             {order.items.map((item, idx) => {
               const itemTitle = item.menuItem ? item.menuItem.title : (item as any).title;
-              const itemPrice = item.menuItem ? item.menuItem.price : (item as any).price;
+              const basePrice = item.menuItem ? item.menuItem.price : (item as any).price || 0;
+              const addonPrice = item.addonPrice || 0;
+              const finalItemPrice = basePrice + addonPrice;
               return (
                 <div key={idx} className="text-xs">
                   <div className="flex justify-between items-start gap-4">
@@ -614,12 +674,17 @@ export default function BillPage() {
                       {item.comment && (
                         <p className="text-[10px] text-amber-600 italic mt-0.5">💬 {item.comment}</p>
                       )}
+                      {addonPrice > 0 && (
+                        <p className="text-[9px] text-amber-600 font-bold mt-0.5">
+                          + Addon Price: LKR {addonPrice.toLocaleString()}
+                        </p>
+                      )}
                       <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                        {item.quantity} x LKR {(itemPrice || 0).toLocaleString()}
+                        {item.quantity} x LKR {finalItemPrice.toLocaleString()}
                       </p>
                     </div>
                     <span className="font-mono font-bold text-slate-950 whitespace-nowrap">
-                      LKR {((itemPrice || 0) * item.quantity).toLocaleString()}
+                      LKR {(finalItemPrice * item.quantity).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -634,6 +699,14 @@ export default function BillPage() {
             <span className="font-semibold text-slate-500">Subtotal:</span>
             <span className="font-mono font-bold text-slate-800">LKR {order.subtotal.toLocaleString()}</span>
           </div>
+          {order.customer?.discount_amount ? (
+            <div className="flex justify-between text-red-600 font-medium">
+              <span>
+                Discount ({order.customer.discount_type === "percentage" ? `${order.customer.discount_value}%` : "LKR"}):
+              </span>
+              <span className="font-mono">- LKR {order.customer.discount_amount.toLocaleString()}</span>
+            </div>
+          ) : null}
           <div className="flex justify-between">
             <span className="font-semibold text-slate-500">Taxes &amp; Service Charges:</span>
             <span className="font-mono font-medium text-slate-500">LKR 0</span>
