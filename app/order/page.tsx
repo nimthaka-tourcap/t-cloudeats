@@ -105,6 +105,7 @@ export default function OrderPage() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "add" | "remove" } | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   /* ── Data Loading + Realtime ─────────────────────────────────── */
@@ -123,6 +124,19 @@ export default function OrderPage() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  /* ── Scroll listener for Back to Top button (after 2 rows of products disappear) ── */
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 420) {
+        setShowBackToTop(true);
+      } else {
+        setShowBackToTop(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   /* ── Cart Helpers ────────────────────────────────────────────── */
@@ -183,7 +197,7 @@ export default function OrderPage() {
         .product-card { background:#fff; border-radius:20px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.07); transition:transform .25s ease, box-shadow .25s ease; }
         .product-card:hover { transform:translateY(-5px); box-shadow:0 16px 40px rgba(242,111,33,0.13); }
         .cat-pill { padding:8px 16px; border-radius:100px; font-size:11px; font-weight:800; transition:all .2s ease; border:2px solid transparent; cursor:pointer; white-space:nowrap; text-transform:uppercase; letter-spacing:0.04em; }
-        .cat-pill.active { background:#F26F21; color:#fff; box-shadow:0 6px 18px rgba(242,111,33,0.35); }
+        .cat-pill.active { background:#F26F21; color:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
         .cat-pill:not(.active) { background:#fff; color:#777; border-color:#e5e5e5; }
         .cat-pill:not(.active):hover { border-color:#F26F21; color:#F26F21; }
         @keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
@@ -400,7 +414,6 @@ export default function OrderPage() {
                           <span className="font-black text-sm" style={{ color: "#F26F21" }}>
                             Rs {Number(item.price).toLocaleString()}
                           </span>
-                          <span className="text-[9px] text-gray-400 font-semibold">{item.portion}</span>
                         </div>
                       </div>
 
@@ -471,6 +484,21 @@ export default function OrderPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* ── BACK TO TOP FLOATING BUTTON ──────────────────────────── */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className={`fixed z-40 w-11 h-11 rounded-full bg-[#0D0D0D] text-white flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-90 hover:bg-[#F26F21] border border-white/20 anim-slide-up ${
+            totalItems > 0 && !isCartOpen ? "bottom-24 right-4 sm:bottom-6 sm:right-6" : "bottom-6 right-4 sm:bottom-6 sm:right-6"
+          }`}
+          aria-label="Back to Top"
+          style={{ boxShadow: "0 8px 25px rgba(0,0,0,0.35)" }}>
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+          </svg>
+        </button>
       )}
 
       {/* ── CART DRAWER ──────────────────────────────────────────────── */}
@@ -624,9 +652,22 @@ export default function OrderPage() {
 
                     const cartIds = cart.map(ci => ci.item.id);
                     // Filter out milkshakes!
-                    const beverages = menuItems
-                      .filter(m => m.category === "Beverages" && !m.title.toLowerCase().includes("shake") && !cartIds.includes(m.id))
-                      .slice(0, 5);
+                    let beverages = menuItems
+                      .filter(m => m.category === "Beverages" && !m.title.toLowerCase().includes("shake") && !cartIds.includes(m.id));
+
+                    // Guarantee Elephant House Orange Crush is included in free beverages list
+                    if (!beverages.some(b => b.title.toLowerCase().includes("orange crush"))) {
+                      beverages.unshift({
+                        id: 9991,
+                        title: "Elephant House Orange Crush",
+                        price: 300,
+                        category: "Beverages",
+                        portion: "1.05L Bottle",
+                        description: "Chilled Elephant House Orange Crush.",
+                        image: "/fanta.png"
+                      });
+                    }
+                    beverages = beverages.slice(0, 6);
 
                     return (
                       <div className="mt-2 space-y-2">
@@ -806,7 +847,17 @@ export default function OrderPage() {
               <div className="flex items-start justify-between gap-4 mb-2">
                 <div>
                   <h2 className="text-xl font-black text-gray-900 leading-tight">{selectedProduct.title}</h2>
-                  <p className="text-xs font-bold text-[#F26F21] mt-0.5">{selectedProduct.portion}</p>
+                  <p className="text-xs font-bold text-[#F26F21] mt-0.5 flex items-center gap-1">
+                    {selectedProduct.category === "Beverages" ? (selectedProduct.portion || "Bottle") : (
+                      <>
+                        Large Portion · Serves 2
+                        <svg className="w-3.5 h-3.5 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                          <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
+                        </svg>
+                      </>
+                    )}
+                  </p>
                 </div>
                 <span className="text-xl font-black text-[#F26F21] flex-shrink-0">
                   Rs {Number(selectedProduct.price).toLocaleString()}

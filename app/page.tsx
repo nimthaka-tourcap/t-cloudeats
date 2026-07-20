@@ -366,10 +366,8 @@ export default function Home() {
         <div className="relative z-10 max-w-6xl mx-auto px-5 pt-10 pb-20 lg:pb-14 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           {/* Left text */}
           <div className="text-white space-y-5">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.06] tracking-tight drop-shadow-sm">
-              Your Favourite<br />
-              <span className="text-white/90">Sri Lankan</span><br />
-              Street Food 🍜
+            <h1 className="text-4xl sm:text-6xl font-black text-white leading-[1.05] tracking-tight pt-2 sm:pt-0 mb-4 lowercase">
+              eat. enjoy. repeat.
             </h1>
 
             <p className="text-white/80 text-sm sm:text-base leading-relaxed max-w-md">
@@ -420,7 +418,13 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-1">
                   <div>
                     <h3 className="font-extrabold text-xs sm:text-sm text-gray-900">Seafood Fried Rice</h3>
-                    <p className="text-[10px] text-gray-400 font-semibold">Large Portion · Serves 2</p>
+                    <p className="text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-0.5">
+                      Serves 2
+                      <svg className="w-3 h-3 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
+                      </svg>
+                    </p>
                   </div>
                   <span className="font-black text-[#F26F21] text-sm">Rs 1,500</span>
                 </div>
@@ -440,7 +444,13 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-1">
                   <div>
                     <h3 className="font-extrabold text-xs sm:text-sm text-gray-900">Nasi Goreng</h3>
-                    <p className="text-[10px] text-gray-400 font-semibold">Large Portion · Serves 2</p>
+                    <p className="text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-0.5">
+                      Serves 2
+                      <svg className="w-3 h-3 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
+                      </svg>
+                    </p>
                   </div>
                   <span className="font-black text-[#F26F21] text-sm">Rs 1,400</span>
                 </div>
@@ -452,15 +462,15 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Mobile View: Swipeable Overlay Stack (Half of second card peeking out) */}
-            <div className="flex sm:hidden relative z-10 w-full max-w-md items-center justify-center min-h-[300px] overflow-hidden px-4">
+            {/* Mobile View: Touch Swipeable Cards Stack (Ultra Fast 150ms Snappy Transitions) */}
+            <div className="flex sm:hidden relative z-10 w-full max-w-md items-center justify-center min-h-[290px] py-4 px-2 select-none">
               {/* Card 1: #1 Best Seller (Seafood Fried Rice) */}
               <div
                 onClick={() => setHeroSlide(0)}
-                className={`w-60 bg-white rounded-[24px] p-3.5 transition-all duration-500 ease-out cursor-pointer ${
+                className={`w-60 bg-white rounded-[24px] p-3.5 transition-all duration-150 ease-in-out cursor-pointer ${
                   heroSlide === 0
-                    ? "relative z-20 scale-100 opacity-100 shadow-2xl hero-float pointer-events-auto -translate-x-12"
-                    : "absolute z-10 scale-90 opacity-60 -translate-x-28 blur-[0.2px] hover:opacity-80 pointer-events-auto"
+                    ? "relative z-20 scale-100 opacity-100 shadow-xl pointer-events-auto -translate-x-10"
+                    : "absolute z-10 scale-90 opacity-60 -translate-x-24 blur-[0.2px] hover:opacity-80 pointer-events-auto"
                 }`}>
                 <div className="relative h-36 rounded-xl overflow-hidden bg-orange-50 mb-2.5">
                   <img src="/Product Images/FR-05.avif" alt="Seafood Fried Rice" className="w-full h-full object-cover" />
@@ -469,7 +479,13 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-1">
                   <div>
                     <h3 className="font-extrabold text-xs text-gray-900">Seafood Fried Rice</h3>
-                    <p className="text-[10px] text-gray-400 font-semibold">Large Portion · Serves 2</p>
+                    <p className="text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-0.5">
+                      Serves 2
+                      <svg className="w-3 h-3 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
+                      </svg>
+                    </p>
                   </div>
                   <span className="font-black text-[#F26F21] text-sm">Rs 1,500</span>
                 </div>
@@ -483,10 +499,10 @@ export default function Home() {
               {/* Card 2: #2 Top Seller (Nasi Goreng) */}
               <div
                 onClick={() => setHeroSlide(1)}
-                className={`w-60 bg-white rounded-[24px] p-3.5 transition-all duration-500 ease-out cursor-pointer ${
+                className={`w-60 bg-white rounded-[24px] p-3.5 transition-all duration-150 ease-in-out cursor-pointer ${
                   heroSlide === 1
-                    ? "relative z-20 scale-100 opacity-100 shadow-2xl hero-float pointer-events-auto translate-x-12"
-                    : "absolute z-10 scale-90 opacity-60 translate-x-28 blur-[0.2px] hover:opacity-80 pointer-events-auto"
+                    ? "relative z-20 scale-100 opacity-100 shadow-xl pointer-events-auto translate-x-10"
+                    : "absolute z-10 scale-90 opacity-60 translate-x-24 blur-[0.2px] hover:opacity-80 pointer-events-auto"
                 }`}>
                 <div className="relative h-36 rounded-xl overflow-hidden bg-orange-50 mb-2.5">
                   <img src="/Product Images/FR-07.avif" alt="Nasi Goreng" className="w-full h-full object-cover" />
@@ -495,7 +511,13 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-1">
                   <div>
                     <h3 className="font-extrabold text-xs text-gray-900">Nasi Goreng</h3>
-                    <p className="text-[10px] text-gray-400 font-semibold">Large Portion · Serves 2</p>
+                    <p className="text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-0.5">
+                      Serves 2
+                      <svg className="w-3 h-3 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
+                      </svg>
+                    </p>
                   </div>
                   <span className="font-black text-[#F26F21] text-sm">Rs 1,400</span>
                 </div>
@@ -515,39 +537,47 @@ export default function Home() {
         <div className="ticker-track gap-12 text-xs font-black uppercase tracking-widest">
           {[...Array(2)].map((_, i) =>
             ["🍜 Kottu", "🍚 Fried Rice", "🥘 Chopsuey", "🌶️ Spicy Options", "⚡ 20-Min Prep", "🚴 Express Delivery", "⭐ 5.0 Google Rating", "🥗 Fresh Daily", "🍝 Pasta", "🍳 Nasi Goreng"].map((t, j) => (
-              <span key={`${i}-${j}`} className="text-[#F26F21] mx-10">{t}<span className="text-white/30 ml-10">·</span></span>
+              <span key={`${i}-${j}`} className="text-[#F26F21] mx-6 sm:mx-10">{t}</span>
             ))
           )}
         </div>
       </div>
 
-      {/* ─────────── PROMO BANNER ──────────────────────────────────── */}
+      {/* ─────────── PROMO BANNER (Dark Fading Luxury Aesthetic) ──────────── */}
       <section className="bg-[#F7F5F2] py-6 px-5">
         <div className="max-w-6xl mx-auto" data-reveal>
-          <div className="rounded-3xl relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6 p-6 sm:p-8"
-            style={{ background: "linear-gradient(135deg,#F26F21 0%,#FF8C3F 50%,#e05c0d 100%)" }}>
-            {/* BG shapes */}
-            <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/10" />
-            <div className="absolute -right-8 -bottom-12 w-40 h-40 rounded-full bg-white/10" />
-
-            {/* Faded beverage offer AVIF background image */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
+          <div className="rounded-3xl relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6 p-6 sm:p-8 border border-white/10 shadow-2xl"
+            style={{ background: "linear-gradient(135deg, #0D0D0D 0%, #1A1A1A 60%, #111111 100%)" }}>
+            {/* Dark background overlay over soda bottles image for high contrast readability */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-45">
               <img src="/beverage offer.avif?v=2" alt="Beverage Offer" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-black/85" />
             </div>
 
+            {/* Glowing Accent Glows */}
+            <div className="absolute -left-16 -top-16 w-64 h-64 rounded-full bg-[#F26F21]/25 blur-3xl pointer-events-none" />
+            <div className="absolute -right-8 -bottom-12 w-52 h-52 rounded-full bg-[#FF8C3F]/20 blur-3xl pointer-events-none" />
+
             <div className="relative z-10 text-white text-center sm:text-left">
-              <p className="text-[11px] font-extrabold uppercase tracking-widest bg-white/20 inline-flex px-3 py-1 rounded-full mb-2">🎁 Special Offer</p>
-              <h2 className="text-2xl sm:text-4xl font-black leading-tight">Orders Over Rs 3,000<br />Get a <span className="text-yellow-200">Free Beverage!</span></h2>
-              <p className="text-white/80 text-sm mt-2">Spend Rs 3,000 or more and get one complimentary beverage item absolutely free<br className="hidden sm:block" /> <span className="text-white/60 text-xs">(Excludes milkshakes · While stocks last)</span></p>
+              <p className="text-[11px] font-extrabold uppercase tracking-widest bg-[#F26F21] text-white inline-flex px-3.5 py-1 rounded-full mb-2.5 shadow-md">
+                🎁 Special Offer
+              </p>
+              <h2 className="text-2xl sm:text-4xl font-black leading-tight text-white">
+                Orders Over Rs 3,000<br />Get a <span className="text-[#FF8C3F]">Free Beverage!</span>
+              </h2>
+              <p className="text-gray-300 text-sm mt-2 font-medium">
+                Spend Rs 3,000 or more and get one complimentary beverage item absolutely free<br className="hidden sm:block" />{" "}
+                <span className="text-gray-400 text-xs">(Excludes milkshakes · While stocks last)</span>
+              </p>
             </div>
 
             <div className="relative z-10 flex flex-col items-center gap-3">
               <Link href="/order"
-                className="flex items-center gap-2 bg-white font-black text-sm px-7 py-3.5 rounded-2xl transition-all active:scale-95 shadow-xl"
-                style={{ color: "#F26F21" }}>
+                className="flex items-center gap-2 bg-[#F26F21] hover:bg-[#e05c0d] text-white font-black text-sm px-7 py-3.5 rounded-2xl transition-all active:scale-95 shadow-xl"
+                style={{ boxShadow: "0 8px 25px rgba(242,111,33,0.4)" }}>
                 {Icon.bag("w-4 h-4")} Claim Free Beverage
               </Link>
-              <span className="text-white/70 text-[10px] font-bold uppercase tracking-wider">Valid on orders 3,000 LKR+</span>
+              <span className="text-gray-400 text-[10px] font-extrabold uppercase tracking-wider">Valid on orders 3,000 LKR+</span>
             </div>
           </div>
         </div>
@@ -594,7 +624,17 @@ export default function Home() {
                   </div>
                   <div className="p-3 sm:p-4">
                     <h3 className="font-extrabold text-sm text-gray-900 truncate mb-0.5 group-hover:text-[#F26F21] transition-colors">{item.title}</h3>
-                    <p className="text-[10px] text-gray-400 font-semibold mb-2">{item.portion || "Large Portion · Serves 2"}</p>
+                    <p className="text-[10px] text-gray-500 font-bold flex items-center gap-1 mb-2">
+                      {item.category === "Beverages" ? (item.portion || "Bottle") : (
+                        <>
+                          Serves 2
+                          <svg className="w-3 h-3 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
+                          </svg>
+                        </>
+                      )}
+                    </p>
                     <div className="flex items-center justify-between">
                       <span className="font-black text-[#F26F21] text-sm">{price}</span>
                       <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white transition-all active:scale-95 shadow-md"
@@ -808,9 +848,9 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 text-[11px] text-white/30 font-semibold">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 text-[11px] text-white/30 font-bold">
             <p>© 2026 t-cloud eats. All rights reserved.</p>
-            <p>Eat. Enjoy. Repeat. 🍜</p>
+            <p className="lowercase">eat. enjoy. repeat.</p>
           </div>
         </div>
       </footer>
@@ -843,7 +883,17 @@ export default function Home() {
               <div className="flex items-start justify-between gap-4 mb-2">
                 <div>
                   <h2 className="text-xl font-black text-gray-900 leading-tight">{selectedProduct.title}</h2>
-                  <p className="text-xs font-bold text-[#F26F21] mt-0.5">{selectedProduct.portion || "Large Portion · Serves 2"}</p>
+                  <p className="text-xs font-bold text-[#F26F21] mt-0.5 flex items-center gap-1">
+                    {selectedProduct.category === "Beverages" ? (selectedProduct.portion || "Bottle") : (
+                      <>
+                        Large Portion · Serves 2
+                        <svg className="w-3.5 h-3.5 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                          <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
+                        </svg>
+                      </>
+                    )}
+                  </p>
                 </div>
                 <span className="text-xl font-black text-[#F26F21] flex-shrink-0">
                   {typeof selectedProduct.price === "string" ? selectedProduct.price : `Rs ${Number(selectedProduct.price).toLocaleString()}`}
@@ -855,16 +905,11 @@ export default function Home() {
               </p>
 
               <div className="flex items-center gap-3">
-                <Link href="/order"
-                  className="flex-1 flex items-center justify-center gap-2 text-white text-xs font-black py-3.5 rounded-2xl transition-all active:scale-95 shadow-lg"
+                <Link href="/order" onClick={() => setSelectedProduct(null)}
+                  className="w-full flex items-center justify-center gap-2 text-white text-xs font-black py-4 rounded-2xl transition-all active:scale-95 shadow-lg"
                   style={{ background: "#F26F21", boxShadow: "0 8px 24px rgba(242,111,33,0.35)" }}>
                   {Icon.bag("w-4 h-4")} Order in Menu
                 </Link>
-                <a href={`https://wa.me/94706288109?text=${encodeURIComponent(`Hi t-cloud eats! I'd like to order ${selectedProduct.title}`)}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-[#25D366] text-white text-xs font-black px-4 py-3.5 rounded-2xl transition-all active:scale-95 shadow-lg">
-                  {Icon.wa("w-4 h-4")} WhatsApp
-                </a>
               </div>
             </div>
           </div>
