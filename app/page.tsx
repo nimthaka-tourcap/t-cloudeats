@@ -5,19 +5,25 @@ import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 
 /* ── Intersection observer for reveal animations ──────────────── */
-function useReveal() {
+function useReveal(deps: any[] = []) {
   useEffect(() => {
-    const els = document.querySelectorAll("[data-reveal]");
-    const io = new IntersectionObserver(
-      (entries) =>
-        entries.forEach((e) => {
-          if (e.isIntersecting) e.target.classList.add("revealed");
-        }),
-      { threshold: 0.12 }
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
+    // Small delay so React has flushed the new DOM nodes
+    const timer = setTimeout(() => {
+      const els = document.querySelectorAll("[data-reveal]");
+      const io = new IntersectionObserver(
+        (entries) =>
+          entries.forEach((e) => {
+            if (e.isIntersecting) e.target.classList.add("revealed");
+          }),
+        { threshold: 0.08 }
+      );
+      els.forEach((el) => io.observe(el));
+      // Clean-up is handled by the effect return below
+      return () => io.disconnect();
+    }, 80);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 }
 
 /* ── Icons ─────────────────────────────────────────────────────── */
@@ -123,10 +129,10 @@ const CATS = ["All", "Fried Rice", "Kottu", "Chopsuey", "Beverages"];
 
 /* ── Component ─────────────────────────────────────────────────── */
 export default function Home() {
-  useReveal();
   const [items, setItems] = useState<any[]>([]);
   const [cat, setCat] = useState("All");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  useReveal([items]);
 
   useEffect(() => {
     fetch("/api/menu")
@@ -171,6 +177,7 @@ export default function Home() {
         .scrollbar-none::-webkit-scrollbar { display:none; }
         .shimmer { background: linear-gradient(110deg,#f3f3f3 30%,#ecebeb 50%,#f3f3f3 70%); background-size:200% 100%; animation:shimmer 1.4s linear infinite; }
         @keyframes shimmer{to{background-position:-200% 0}}
+        @keyframes cardFadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         .tag-chip { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:800; padding:3px 10px; border-radius:100px; letter-spacing:0.04em; }
       `}</style>
 
@@ -381,7 +388,7 @@ export default function Home() {
             {visible.map((item, idx) => {
               const price = typeof item.price === "string" ? item.price : `Rs ${Number(item.price).toLocaleString()}`;
               return (
-                <div key={item.id} className="product-card" data-reveal data-reveal-delay={String(idx % 4) as any}>
+                <div key={item.id} className="product-card" style={{ animationDelay: `${idx * 60}ms`, animation: "cardFadeIn .4s ease both" }}>
                   <div className="relative h-36 sm:h-44 bg-orange-50 overflow-hidden">
                     {item.image
                       ? <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
