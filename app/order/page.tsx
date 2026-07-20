@@ -104,6 +104,7 @@ export default function OrderPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "add" | "remove" } | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   /* ── Data Loading + Realtime ─────────────────────────────────── */
@@ -337,10 +338,38 @@ export default function OrderPage() {
                 return (
                   <div key={item.id} className="product-card flex flex-col">
                     {/* Image */}
-                    <div className="relative h-32 sm:h-40 bg-orange-50 flex-shrink-0 overflow-hidden">
+                    <div className="relative h-32 sm:h-40 bg-gray-100 flex-shrink-0 overflow-hidden cursor-pointer"
+                      onClick={() => setSelectedProduct(item)}>
                       {item.image
                         ? <img src={item.image} alt={item.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-                        : <div className="shimmer w-full h-full" />
+                        : item.category === "Beverages"
+                          ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "linear-gradient(135deg,#e8e8e8,#d0d0d0)" }}>
+                              <svg viewBox="0 0 64 80" className="w-10 h-14 opacity-50" fill="none">
+                                <rect x="18" y="4" width="28" height="6" rx="3" fill="#999"/>
+                                <path d="M14 10 L10 68 Q10 72 14 72 L50 72 Q54 72 54 68 L50 10 Z" fill="#bbb" stroke="#aaa" strokeWidth="1"/>
+                                <path d="M16 10 L20 10 L16 68 Q16 70 18 70 L14 70 Q12 70 12 68 Z" fill="#c8c8c8"/>
+                                <ellipse cx="32" cy="38" rx="12" ry="4" fill="#aaa" opacity="0.4"/>
+                                <path d="M50 22 Q58 22 58 28 Q58 34 50 32" stroke="#aaa" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                              </svg>
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1">Beverage</p>
+                            </div>
+                          )
+                          : (
+                            <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "linear-gradient(135deg,#e8e8e8,#d0d0d0)" }}>
+                              <svg viewBox="0 0 80 80" className="w-14 h-14 opacity-40" fill="none">
+                                <circle cx="40" cy="38" r="24" fill="none" stroke="#999" strokeWidth="3"/>
+                                <path d="M24 38 Q40 20 56 38" fill="#bbb"/>
+                                <circle cx="32" cy="34" r="4" fill="#aaa"/>
+                                <circle cx="48" cy="32" r="3" fill="#aaa"/>
+                                <circle cx="40" cy="42" r="2.5" fill="#c0c0c0"/>
+                                <rect x="16" y="62" width="48" height="4" rx="2" fill="#bbb"/>
+                                <rect x="22" y="58" width="36" height="6" rx="3" fill="#aaa"/>
+                                <line x1="20" y1="62" x2="60" y2="62" stroke="#999" strokeWidth="1"/>
+                              </svg>
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1">Food Item</p>
+                            </div>
+                          )
                       }
 
                       {/* Category Badge */}
@@ -351,7 +380,7 @@ export default function OrderPage() {
 
                       {/* Quick add button (top-right) */}
                       {qty === 0 && (
-                        <button onClick={() => addToCart(item)}
+                        <button onClick={(e) => { e.stopPropagation(); addToCart(item); }}
                           className="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center text-white shadow-lg transition-all active:scale-90"
                           style={{ background: "#F26F21" }}>
                           {Icons.plus("w-4 h-4")}
@@ -361,8 +390,8 @@ export default function OrderPage() {
 
                     {/* Info */}
                     <div className="p-3 sm:p-3.5 flex flex-col flex-1 justify-between">
-                      <div className="mb-2.5">
-                        <h3 className="font-extrabold text-xs sm:text-sm text-gray-900 truncate leading-tight mb-0.5">{item.title}</h3>
+                      <div className="mb-2.5 cursor-pointer" onClick={() => setSelectedProduct(item)}>
+                        <h3 className="font-extrabold text-xs sm:text-sm text-gray-900 truncate leading-tight mb-0.5 hover:text-[#F26F21] transition-colors">{item.title}</h3>
                         <p className="text-[10px] text-gray-400 leading-snug line-clamp-2 mb-1.5">
                           {item.description || getFallbackDescription(item.title, item.category)}
                         </p>
@@ -371,12 +400,8 @@ export default function OrderPage() {
                           <span className="font-black text-sm" style={{ color: "#F26F21" }}>
                             Rs {Number(item.price).toLocaleString()}
                           </span>
-                          <div className="flex items-center gap-0.5 text-yellow-400 text-[11px]">
-                            {Icons.star()} <span className="font-bold text-gray-500 text-[10px]">5.0</span>
-                          </div>
+                          <span className="text-[9px] text-gray-400 font-semibold">{item.portion}</span>
                         </div>
-
-                        <span className="text-[9px] text-gray-400 font-semibold">{item.portion}</span>
                       </div>
 
                       {/* Cart controls */}
@@ -492,44 +517,204 @@ export default function OrderPage() {
                   </button>
                 </div>
               ) : (
-                cart.map(({ item, quantity }) => (
-                  <div key={item.id} className="flex items-center gap-3 bg-gray-50 rounded-2xl p-3 border border-gray-100">
-                    {/* Thumbnail */}
-                    {item.image
-                      ? <img src={item.image} alt={item.title} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-gray-200" />
-                      : <div className="w-14 h-14 rounded-xl bg-orange-100 flex items-center justify-center text-[#F26F21] font-black text-xs flex-shrink-0">FOOD</div>
-                    }
+                <>
+                  {/* Cart items */}
+                  {cart.map(({ item, quantity }) => (
+                    <div key={item.id} className="flex items-center gap-3 bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                      {/* Thumbnail */}
+                      {item.image
+                        ? <img src={item.image} alt={item.title} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-gray-200" />
+                        : item.category === "Beverages"
+                          ? (
+                            <div className="w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#e8e8e8,#d0d0d0)" }}>
+                              <svg viewBox="0 0 40 52" className="w-6 h-8 opacity-50" fill="none">
+                                <rect x="10" y="2" width="20" height="4" rx="2" fill="#999"/>
+                                <path d="M8 6 L6 46 Q6 48 8 48 L32 48 Q34 48 34 46 L32 6 Z" fill="#bbb" stroke="#aaa" strokeWidth="0.5"/>
+                                <ellipse cx="20" cy="24" rx="8" ry="3" fill="#aaa" opacity="0.4"/>
+                                <path d="M32 14 Q38 14 38 18 Q38 22 32 21" stroke="#aaa" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                              </svg>
+                            </div>
+                          )
+                          : <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#e8e8e8,#d0d0d0)" }}>
+                              <svg viewBox="0 0 40 40" className="w-8 h-8 opacity-40" fill="none">
+                                <circle cx="20" cy="18" r="12" fill="none" stroke="#999" strokeWidth="1.5"/>
+                                <path d="M12 18 Q20 10 28 18" fill="#bbb"/>
+                                <circle cx="16" cy="16" r="2" fill="#aaa"/>
+                                <circle cx="24" cy="15" r="1.5" fill="#aaa"/>
+                                <rect x="8" y="30" width="24" height="2" rx="1" fill="#bbb"/>
+                                <rect x="11" y="28" width="18" height="4" rx="2" fill="#aaa"/>
+                              </svg>
+                            </div>
+                      }
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-extrabold text-sm text-gray-900 truncate">{item.title}</h4>
-                      <p className="text-[10px] text-gray-400 font-medium">{item.portion}</p>
-                      <p className="font-black text-sm mt-0.5" style={{ color: "#F26F21" }}>
-                        Rs {(Number(item.price) * quantity).toLocaleString()}
-                      </p>
-                    </div>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-extrabold text-sm text-gray-900 truncate">{item.title}</h4>
+                        <p className="text-[10px] text-gray-400 font-medium">{item.portion}</p>
+                        <p className="font-black text-sm mt-0.5" style={{ color: "#F26F21" }}>
+                          Rs {(Number(item.price) * quantity).toLocaleString()}
+                        </p>
+                      </div>
 
-                    {/* Qty + remove */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 p-1">
-                        <button onClick={() => updateQuantity(item.id, -1)}
-                          className="qty-btn bg-gray-100 hover:bg-gray-200 text-gray-700">
-                          {Icons.minus("w-3.5 h-3.5")}
-                        </button>
-                        <span className="text-sm font-black text-gray-900 w-5 text-center">{quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, 1)}
-                          className="qty-btn text-white"
-                          style={{ background: "#F26F21" }}>
-                          {Icons.plus("w-3.5 h-3.5")}
+                      {/* Qty + remove */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 p-1">
+                          <button onClick={() => updateQuantity(item.id, -1)}
+                            className="qty-btn bg-gray-100 hover:bg-gray-200 text-gray-700">
+                            {Icons.minus("w-3.5 h-3.5")}
+                          </button>
+                          <span className="text-sm font-black text-gray-900 w-5 text-center">{quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, 1)}
+                            className="qty-btn text-white"
+                            style={{ background: "#F26F21" }}>
+                            {Icons.plus("w-3.5 h-3.5")}
+                          </button>
+                        </div>
+                        <button onClick={() => removeFromCart(item.id)}
+                          className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-400 flex items-center justify-center transition-colors">
+                          {Icons.trash("w-3.5 h-3.5")}
                         </button>
                       </div>
-                      <button onClick={() => removeFromCart(item.id)}
-                        className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-400 flex items-center justify-center transition-colors">
-                        {Icons.trash("w-3.5 h-3.5")}
-                      </button>
                     </div>
-                  </div>
-                ))
+                  ))}
+
+                  {/* ── UPSELL: Suggest food add-ons ── */}
+                  {(() => {
+                    const cartIds = cart.map(ci => ci.item.id);
+                    const foodSuggestions = menuItems
+                      .filter(m => m.category !== "Beverages" && !cartIds.includes(m.id))
+                      .slice(0, 3);
+                    if (foodSuggestions.length === 0) return null;
+                    return (
+                      <div className="mt-1 rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg,#FFF7F0,#FFF3E8)", border: "1px solid rgba(242,111,33,0.15)" }}>
+                        <div className="flex items-center gap-2 px-3.5 pt-3 pb-2">
+                          <span className="text-base">🔥</span>
+                          <p className="text-[11px] font-black text-gray-700 uppercase tracking-wider">People also add</p>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto scrollbar-none px-3.5 pb-3">
+                          {foodSuggestions.map(s => (
+                            <button key={s.id} onClick={() => addToCart(s)}
+                              className="flex-shrink-0 flex items-center gap-2 bg-white rounded-xl px-2.5 py-2 shadow-sm border border-orange-100 hover:border-[#F26F21] transition-all active:scale-95">
+                              {s.image
+                                ? <img src={s.image} alt={s.title} className="w-9 h-9 rounded-lg object-cover" />
+                                : <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#e8e8e8,#d0d0d0)" }}>
+                                    <svg viewBox="0 0 24 24" className="w-5 h-5 opacity-40" fill="none"><circle cx="12" cy="11" r="7" fill="none" stroke="#999" strokeWidth="1.5"/><path d="M7 11 Q12 6 17 11" fill="#bbb"/><rect x="5" y="18" width="14" height="1.5" rx="0.75" fill="#bbb"/></svg>
+                                  </div>
+                              }
+                              <div className="text-left">
+                                <p className="text-[10px] font-extrabold text-gray-800 leading-tight" style={{ maxWidth: 90, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.title}</p>
+                                <p className="text-[10px] font-black" style={{ color: "#F26F21" }}>Rs {Number(s.price).toLocaleString()}</p>
+                              </div>
+                              <div className="w-6 h-6 rounded-full text-white flex items-center justify-center flex-shrink-0 ml-1" style={{ background: "#F26F21" }}>
+                                {Icons.plus("w-3 h-3")}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── UPSELL: Free Beverage Goal Progress Bar & Beverage Selection ── */}
+                  {(() => {
+                    const TARGET = 3000;
+                    const isUnlocked = subtotal >= TARGET;
+                    const remaining = Math.max(0, TARGET - subtotal);
+                    const pct = Math.min(100, Math.round((subtotal / TARGET) * 100));
+
+                    const cartIds = cart.map(ci => ci.item.id);
+                    // Filter out milkshakes!
+                    const beverages = menuItems
+                      .filter(m => m.category === "Beverages" && !m.title.toLowerCase().includes("shake") && !cartIds.includes(m.id))
+                      .slice(0, 5);
+
+                    return (
+                      <div className="mt-2 space-y-2">
+                        {/* Progress Bar Card */}
+                        <div className="rounded-2xl p-3 border transition-all"
+                          style={{
+                            background: isUnlocked ? "linear-gradient(135deg,#ECFDF5 0%,#D1FAE5 100%)" : "linear-gradient(135deg,#FFF7F0 0%,#FFF0E5 100%)",
+                            borderColor: isUnlocked ? "#10B981" : "#F26F21"
+                          }}>
+                          <div className="flex items-center justify-between text-xs font-black mb-1.5">
+                            <span className="flex items-center gap-1.5" style={{ color: isUnlocked ? "#047857" : "#C2410C" }}>
+                              {isUnlocked ? "🎉 Free Drink Unlocked!" : `🍹 Add Rs ${remaining.toLocaleString()} more for FREE Drink`}
+                            </span>
+                            <span className="font-bold text-[10px]" style={{ color: isUnlocked ? "#059669" : "#EA580C" }}>
+                              Rs {subtotal.toLocaleString()} / Rs 3,000
+                            </span>
+                          </div>
+                          
+                          {/* Progress Bar Track */}
+                          <div className="w-full h-2.5 bg-black/10 rounded-full overflow-hidden p-0.5">
+                            <div className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${pct}%`,
+                                background: isUnlocked ? "linear-gradient(90deg,#10B981,#059669)" : "linear-gradient(90deg,#F26F21,#FF8C3F)"
+                              }} />
+                          </div>
+                        </div>
+
+                        {/* Drink Selection Section */}
+                        {beverages.length > 0 && (
+                          <div className={`rounded-2xl overflow-hidden border transition-all ${isUnlocked ? "bg-emerald-50/60 border-emerald-200" : "bg-gray-100/90 border-gray-200"}`}>
+                            <div className="flex items-center justify-between px-3.5 pt-3 pb-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-base">{isUnlocked ? "🎁" : "🔒"}</span>
+                                <p className="text-[11px] font-black text-gray-800 uppercase tracking-wider">
+                                  {isUnlocked ? "Choose Your FREE Drink" : "Add a Drink (Locked)"}
+                                </p>
+                              </div>
+                              <span className="text-[9px] font-bold text-gray-400">Excludes milkshakes</span>
+                            </div>
+
+                            <div className="flex gap-2 overflow-x-auto scrollbar-none px-3.5 pb-3">
+                              {beverages.map(bev => (
+                                <button key={bev.id}
+                                  disabled={!isUnlocked}
+                                  onClick={() => {
+                                    if (isUnlocked) {
+                                      addToCart({ ...bev, price: 0 });
+                                    }
+                                  }}
+                                  className={`flex-shrink-0 flex items-center gap-2 rounded-xl px-2.5 py-2 shadow-sm border transition-all ${
+                                    isUnlocked
+                                      ? "bg-white border-emerald-300 hover:border-emerald-500 cursor-pointer active:scale-95"
+                                      : "bg-white/60 border-gray-200 opacity-60 cursor-not-allowed"
+                                  }`}>
+                                  {bev.image
+                                    ? <img src={bev.image} alt={bev.title} className="w-9 h-9 rounded-lg object-cover" />
+                                    : (
+                                      <div className="w-9 h-9 rounded-lg flex flex-col items-center justify-center bg-gray-200">
+                                        <svg viewBox="0 0 40 52" className="w-5 h-6 opacity-40" fill="none">
+                                          <rect x="10" y="2" width="20" height="4" rx="2" fill="#999"/>
+                                          <path d="M8 6 L6 46 Q6 48 8 48 L32 48 Q34 48 34 46 L32 6 Z" fill="#bbb" stroke="#aaa" strokeWidth="0.5"/>
+                                        </svg>
+                                      </div>
+                                    )
+                                  }
+                                  <div className="text-left">
+                                    <p className="text-[10px] font-extrabold text-gray-800 leading-tight" style={{ maxWidth: 80, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bev.title}</p>
+                                    {isUnlocked ? (
+                                      <span className="inline-block bg-emerald-100 text-emerald-700 font-extrabold px-1.5 py-0.5 rounded-full text-[9px]">FREE ✔</span>
+                                    ) : (
+                                      <p className="text-[10px] font-bold text-gray-400">Rs {Number(bev.price).toLocaleString()}</p>
+                                    )}
+                                  </div>
+                                  {isUnlocked && (
+                                    <div className="w-6 h-6 rounded-full text-white flex items-center justify-center flex-shrink-0 ml-1 bg-emerald-500">
+                                      {Icons.plus("w-3 h-3")}
+                                    </div>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </>
               )}
             </div>
 
@@ -568,6 +753,101 @@ export default function OrderPage() {
               </div>
             )}
           </aside>
+        </div>
+      )}
+      {/* ── PRODUCT DETAIL MODAL (INDIVIDUAL ENTITY) ────────── */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md anim-fade"
+          onClick={() => setSelectedProduct(null)}>
+          <div className="relative w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl anim-slide-up"
+            onClick={(e) => e.stopPropagation()} style={{ boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)" }}>
+            
+            {/* Image header */}
+            <div className="relative h-56 sm:h-64 bg-gray-100 overflow-hidden">
+              {selectedProduct.image
+                ? <img src={selectedProduct.image} alt={selectedProduct.title} className="w-full h-full object-cover" />
+                : selectedProduct.category === "Beverages"
+                  ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "linear-gradient(135deg,#e8e8e8,#d0d0d0)" }}>
+                      <svg viewBox="0 0 64 80" className="w-16 h-20 opacity-50" fill="none">
+                        <rect x="18" y="4" width="28" height="6" rx="3" fill="#999"/>
+                        <path d="M14 10 L10 68 Q10 72 14 72 L50 72 Q54 72 54 68 L50 10 Z" fill="#bbb" stroke="#aaa" strokeWidth="1"/>
+                        <path d="M16 10 L20 10 L16 68 Q16 70 18 70 L14 70 Q12 70 12 68 Z" fill="#c8c8c8"/>
+                        <ellipse cx="32" cy="38" rx="12" ry="4" fill="#aaa" opacity="0.4"/>
+                      </svg>
+                      <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mt-2">Beverage</p>
+                    </div>
+                  )
+                  : (
+                    <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "linear-gradient(135deg,#e8e8e8,#d0d0d0)" }}>
+                      <svg viewBox="0 0 80 80" className="w-20 h-20 opacity-40" fill="none">
+                        <circle cx="40" cy="38" r="24" fill="none" stroke="#999" strokeWidth="3"/>
+                        <path d="M24 38 Q40 20 56 38" fill="#bbb"/>
+                        <circle cx="32" cy="34" r="4" fill="#aaa"/>
+                        <circle cx="48" cy="32" r="3" fill="#aaa"/>
+                      </svg>
+                      <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mt-2">Food Item</p>
+                    </div>
+                  )
+              }
+              <button onClick={() => setSelectedProduct(null)}
+                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-lg transition-all z-10 backdrop-blur-sm">
+                ×
+              </button>
+              {selectedProduct.category && (
+                <span className="absolute top-3 left-3 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#F26F21] text-white shadow-md">
+                  {selectedProduct.category}
+                </span>
+              )}
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="flex items-start justify-between gap-4 mb-2">
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 leading-tight">{selectedProduct.title}</h2>
+                  <p className="text-xs font-bold text-[#F26F21] mt-0.5">{selectedProduct.portion}</p>
+                </div>
+                <span className="text-xl font-black text-[#F26F21] flex-shrink-0">
+                  Rs {Number(selectedProduct.price).toLocaleString()}
+                </span>
+              </div>
+
+              <p className="text-xs text-gray-500 leading-relaxed mb-6">
+                {selectedProduct.description || getFallbackDescription(selectedProduct.title, selectedProduct.category)}
+              </p>
+
+              {/* Cart Actions */}
+              {(() => {
+                const inCart = cart.find(ci => ci.item.id === selectedProduct.id);
+                const qty = inCart?.quantity ?? 0;
+                return (
+                  <div className="flex items-center gap-3">
+                    {qty > 0 ? (
+                      <div className="flex items-center justify-between bg-gray-50 rounded-2xl p-2 border border-gray-200 flex-1">
+                        <button onClick={() => updateQuantity(selectedProduct.id, -1)}
+                          className="qty-btn bg-white border border-gray-200 text-gray-700 hover:border-[#F26F21] hover:text-[#F26F21]">
+                          {Icons.minus("w-4 h-4")}
+                        </button>
+                        <span className="text-base font-black text-gray-900 px-3">{qty} in cart</span>
+                        <button onClick={() => updateQuantity(selectedProduct.id, 1)}
+                          className="qty-btn text-white"
+                          style={{ background: "#F26F21" }}>
+                          {Icons.plus("w-4 h-4")}
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}
+                        className="flex-1 text-white text-xs font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
+                        style={{ background: "#F26F21", boxShadow: "0 8px 24px rgba(242,111,33,0.4)" }}>
+                        {Icons.plus("w-4 h-4")} Add to Cart (Rs {Number(selectedProduct.price).toLocaleString()})
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
         </div>
       )}
     </>

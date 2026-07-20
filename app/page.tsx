@@ -7,7 +7,6 @@ import { useEffect, useState, useRef } from "react";
 /* ── Intersection observer for reveal animations ──────────────── */
 function useReveal(deps: any[] = []) {
   useEffect(() => {
-    // Small delay so React has flushed the new DOM nodes
     const timer = setTimeout(() => {
       const els = document.querySelectorAll("[data-reveal]");
       const io = new IntersectionObserver(
@@ -18,7 +17,6 @@ function useReveal(deps: any[] = []) {
         { threshold: 0.08 }
       );
       els.forEach((el) => io.observe(el));
-      // Clean-up is handled by the effect return below
       return () => io.disconnect();
     }, 80);
     return () => clearTimeout(timer);
@@ -104,18 +102,18 @@ const Icon = {
 /* ── Static fallback menu data ─────────────────────────────────── */
 const FEATURED = [
   { id: 1, title: "Seafood Fried Rice", price: "Rs 1,500", label: "🔥 Hot Pick", category: "Fried Rice", image: "/Product Images/FR-05.avif" },
-  { id: 2, title: "Nasi Goreng", price: "Rs 1,400", label: "⭐ Top Rated", category: "Fried Rice", image: "/Product Images/FR-07.avif" },
-  { id: 3, title: "Chicken Kottu", price: "Rs 1,100", label: "💚 Best Value", category: "Kottu", image: "/Product Images/KT-02.avif" },
-  { id: 4, title: "Prawn Chopsuey", price: "Rs 1,400", label: "🍤 Chef's Pick", category: "Chopsuey", image: "/Product Images/CS-02.avif" },
+  { id: 2, title: "Chicken Kottu", price: "Rs 1,100", label: "💚 Best Value", category: "Kottu", image: "/Product Images/KT-02.avif" },
+  { id: 3, title: "Nasi Goreng", price: "Rs 1,400", label: "⭐ Top Rated", category: "Fried Rice", image: "/Product Images/FR-07.avif" },
+  { id: 4, title: "Prawn Chopsuey Rice", price: "Rs 1,400", label: "🍤 Chef's Pick", category: "Chopsuey", image: "/Product Images/CS-02.avif" },
 ];
 
 const REVIEWS = [
-  { i: "T", name: "Thanuja Welagedara", text: "Highly recommended — excellent food quality, taste, and service!", href: "https://share.google/XfX96zQZ36QWsqjlI" },
-  { i: "M", name: "madusanka bandara", text: "Absolutely delicious street-style food and extremely fast service!", href: "https://share.google/y80WdEtoMV9bRdeFT" },
-  { i: "E", name: "Eranga Perera", text: "Best Kottu and Fried Rice in town! Large portions and amazing flavor.", href: "https://share.google/eJhWP2tMIsHOp0iTs" },
-  { i: "N", name: "Nipuni Fernando", text: "Super fast delivery and food arrived piping hot! Chopsuey is top tier.", href: "https://share.google/Wmb7eUaSzIlG8Y2Ml" },
-  { i: "K", name: "Kavindu Silva", text: "Great value! Fresh ingredients and authentic cloud kitchen vibe.", href: "https://share.google/KvwuzXIvknEDxGasV" },
-  { i: "P", name: "Pathum Jayasinghe", text: "Generous portions and incredible taste — will definitely order again!", href: "https://share.google/nk2NN7nxO0rI2dhy2" },
+  { i: "T", name: "Thanuja Welagedara", text: "Highly recommended — excellent food quality, taste, and service! Everything was cooked perfectly and the delivery was super fast.", href: "https://share.google/XfX96zQZ36QWsqjlI" },
+  { i: "M", name: "madusanka bandara", text: "Absolutely delicious street-style food and extremely fast service! The Kottu was smoky, bold, and authentically Sri Lankan.", href: "https://share.google/y80WdEtoMV9bRdeFT" },
+  { i: "E", name: "Eranga Perera", text: "Best Kottu and Fried Rice in town! Large portions, amazing flavor and great value for money. Will definitely order again.", href: "https://share.google/eJhWP2tMIsHOp0iTs" },
+  { i: "N", name: "Nipuni Fernando", text: "Super fast delivery and food arrived piping hot! The Chopsuey is absolutely top tier — fresh ingredients and incredible taste.", href: "https://share.google/Wmb7eUaSzIlG8Y2Ml" },
+  { i: "K", name: "Kavindu Silva", text: "Great value! Fresh ingredients and authentic cloud kitchen vibe. The Seafood Fried Rice was loaded with prawns and cuttlefish.", href: "https://share.google/KvwuzXIvknEDxGasV" },
+  { i: "P", name: "Pathum Jayasinghe", text: "Generous portions and incredible taste — will definitely order again! Honestly one of the best food experiences in Mulleriyawa.", href: "https://share.google/nk2NN7nxO0rI2dhy2" },
 ];
 
 const FAQS = [
@@ -125,13 +123,97 @@ const FAQS = [
   { q: "What payment methods are accepted?", a: "Cash on Delivery (COD) and online bank transfers with receipt upload." },
 ];
 
-const CATS = ["All", "Fried Rice", "Kottu", "Chopsuey", "Beverages"];
+const CATS = ["All", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Pasta", "Beverages"];
+
+/* ── Grey food placeholder SVG ─────────────────────────────────── */
+function FoodPlaceholder() {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden" style={{ background: "linear-gradient(135deg,#e8e8e8 0%,#d0d0d0 100%)" }}>
+      <svg viewBox="0 0 80 80" className="w-14 h-14 opacity-40" fill="none">
+        <circle cx="40" cy="40" r="28" fill="none" stroke="#888" strokeWidth="2.5" />
+        <path d="M22 42 Q40 22 58 42" fill="#999" />
+        <circle cx="32" cy="36" r="4" fill="#888" />
+        <circle cx="48" cy="34" r="3.5" fill="#888" />
+        <circle cx="40" cy="44" r="2.5" fill="#aaa" />
+        <rect x="20" y="60" width="40" height="3" rx="1.5" fill="#999" />
+      </svg>
+    </div>
+  );
+}
+
+/* ── Review Flashcard Carousel ─────────────────────────────────── */
+function ReviewCarousel() {
+  const [current, setCurrent] = useState(0);
+  const [animState, setAnimState] = useState<"idle" | "exit" | "enter">("idle");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const goTo = (next: number) => {
+    if (animState !== "idle") return;
+    setAnimState("exit");
+    setTimeout(() => {
+      setCurrent(next);
+      setAnimState("enter");
+      setTimeout(() => setAnimState("idle"), 500);
+    }, 400);
+  };
+
+  useEffect(() => {
+    timerRef.current = setTimeout(() => {
+      const next = (current + 1) % REVIEWS.length;
+      goTo(next);
+    }, 3000);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current, animState]);
+
+  const r = REVIEWS[current];
+
+  return (
+    <div style={{ position: "relative", overflow: "hidden" }}>
+      <div
+        style={{
+          transition: "opacity 0.4s ease, transform 0.4s ease",
+          opacity: animState === "exit" ? 0 : 1,
+          transform: animState === "exit" ? "translateY(40px) scale(0.97)" : animState === "enter" ? "translateY(-8px)" : "translateY(0) scale(1)",
+        }}
+      >
+        <div className="review-flash-card">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 14, background: "#F26F21", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16, flexShrink: 0 }}>{r.i}</div>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 800, color: "#111", lineHeight: 1.2 }}>{r.name}</p>
+                <p style={{ fontSize: 10, color: "#999", fontWeight: 700 }}>Google Review · Verified</p>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 2 }}>{[1,2,3,4,5].map(s => <span key={s} style={{ color: "#FBBF24", fontSize: 16 }}>★</span>)}</div>
+          </div>
+          <p style={{ fontSize: 13, color: "#444", fontStyle: "italic", lineHeight: 1.65, marginBottom: 14 }}>"{r.text}"</p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <a href={r.href} target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: 10, fontWeight: 800, color: "#F26F21", textDecoration: "none", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              View on Google ↗
+            </a>
+            <div style={{ display: "flex", gap: 6 }}>
+              {REVIEWS.map((_, i) => (
+                <button key={i} onClick={() => goTo(i)}
+                  style={{ width: i === current ? 20 : 8, height: 8, borderRadius: 4, background: i === current ? "#F26F21" : "#ddd", border: "none", cursor: "pointer", transition: "all 0.3s ease", padding: 0 }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ── Component ─────────────────────────────────────────────────── */
 export default function Home() {
   const [items, setItems] = useState<any[]>([]);
   const [cat, setCat] = useState("All");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [heroSlide, setHeroSlide] = useState(0);
   useReveal([items]);
 
   useEffect(() => {
@@ -142,7 +224,66 @@ export default function Home() {
   }, []);
 
   const pool = items.length >= 4 ? items : FEATURED;
-  const visible = (cat === "All" ? pool : pool.filter((i) => i.category === cat)).slice(0, 4);
+  
+  // Always show exactly these 4 dishes in the popular section for "All"
+  const popularDishes = [
+    pool.find(i => i.title?.toLowerCase().includes("seafood fried")) || FEATURED[0],
+    pool.find(i => i.title?.toLowerCase().includes("chicken kottu")) || FEATURED[1],
+    pool.find(i => i.title?.toLowerCase().includes("nasi")) || FEATURED[2],
+    pool.find(i => i.title?.toLowerCase().includes("prawn chop")) || pool.find(i => i.title?.toLowerCase().includes("prawn")) || FEATURED[3],
+  ].filter(Boolean);
+
+  const getCategoryItems = (category: string) => {
+    if (category === "All") return popularDishes;
+    
+    const filtered = pool.filter((i) => {
+      const itemCat = (i.category || "").toLowerCase();
+      const targetCat = category.toLowerCase();
+      if (targetCat === "ultimate bites") {
+        return itemCat.includes("ultimate") || (i.label || "").toLowerCase().includes("hot") || (i.label || "").toLowerCase().includes("chef") || Number(i.price) >= 1400;
+      }
+      return itemCat === targetCat || itemCat.includes(targetCat);
+    });
+
+    if (category === "Chopsuey") {
+      filtered.sort((a, b) => {
+        const aPrawn = a.title?.toLowerCase().includes("prawn") ? -1 : 1;
+        const bPrawn = b.title?.toLowerCase().includes("prawn") ? -1 : 1;
+        return aPrawn - bPrawn;
+      });
+    }
+
+    if (filtered.length === 0) {
+      if (category === "Ultimate Bites") {
+        return [
+          { id: 101, title: "Ultimate Mixed Kottu", price: "Rs 1,600", label: "🔥 Ultimate Pick", category: "Ultimate Bites", image: "/Product Images/KT-05.avif" },
+          { id: 102, title: "Ultimate Seafood Rice", price: "Rs 1,800", label: "🍤 Chef's Special", category: "Ultimate Bites", image: "/Product Images/FR-05.avif" },
+          { id: 103, title: "Ultimate Cheese Kottu", price: "Rs 1,500", label: "🧀 Cheesy", category: "Ultimate Bites", image: "/Product Images/KT-04.avif" },
+          { id: 104, title: "Nasi Goreng Deluxe", price: "Rs 1,650", label: "⭐ Top Rated", category: "Ultimate Bites", image: "/Product Images/FR-07.avif" },
+        ];
+      }
+      if (category === "Pasta") {
+        return [
+          { id: 201, title: "Creamy Chicken Pasta", price: "Rs 1,400", label: "🍝 Creamy", category: "Pasta" },
+          { id: 202, title: "Spicy Seafood Pasta", price: "Rs 1,600", label: "🔥 Spicy", category: "Pasta" },
+          { id: 203, title: "Cheesy Baked Pasta", price: "Rs 1,500", label: "🧀 Cheesy", category: "Pasta" },
+          { id: 204, title: "Vegetable Pasta", price: "Rs 1,100", label: "🥗 Fresh", category: "Pasta" },
+        ];
+      }
+      if (category === "Beverages") {
+        return [
+          { id: 301, title: "Coca-Cola 500ml", price: "Rs 250", label: "🥤 Chilled", category: "Beverages" },
+          { id: 302, title: "Sprite 500ml", price: "Rs 250", label: "🍋 Refreshing", category: "Beverages" },
+          { id: 303, title: "Fanta Orange 500ml", price: "Rs 250", label: "🍊 Fruity", category: "Beverages" },
+          { id: 304, title: "EGB Ginger Beer", price: "Rs 250", label: "🍺 Classic", category: "Beverages" },
+        ];
+      }
+    }
+
+    return filtered.slice(0, 4);
+  };
+
+  const visible = getCategoryItems(cat);
 
   return (
     <>
@@ -166,19 +307,19 @@ export default function Home() {
         .product-card { background:#fff; border-radius:20px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.07); transition:transform .25s ease,box-shadow .25s ease; }
         .product-card:hover { transform:translateY(-6px); box-shadow:0 16px 40px rgba(242,111,33,0.15); }
         .faq-item { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.06); }
-        .review-card { background:#fff; border-radius:20px; padding:20px; box-shadow:0 4px 24px rgba(0,0,0,0.06); transition:transform .25s ease; }
-        .review-card:hover { transform:translateY(-4px); }
+        .review-flash-card { background:#fff; border-radius:24px; padding:28px 28px 22px; box-shadow:0 8px 40px rgba(0,0,0,0.09); max-width:560px; margin:0 auto; }
         .cat-pill { padding:8px 18px; border-radius:100px; font-size:12px; font-weight:800; transition:all .2s ease; border:2px solid transparent; cursor:pointer; white-space:nowrap; }
         .cat-pill.active { background:var(--orange); color:#fff; box-shadow:0 6px 18px rgba(242,111,33,0.35); }
         .cat-pill:not(.active) { background:#fff; color:#555; border-color:#e5e5e5; }
         .cat-pill:not(.active):hover { border-color:var(--orange); color:var(--orange); }
-        .hero-diagonal { position:absolute; inset:0; background:var(--orange); clip-path:polygon(0 0,100% 0,100% 72%,0 100%); z-index:0; }
         .scrollbar-none { -ms-overflow-style:none; scrollbar-width:none; }
         .scrollbar-none::-webkit-scrollbar { display:none; }
         .shimmer { background: linear-gradient(110deg,#f3f3f3 30%,#ecebeb 50%,#f3f3f3 70%); background-size:200% 100%; animation:shimmer 1.4s linear infinite; }
         @keyframes shimmer{to{background-position:-200% 0}}
         @keyframes cardFadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         .tag-chip { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:800; padding:3px 10px; border-radius:100px; letter-spacing:0.04em; }
+        @keyframes foodSlide { 0%,100%{transform:translateX(0)} 33%{transform:translateX(-33.33%)} 66%{transform:translateX(-66.66%)} }
+        .ultimate-bites-badge { background: linear-gradient(135deg,#F26F21,#FF6B35); color:#fff; border-radius:100px; padding:4px 14px; font-size:10px; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; display:inline-block; margin-bottom:8px; }
       `}</style>
 
       {/* ─────────── STICKY NAV ────────────────────────────────────── */}
@@ -201,7 +342,7 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <a href="tel:+94706288109" className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-[#F26F21] transition-colors">
+            <a href="tel:+94706288109" className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-[#F26F21] transition-colors">
               {Icon.phone()} 070 628 8109
             </a>
             <Link href="/order"
@@ -214,7 +355,7 @@ export default function Home() {
       </header>
 
       {/* ─────────── HERO SECTION ─────────────────────────────────── */}
-      <section className="relative overflow-hidden" style={{ minHeight: "92svh", background: "#F26F21" }}>
+      <section className="relative overflow-hidden" style={{ background: "#F26F21" }}>
         {/* Background wave shape */}
         <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-[#F7F5F2] z-0" style={{ borderRadius: "50% 50% 0 0 / 10% 10% 0 0" }} />
 
@@ -222,15 +363,9 @@ export default function Home() {
         <div className="absolute inset-0 z-0 opacity-[0.04]"
           style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E\")" }} />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-5 pt-12 pb-28 lg:pb-16 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center min-h-[88svh]">
+        <div className="relative z-10 max-w-6xl mx-auto px-5 pt-10 pb-20 lg:pb-14 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           {/* Left text */}
           <div className="text-white space-y-5">
-            {/* Live badge */}
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3.5 py-1.5 rounded-full badge-pop">
-              <span className="w-2 h-2 bg-white rounded-full animate-ping" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Kitchen Open · Express Delivery</span>
-            </div>
-
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.06] tracking-tight drop-shadow-sm">
               Your Favourite<br />
               <span className="text-white/90">Sri Lankan</span><br />
@@ -247,77 +382,128 @@ export default function Home() {
                 {[1,2,3,4,5].map(s => <span key={s} className="text-yellow-300 text-base">★</span>)}
               </div>
               <span className="text-white font-black text-sm">5.0</span>
-              <span className="text-white/60 text-xs font-semibold">Google Reviews · 50K+ Meals</span>
+              <span className="text-white/60 text-xs font-semibold">Google Reviews</span>
             </div>
 
             {/* CTAs */}
             <div className="flex gap-3 flex-wrap pt-1">
               <Link href="/order"
-                className="flex items-center gap-2 bg-white font-black text-sm px-6 py-3.5 rounded-2xl transition-all active:scale-95 shadow-xl"
+                className="flex items-center gap-2 bg-white font-black text-sm px-7 py-3.5 rounded-2xl transition-all active:scale-95 shadow-xl"
                 style={{ color: "#F26F21", boxShadow: "0 10px 30px rgba(0,0,0,0.18)" }}>
                 {Icon.bag("w-4 h-4")} Browse Menu
               </Link>
-              <a href="https://wa.me/94706288109" target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur border border-white/30 text-white font-black text-sm px-6 py-3.5 rounded-2xl transition-all active:scale-95">
-                {Icon.wa("w-4 h-4")} WhatsApp Order
-              </a>
-            </div>
-
-            {/* Quick stats */}
-            <div className="grid grid-cols-3 gap-3 pt-2 max-w-sm">
-              {[
-                ["~20 min", "Prep Time"],
-                ["3 km", "Delivery Range"],
-                ["100%", "Hygienic"],
-              ].map(([v, l]) => (
-                <div key={l} className="bg-white/15 backdrop-blur rounded-xl p-2.5 text-center border border-white/20">
-                  <p className="font-black text-sm text-white">{v}</p>
-                  <p className="text-[10px] text-white/70 font-bold uppercase tracking-wider leading-tight">{l}</p>
-                </div>
-              ))}
             </div>
           </div>
 
-          {/* Right floating food image */}
-          <div className="relative flex items-center justify-center">
+          {/* Right top seller food cards - Desktop side-by-side simultaneously; Mobile swipeable overlay stack */}
+          <div className="relative flex items-center justify-center py-6 min-h-[300px] sm:min-h-[340px] select-none"
+            onTouchStart={(e) => (window as any)._touchX = e.touches[0].clientX}
+            onTouchEnd={(e) => {
+              const startX = (window as any)._touchX;
+              if (startX !== undefined) {
+                const diff = e.changedTouches[0].clientX - startX;
+                if (diff < -40) setHeroSlide(1);
+                if (diff > 40) setHeroSlide(0);
+              }
+            }}>
             {/* Glow disc */}
-            <div className="absolute w-72 h-72 sm:w-80 sm:h-80 bg-white/20 rounded-full blur-3xl" />
+            <div className="absolute w-72 h-72 sm:w-96 sm:h-96 bg-white/20 rounded-full blur-3xl" />
 
-            {/* Food card */}
-            <div className="relative z-10 hero-float">
-              <div className="w-64 sm:w-80 bg-white rounded-[28px] p-4 shadow-2xl" style={{ boxShadow: "0 30px 80px rgba(0,0,0,0.25)" }}>
-                <div className="relative h-44 sm:h-52 rounded-2xl overflow-hidden bg-orange-50 mb-3">
+            {/* Desktop View: Side by side simultaneously */}
+            <div className="hidden sm:flex relative z-10 flex-row gap-4 items-center justify-center">
+              {/* Card 1 */}
+              <div className="w-64 sm:w-72 bg-white rounded-[24px] p-3.5 shadow-2xl hero-float">
+                <div className="relative h-40 sm:h-44 rounded-xl overflow-hidden bg-orange-50 mb-2.5">
                   <img src="/Product Images/FR-05.avif" alt="Seafood Fried Rice" className="w-full h-full object-cover" />
-                  <span className="absolute top-3 left-3 tag-chip bg-[#F26F21] text-white">{Icon.fire("w-3 h-3")} #1 Best Seller</span>
+                  <span className="absolute top-2.5 left-2.5 tag-chip bg-[#F26F21] text-white text-[9px]">{Icon.fire("w-3 h-3")} #1 Best Seller</span>
                 </div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-1">
                   <div>
-                    <h3 className="font-extrabold text-sm text-gray-900">Seafood Fried Rice</h3>
-                    <p className="text-[11px] text-gray-400 font-medium">Prawns · Cuttlefish · Beef · Basmati</p>
+                    <h3 className="font-extrabold text-xs sm:text-sm text-gray-900">Seafood Fried Rice</h3>
+                    <p className="text-[10px] text-gray-400 font-semibold">Large Portion · Serves 2</p>
                   </div>
-                  <span className="font-black text-[#F26F21] text-base">Rs 1,500</span>
-                </div>
-                <div className="flex items-center gap-3 text-[11px] text-gray-400 font-semibold mb-3">
-                  <span className="flex items-center gap-1">{Icon.star("w-3 h-3")} <span className="text-yellow-500 font-bold">5.0</span></span>
-                  <span className="flex items-center gap-1">{Icon.clock("w-3 h-3")} 20 min</span>
-                  <span className="flex items-center gap-1">{Icon.map("w-3 h-3")} 3 km</span>
+                  <span className="font-black text-[#F26F21] text-sm">Rs 1,500</span>
                 </div>
                 <Link href="/order"
-                  className="w-full flex items-center justify-center gap-2 text-white text-xs font-black py-2.5 rounded-xl transition-all active:scale-95"
-                  style={{ background: "#F26F21", boxShadow: "0 6px 18px rgba(242,111,33,0.4)" }}>
-                  {Icon.bag("w-4 h-4")} Add to Cart
+                  className="w-full flex items-center justify-center gap-2 text-white text-xs font-black py-2 rounded-xl transition-all active:scale-95 mt-2"
+                  style={{ background: "#F26F21", boxShadow: "0 4px 14px rgba(242,111,33,0.35)" }}>
+                  {Icon.bag("w-3.5 h-3.5")} Order Now
+                </Link>
+              </div>
+
+              {/* Card 2 */}
+              <div className="w-64 sm:w-72 bg-white rounded-[24px] p-3.5 shadow-2xl hero-float" style={{ animationDelay: "1.5s" }}>
+                <div className="relative h-40 sm:h-44 rounded-xl overflow-hidden bg-orange-50 mb-2.5">
+                  <img src="/Product Images/FR-07.avif" alt="Nasi Goreng" className="w-full h-full object-cover" />
+                  <span className="absolute top-2.5 left-2.5 tag-chip bg-[#0D0D0D] text-white text-[9px]">⭐ #2 Top Seller</span>
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <h3 className="font-extrabold text-xs sm:text-sm text-gray-900">Nasi Goreng</h3>
+                    <p className="text-[10px] text-gray-400 font-semibold">Large Portion · Serves 2</p>
+                  </div>
+                  <span className="font-black text-[#F26F21] text-sm">Rs 1,400</span>
+                </div>
+                <Link href="/order"
+                  className="w-full flex items-center justify-center gap-2 text-white text-xs font-black py-2 rounded-xl transition-all active:scale-95 mt-2"
+                  style={{ background: "#F26F21", boxShadow: "0 4px 14px rgba(242,111,33,0.35)" }}>
+                  {Icon.bag("w-3.5 h-3.5")} Order Now
                 </Link>
               </div>
             </div>
 
-            {/* Floating mini badge */}
-            <div className="absolute bottom-4 left-0 sm:-left-6 z-20 bg-white rounded-2xl px-3 py-2.5 flex items-center gap-2 shadow-xl badge-pop" style={{ animationDelay: ".3s" }}>
-              <div className="w-8 h-8 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
-                {Icon.shield("w-4 h-4")}
+            {/* Mobile View: Swipeable Overlay Stack (Half of second card peeking out) */}
+            <div className="flex sm:hidden relative z-10 w-full max-w-md items-center justify-center min-h-[300px] overflow-hidden px-4">
+              {/* Card 1: #1 Best Seller (Seafood Fried Rice) */}
+              <div
+                onClick={() => setHeroSlide(0)}
+                className={`w-60 bg-white rounded-[24px] p-3.5 transition-all duration-500 ease-out cursor-pointer ${
+                  heroSlide === 0
+                    ? "relative z-20 scale-100 opacity-100 shadow-2xl hero-float pointer-events-auto -translate-x-12"
+                    : "absolute z-10 scale-90 opacity-60 -translate-x-28 blur-[0.2px] hover:opacity-80 pointer-events-auto"
+                }`}>
+                <div className="relative h-36 rounded-xl overflow-hidden bg-orange-50 mb-2.5">
+                  <img src="/Product Images/FR-05.avif" alt="Seafood Fried Rice" className="w-full h-full object-cover" />
+                  <span className="absolute top-2.5 left-2.5 tag-chip bg-[#F26F21] text-white text-[9px]">{Icon.fire("w-3 h-3")} #1 Best Seller</span>
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <h3 className="font-extrabold text-xs text-gray-900">Seafood Fried Rice</h3>
+                    <p className="text-[10px] text-gray-400 font-semibold">Large Portion · Serves 2</p>
+                  </div>
+                  <span className="font-black text-[#F26F21] text-sm">Rs 1,500</span>
+                </div>
+                <Link href="/order"
+                  className="w-full flex items-center justify-center gap-2 text-white text-xs font-black py-2 rounded-xl transition-all active:scale-95 mt-2"
+                  style={{ background: "#F26F21", boxShadow: "0 4px 14px rgba(242,111,33,0.35)" }}>
+                  {Icon.bag("w-3.5 h-3.5")} Order Now
+                </Link>
               </div>
-              <div>
-                <p className="text-xs font-black text-gray-900 leading-none">Verified Hygienic</p>
-                <p className="text-[10px] text-gray-400 font-bold">Food Safety Certified</p>
+
+              {/* Card 2: #2 Top Seller (Nasi Goreng) */}
+              <div
+                onClick={() => setHeroSlide(1)}
+                className={`w-60 bg-white rounded-[24px] p-3.5 transition-all duration-500 ease-out cursor-pointer ${
+                  heroSlide === 1
+                    ? "relative z-20 scale-100 opacity-100 shadow-2xl hero-float pointer-events-auto translate-x-12"
+                    : "absolute z-10 scale-90 opacity-60 translate-x-28 blur-[0.2px] hover:opacity-80 pointer-events-auto"
+                }`}>
+                <div className="relative h-36 rounded-xl overflow-hidden bg-orange-50 mb-2.5">
+                  <img src="/Product Images/FR-07.avif" alt="Nasi Goreng" className="w-full h-full object-cover" />
+                  <span className="absolute top-2.5 left-2.5 tag-chip bg-[#0D0D0D] text-white text-[9px]">⭐ #2 Top Seller</span>
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <h3 className="font-extrabold text-xs text-gray-900">Nasi Goreng</h3>
+                    <p className="text-[10px] text-gray-400 font-semibold">Large Portion · Serves 2</p>
+                  </div>
+                  <span className="font-black text-[#F26F21] text-sm">Rs 1,400</span>
+                </div>
+                <Link href="/order"
+                  className="w-full flex items-center justify-center gap-2 text-white text-xs font-black py-2 rounded-xl transition-all active:scale-95 mt-2"
+                  style={{ background: "#F26F21", boxShadow: "0 4px 14px rgba(242,111,33,0.35)" }}>
+                  {Icon.bag("w-3.5 h-3.5")} Order Now
+                </Link>
               </div>
             </div>
           </div>
@@ -328,7 +514,7 @@ export default function Home() {
       <div className="overflow-hidden py-4 bg-[#0D0D0D] text-white">
         <div className="ticker-track gap-12 text-xs font-black uppercase tracking-widest">
           {[...Array(2)].map((_, i) =>
-            ["🍜 Kottu", "🍚 Fried Rice", "🥘 Chopsuey", "🌶️ Spicy Options", "⚡ 20-Min Prep", "🚴 Express Delivery", "⭐ 5.0 Google Rating", "🥗 Fresh Daily"].map((t, j) => (
+            ["🍜 Kottu", "🍚 Fried Rice", "🥘 Chopsuey", "🌶️ Spicy Options", "⚡ 20-Min Prep", "🚴 Express Delivery", "⭐ 5.0 Google Rating", "🥗 Fresh Daily", "🍝 Pasta", "🍳 Nasi Goreng"].map((t, j) => (
               <span key={`${i}-${j}`} className="text-[#F26F21] mx-10">{t}<span className="text-white/30 ml-10">·</span></span>
             ))
           )}
@@ -344,19 +530,24 @@ export default function Home() {
             <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/10" />
             <div className="absolute -right-8 -bottom-12 w-40 h-40 rounded-full bg-white/10" />
 
+            {/* Faded beverage offer AVIF background image */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
+              <img src="/beverage offer.avif?v=2" alt="Beverage Offer" className="w-full h-full object-cover" />
+            </div>
+
             <div className="relative z-10 text-white text-center sm:text-left">
-              <p className="text-[11px] font-extrabold uppercase tracking-widest bg-white/20 inline-flex px-3 py-1 rounded-full mb-2">🎉 Limited Time Offer</p>
-              <h2 className="text-2xl sm:text-4xl font-black leading-tight">Order via WhatsApp <br />Get Free Extras!</h2>
-              <p className="text-white/80 text-sm mt-1">First 5 orders daily — complimentary sambol + chili sauce with every meal.</p>
+              <p className="text-[11px] font-extrabold uppercase tracking-widest bg-white/20 inline-flex px-3 py-1 rounded-full mb-2">🎁 Special Offer</p>
+              <h2 className="text-2xl sm:text-4xl font-black leading-tight">Orders Over Rs 3,000<br />Get a <span className="text-yellow-200">Free Beverage!</span></h2>
+              <p className="text-white/80 text-sm mt-2">Spend Rs 3,000 or more and get one complimentary beverage item absolutely free<br className="hidden sm:block" /> <span className="text-white/60 text-xs">(Excludes milkshakes · While stocks last)</span></p>
             </div>
 
             <div className="relative z-10 flex flex-col items-center gap-3">
-              <a href="https://wa.me/94706288109" target="_blank" rel="noopener noreferrer"
+              <Link href="/order"
                 className="flex items-center gap-2 bg-white font-black text-sm px-7 py-3.5 rounded-2xl transition-all active:scale-95 shadow-xl"
                 style={{ color: "#F26F21" }}>
-                {Icon.wa("w-4 h-4")} Claim via WhatsApp
-              </a>
-              <span className="text-white/70 text-[10px] font-bold uppercase tracking-wider">No minimum order required</span>
+                {Icon.bag("w-4 h-4")} Claim Free Beverage
+              </Link>
+              <span className="text-white/70 text-[10px] font-bold uppercase tracking-wider">Valid on orders 3,000 LKR+</span>
             </div>
           </div>
         </div>
@@ -388,29 +579,28 @@ export default function Home() {
             {visible.map((item, idx) => {
               const price = typeof item.price === "string" ? item.price : `Rs ${Number(item.price).toLocaleString()}`;
               return (
-                <div key={item.id} className="product-card" style={{ animationDelay: `${idx * 60}ms`, animation: "cardFadeIn .4s ease both" }}>
-                  <div className="relative h-36 sm:h-44 bg-orange-50 overflow-hidden">
+                <div key={item.id}
+                  onClick={() => setSelectedProduct(item)}
+                  className="product-card cursor-pointer group"
+                  style={{ animationDelay: `${idx * 60}ms`, animation: "cardFadeIn .4s ease both" }}>
+                  <div className="relative h-36 sm:h-44 bg-gray-100 overflow-hidden">
                     {item.image
-                      ? <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-                      : <div className="shimmer w-full h-full" />
+                      ? <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      : <FoodPlaceholder />
                     }
                     {item.label && (
                       <span className="absolute top-2.5 left-2.5 tag-chip bg-[#F26F21] text-white text-[9px]">{item.label}</span>
                     )}
                   </div>
                   <div className="p-3 sm:p-4">
-                    <h3 className="font-extrabold text-sm text-gray-900 truncate mb-0.5">{item.title}</h3>
-                    <div className="flex items-center gap-1 mb-2">
-                      {[1,2,3,4,5].map(s => <span key={s} className="text-yellow-400 text-xs">★</span>)}
-                      <span className="text-[10px] text-gray-400 font-bold ml-1">5.0</span>
-                    </div>
+                    <h3 className="font-extrabold text-sm text-gray-900 truncate mb-0.5 group-hover:text-[#F26F21] transition-colors">{item.title}</h3>
+                    <p className="text-[10px] text-gray-400 font-semibold mb-2">{item.portion || "Large Portion · Serves 2"}</p>
                     <div className="flex items-center justify-between">
                       <span className="font-black text-[#F26F21] text-sm">{price}</span>
-                      <Link href="/order"
-                        className="w-8 h-8 rounded-xl flex items-center justify-center text-white transition-all active:scale-95 shadow-md"
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white transition-all active:scale-95 shadow-md"
                         style={{ background: "#F26F21" }}>
                         {Icon.plus("w-4 h-4")}
-                      </Link>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -439,11 +629,11 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { icon: Icon.shield("w-6 h-6"), emoji: "🛡️", title: "100% Hygienic", desc: "Stainless steel workstations, sealed tamper-proof packaging and daily sanitization.", color: "rgba(6,193,103,0.12)", textColor: "#06C167" },
-              { icon: Icon.fire("w-6 h-6"), emoji: "🔥", title: "Master Wok Cooking", desc: "High-heat wok searing with authentic Sri Lankan spices for bold, smoky street-style taste.", color: "rgba(242,111,33,0.12)", textColor: "#F26F21" },
-              { icon: Icon.clock("w-6 h-6"), emoji: "⚡", title: "Express 25-Min Delivery", desc: "Thermal-insulated delivery bags keep your meal piping hot, from kitchen to doorstep.", color: "rgba(99,102,241,0.12)", textColor: "#818CF8" },
-              { icon: Icon.wa("w-6 h-6"), emoji: "💬", title: "WhatsApp Instant Orders", desc: "Real-time confirmations, item updates and digital receipts sent directly on WhatsApp.", color: "rgba(37,211,102,0.12)", textColor: "#25D366" },
-            ].map(({ icon, emoji, title, desc, color, textColor }, idx) => (
+              { icon: Icon.fire("w-6 h-6"), title: "Master Wok Cooking", desc: "High-heat wok searing with authentic Sri Lankan spices for bold, smoky street-style taste.", color: "rgba(242,111,33,0.12)", textColor: "#F26F21" },
+              { icon: Icon.clock("w-6 h-6"), title: "Express 25-Min Delivery", desc: "Thermal-insulated delivery bags keep your meal piping hot, from kitchen to doorstep.", color: "rgba(99,102,241,0.12)", textColor: "#818CF8" },
+              { icon: Icon.wa("w-6 h-6"), title: "WhatsApp Instant Orders", desc: "Real-time confirmations, item updates and digital receipts sent directly on WhatsApp.", color: "rgba(37,211,102,0.12)", textColor: "#25D366" },
+              { icon: Icon.shield("w-6 h-6"), title: "Fresh Every Day", desc: "Ingredients sourced fresh daily. No frozen shortcuts — just real food cooked with care.", color: "rgba(6,193,103,0.12)", textColor: "#06C167" },
+            ].map(({ icon, title, desc, color, textColor }, idx) => (
               <div key={title} data-reveal data-reveal-delay={String(idx + 1) as any}
                 className="rounded-2xl p-5 border border-white/5 hover:border-white/10 transition-all"
                 style={{ background: "rgba(255,255,255,0.04)" }}>
@@ -461,39 +651,28 @@ export default function Home() {
       {/* ─────────── REVIEWS ─────────────────────────────────────────── */}
       <section id="reviews" className="py-12 px-5 bg-[#F7F5F2]">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-8">
             <div data-reveal>
               <p className="text-[11px] font-black uppercase tracking-widest text-[#F26F21] mb-1">What Customers Say</p>
-              <h2 className="text-2xl sm:text-3xl font-black text-gray-900">5.0 ★ Verified Google Reviews</h2>
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-900">5.0 ★ Google Reviews</h2>
             </div>
-            <a href="https://g.page/r/CcHhV6EC-0olEAI/review" target="_blank" rel="noopener noreferrer"
-              data-reveal data-reveal-delay="1"
-              className="text-xs font-extrabold text-[#F26F21] hover:underline flex items-center gap-1 uppercase tracking-wider">
-              Write a Review {Icon.arrow()}
-            </a>
+            <div className="flex items-center gap-3" data-reveal data-reveal-delay="1">
+              <a href="https://g.page/r/CcHhV6EC-0olEAI/review" target="_blank" rel="noopener noreferrer"
+                className="text-xs font-extrabold text-[#F26F21] hover:underline flex items-center gap-1 uppercase tracking-wider">
+                Write a Review {Icon.arrow()}
+              </a>
+              <span className="text-gray-300">|</span>
+              <a href="https://www.google.com/maps/place/t-cloud+eats" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-black text-white px-4 py-2 rounded-full uppercase tracking-wider transition-all"
+                style={{ background: "#F26F21", boxShadow: "0 4px 14px rgba(242,111,33,0.35)" }}>
+                Read All Reviews {Icon.arrow("w-3 h-3")}
+              </a>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {REVIEWS.map((r, idx) => (
-              <div key={idx} className="review-card" data-reveal data-reveal-delay={String((idx % 3) + 1) as any}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-sm"
-                      style={{ background: "#F26F21" }}>{r.i}</div>
-                    <div>
-                      <p className="text-xs font-bold text-gray-900">{r.name}</p>
-                      <p className="text-[10px] text-gray-400 font-semibold">Google Review · Verified</p>
-                    </div>
-                  </div>
-                  <div className="flex text-yellow-400">{[1,2,3,4,5].map(s => <span key={s} className="text-sm">★</span>)}</div>
-                </div>
-                <p className="text-xs text-gray-600 italic leading-relaxed mb-3">"{r.text}"</p>
-                <a href={r.href} target="_blank" rel="noopener noreferrer"
-                  className="text-[10px] font-extrabold text-[#F26F21] hover:underline uppercase tracking-wider">
-                  View on Google ↗
-                </a>
-              </div>
-            ))}
+          {/* Flashcard carousel */}
+          <div data-reveal>
+            <ReviewCarousel />
           </div>
         </div>
       </section>
@@ -635,6 +814,62 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      {/* ─────────── PRODUCT DETAIL MODAL (INDIVIDUAL ENTITY) ─────── */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md anim-fade"
+          onClick={() => setSelectedProduct(null)}>
+          <div className="relative w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl anim-slide-up"
+            onClick={(e) => e.stopPropagation()} style={{ boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)" }}>
+            
+            {/* Image header */}
+            <div className="relative h-56 sm:h-64 bg-gray-100 overflow-hidden">
+              {selectedProduct.image
+                ? <img src={selectedProduct.image} alt={selectedProduct.title} className="w-full h-full object-cover" />
+                : <FoodPlaceholder />
+              }
+              <button onClick={() => setSelectedProduct(null)}
+                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-lg transition-all z-10 backdrop-blur-sm">
+                ×
+              </button>
+              {selectedProduct.category && (
+                <span className="absolute top-3 left-3 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#F26F21] text-white shadow-md">
+                  {selectedProduct.category}
+                </span>
+              )}
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="flex items-start justify-between gap-4 mb-2">
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 leading-tight">{selectedProduct.title}</h2>
+                  <p className="text-xs font-bold text-[#F26F21] mt-0.5">{selectedProduct.portion || "Large Portion · Serves 2"}</p>
+                </div>
+                <span className="text-xl font-black text-[#F26F21] flex-shrink-0">
+                  {typeof selectedProduct.price === "string" ? selectedProduct.price : `Rs ${Number(selectedProduct.price).toLocaleString()}`}
+                </span>
+              </div>
+
+              <p className="text-xs text-gray-500 leading-relaxed mb-6">
+                {selectedProduct.description || `Freshly prepared ${selectedProduct.title} cooked with authentic Sri Lankan spices and high-heat wok searing.`}
+              </p>
+
+              <div className="flex items-center gap-3">
+                <Link href="/order"
+                  className="flex-1 flex items-center justify-center gap-2 text-white text-xs font-black py-3.5 rounded-2xl transition-all active:scale-95 shadow-lg"
+                  style={{ background: "#F26F21", boxShadow: "0 8px 24px rgba(242,111,33,0.35)" }}>
+                  {Icon.bag("w-4 h-4")} Order in Menu
+                </Link>
+                <a href={`https://wa.me/94706288109?text=${encodeURIComponent(`Hi t-cloud eats! I'd like to order ${selectedProduct.title}`)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-[#25D366] text-white text-xs font-black px-4 py-3.5 rounded-2xl transition-all active:scale-95 shadow-lg">
+                  {Icon.wa("w-4 h-4")} WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
