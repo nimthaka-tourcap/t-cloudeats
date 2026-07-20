@@ -62,6 +62,14 @@ export function transformToGoogleFoodMenu(dbItems: any[]): GoogleFoodMenusPayloa
             value: item.title,
           },
         ],
+        description: item.description
+          ? [
+              {
+                languageCode: "en-US",
+                value: item.description,
+              },
+            ]
+          : undefined,
         price: {
           currencyCode: "LKR",
           units: Math.floor(Number(item.price)).toString(),

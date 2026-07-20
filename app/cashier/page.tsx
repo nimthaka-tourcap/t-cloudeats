@@ -373,53 +373,52 @@ function parseAddress(fullAddress: string) {
 }
 
 const INITIAL_MENU_ITEMS: MenuItem[] = [
-  // Fried Rice Selection
-  { id: 1, title: "Egg Fried Rice", price: 750, category: "Fried Rice", portion: "Full Portion" },
-  { id: 2, title: "Classic Chicken Fried Rice", price: 1000, category: "Fried Rice", portion: "Full Portion" },
-  { id: 3, title: "Prawns Fried Rice", price: 1100, category: "Fried Rice", portion: "Full Portion" },
-  { id: 4, title: "Beef Fried Rice", price: 1200, category: "Fried Rice", portion: "Full Portion" },
-  { id: 5, title: "Seafood Fried Rice", price: 1300, category: "Fried Rice", portion: "Full Portion" },
-  { id: 6, title: "Surf & Turf Fried Rice", price: 1400, category: "Fried Rice", portion: "Full Portion" },
-  { id: 7, title: "Nasi Goreng", price: 1300, category: "Fried Rice", portion: "Full Portion" },
+  // Wok-Fried Rice Selection
+  { id: 1, title: "Egg Fried Rice", price: 800, category: "Fried Rice", portion: "Large Portion", image: "/Product Images/FR-01.avif", sku: "FR-01" },
+  { id: 2, title: "Classic Chicken Fried Rice", price: 1100, category: "Fried Rice", portion: "Large Portion", image: "/Product Images/FR-02.avif", sku: "FR-02" },
+  { id: 3, title: "Prawns Fried Rice", price: 1200, category: "Fried Rice", portion: "Large Portion", sku: "FR-03" },
+  { id: 4, title: "Beef Fried Rice", price: 1400, category: "Fried Rice", portion: "Large Portion", sku: "FR-04" },
+  { id: 5, title: "Seafood Fried Rice", price: 1500, category: "Fried Rice", portion: "Large Portion", image: "/Product Images/FR-05.avif", sku: "FR-05" },
+  { id: 6, title: "Surf & Turf Fried Rice", price: 1700, category: "Fried Rice", portion: "Large Portion", sku: "FR-06" },
+  { id: 7, title: "Nasi Goreng", price: 1400, category: "Fried Rice", portion: "Large Portion", image: "/Product Images/FR-07.avif", sku: "FR-07" },
 
-  // Chopsuey Selection
-  { id: 8, title: "Chicken Chopsuey Rice", price: 1250, category: "Chopsuey", portion: "Full Portion" },
-  { id: 9, title: "Prawn Chopsuey Rice", price: 1350, category: "Chopsuey", portion: "Full Portion" },
-  { id: 10, title: "Seafood Chopsuey Rice", price: 1450, category: "Chopsuey", portion: "Full Portion" },
-  { id: 11, title: "Surf & Turf Chopsuey Rice", price: 1600, category: "Chopsuey", portion: "Full Portion" },
-
-  // Noodles Selection
-  { id: 12, title: "Egg Fried Noodles", price: 750, category: "Noodles", portion: "Full Portion" },
-  { id: 13, title: "Chicken Fried Noodles", price: 1000, category: "Noodles", portion: "Full Portion" },
-  { id: 14, title: "Prawn Fried Noodles", price: 1100, category: "Noodles", portion: "Full Portion" },
-  { id: 15, title: "Beef Fried Noodles", price: 1200, category: "Noodles", portion: "Full Portion" },
-  { id: 16, title: "Seafood Fried Noodles", price: 1300, category: "Noodles", portion: "Full Portion" },
-  { id: 17, title: "Surf & Turf Fried Noodles", price: 1400, category: "Noodles", portion: "Full Portion" },
+  // Wok-Fried Rice Selection - Chopsuey
+  { id: 8, title: "Chicken Chopsuey Rice", price: 1300, category: "Chopsuey", portion: "Large Portion", sku: "CS-01" },
+  { id: 9, title: "Prawn Chopsuey Rice", price: 1400, category: "Chopsuey", portion: "Large Portion", image: "/Product Images/CS-02.avif", sku: "CS-02" },
+  { id: 10, title: "Seafood Chopsuey Rice", price: 1600, category: "Chopsuey", portion: "Large Portion", sku: "CS-03" },
+  { id: 11, title: "Surf & Turf Chopsuey Rice", price: 1800, category: "Chopsuey", portion: "Large Portion", sku: "CS-04" },
 
   // Kottu Selection
-  { id: 18, title: "Egg Kottu", price: 750, category: "Kottu", portion: "Full Portion" },
-  { id: 19, title: "Chicken Kottu", price: 1000, category: "Kottu", portion: "Full Portion" },
-  { id: 20, title: "Beef Kottu", price: 1200, category: "Kottu", portion: "Full Portion" },
-  { id: 21, title: "Seafood Kottu", price: 1300, category: "Kottu", portion: "Full Portion" },
-  { id: 22, title: "Surf & Turf Kottu", price: 1400, category: "Kottu", portion: "Full Portion" },
-  { id: 23, title: "Fried Chicken Cheese Kottu", price: 1500, category: "Kottu", portion: "Full Portion" },
+  { id: 12, title: "Egg Kottu", price: 800, category: "Kottu", portion: "Large Portion", image: "/Product Images/KT-01.avif", sku: "KT-01" },
+  { id: 13, title: "Chicken Kottu", price: 1100, category: "Kottu", portion: "Large Portion", image: "/Product Images/KT-02.avif", sku: "KT-02" },
+  { id: 14, title: "Beef Kottu", price: 1400, category: "Kottu", portion: "Large Portion", sku: "KT-03" },
+  { id: 15, title: "Seafood Kottu", price: 1500, category: "Kottu", portion: "Large Portion", image: "/Product Images/KT-04.avif", sku: "KT-04" },
+  { id: 16, title: "Surf & Turf Kottu", price: 1700, category: "Kottu", portion: "Large Portion", image: "/Product Images/KT-05.avif", sku: "KT-05" },
+  { id: 17, title: "Fried Chicken Cheese Kottu", price: 1600, category: "Kottu", portion: "Large Portion", sku: "KT-06" },
 
   // Ultimate Bites
-  { id: 24, title: "Sri Lankan Chicken Devilled", price: 1000, category: "Ultimate Bites", portion: "250g" },
-  { id: 25, title: "Sri Lankan Fish Devilled", price: 1100, category: "Ultimate Bites", portion: "250g" },
-  { id: 26, title: "Sri Lankan Prawn Devilled", price: 1100, category: "Ultimate Bites", portion: "250g" },
-  { id: 27, title: "Sri Lankan Beef Devilled", price: 1400, category: "Ultimate Bites", portion: "250g" },
-  { id: 28, title: "Sri Lankan Pork Devilled", price: 1300, category: "Ultimate Bites", portion: "250g" },
-  { id: 29, title: "Garlic Buttered Vegetable", price: 900, category: "Ultimate Bites", portion: "Regular" },
-  { id: 30, title: "French Fries", price: 800, category: "Ultimate Bites", portion: "Regular" },
-  { id: 31, title: "Kochi Bite", price: 800, category: "Ultimate Bites", portion: "10 Pcs" },
-  { id: 32, title: "Hot Butter Cuttlefish", price: 900, category: "Ultimate Bites", portion: "Regular" },
+  { id: 18, title: "Sri Lankan Chicken Devilled", price: 1200, category: "Ultimate Bites", portion: "Large Portion", sku: "UB-01" },
+  { id: 19, title: "Fried Fish", price: 1500, category: "Ultimate Bites", portion: "Large Portion", sku: "UB-02" },
+  { id: 20, title: "Sri Lankan Prawn Devilled", price: 1400, category: "Ultimate Bites", portion: "Large Portion", sku: "UB-03" },
+  { id: 21, title: "Sri Lankan Beef Devilled", price: 1600, category: "Ultimate Bites", portion: "Large Portion", sku: "UB-04" },
+  { id: 22, title: "Sri Lankan Pork Devilled", price: 1600, category: "Ultimate Bites", portion: "Large Portion", sku: "UB-05" },
+  { id: 23, title: "Chicken Stew", price: 1200, category: "Ultimate Bites", portion: "Large Portion", sku: "UB-06" },
+  { id: 24, title: "Sri Lankan Omelette", price: 800, category: "Ultimate Bites", portion: "Large Portion", sku: "UB-07" },
+  { id: 25, title: "Cheese & Chicken Omelette", price: 1100, category: "Ultimate Bites", portion: "Large Portion", sku: "UB-08" },
 
   // Beverages
-  { id: 33, title: "Ice Milo", price: 250, category: "Beverages", portion: "Regular" },
-  { id: 34, title: "Milk Shake", price: 350, category: "Beverages", portion: "Regular" },
-  { id: 35, title: "Ice Coffee", price: 250, category: "Beverages", portion: "Regular" },
-  { id: 36, title: "Mineral Water", price: 100, category: "Beverages", portion: "1 Liter" }
+  { id: 26, title: "Mineral Water Bottle (1000 ml)", price: 100, category: "Beverages", portion: "1000 ml", sku: "BV-01" },
+  { id: 27, title: "Milk Shake", price: 600, category: "Beverages", portion: "Regular", sku: "BV-02" },
+  { id: 28, title: "Coca Cola (1050 ml)", price: 300, category: "Beverages", portion: "1050 ml", sku: "BV-03" },
+  { id: 29, title: "Sprite (1050 ml)", price: 300, category: "Beverages", portion: "1050 ml", sku: "BV-04" },
+  { id: 30, title: "Fanta (1050 ml)", price: 300, category: "Beverages", portion: "1050 ml", sku: "BV-05" },
+  { id: 31, title: "EGB (1000 ml)", price: 320, category: "Beverages", portion: "1000 ml", sku: "BV-06" },
+  { id: 32, title: "Orange Crush (1000 ml)", price: 320, category: "Beverages", portion: "1000 ml", sku: "BV-07" },
+
+  // Pasta
+  { id: 33, title: "Creamy Mushroom Sauce", price: 1400, category: "Pasta", portion: "Large Portion", sku: "PA-01" },
+  { id: 34, title: "Chicken with Cheese sauce", price: 1400, category: "Pasta", portion: "Large Portion", sku: "PA-02" },
+  { id: 35, title: "Seafood with Creamy White Sauce", price: 1600, category: "Pasta", portion: "Large Portion", sku: "PA-03" }
 ];
 
 // ============================================================================
@@ -849,7 +848,7 @@ export default function PosPage() {
     title: "",
     price: 0,
     category: "Fried Rice",
-    portion: "Serves Two",
+    portion: "Large Portion",
     sku: ""
   });
 
@@ -2071,7 +2070,7 @@ export default function PosPage() {
           title: newItemData.title,
           price: Number(newItemData.price),
           category: newItemData.category || "Fried Rice",
-          portion: newItemData.portion || "Serves Two",
+          portion: newItemData.portion || "Large Portion",
           image: newItemData.image,
           sku: newItemData.sku
         })
@@ -2081,7 +2080,7 @@ export default function PosPage() {
         const addedItem = await res.json();
         setMenuItems(prev => [...prev, addedItem]);
         setIsAddingItem(false);
-        setNewItemData({ title: "", price: 0, category: "Fried Rice", portion: "Serves Two", sku: "", image: undefined });
+        setNewItemData({ title: "", price: 0, category: "Fried Rice", portion: "Large Portion", sku: "", image: undefined });
         triggerToast("Item added and synced successfully", "success");
       } else {
         const err = await res.json();
@@ -2630,7 +2629,7 @@ export default function PosPage() {
                                                     )}
                                                     {(item as any).addonPrice ? (
                                                       <span className="text-[8px] font-bold text-amber-500 bg-amber-500/10 px-0.5 border border-amber-500/20 rounded">
-                                                        + Rs {(item as any).addonPrice}
+                                                        {Number((item as any).addonPrice) > 0 ? `+ Rs ${Math.abs((item as any).addonPrice)}` : `- Rs ${Math.abs((item as any).addonPrice)}`}
                                                       </span>
                                                     ) : null}
                                                   </div>
@@ -2667,7 +2666,7 @@ export default function PosPage() {
                                                           )}
                                                           {(item as any).addonPrice ? (
                                                             <span className="text-[8px] font-bold text-amber-500 bg-amber-500/10 px-0.5 border border-amber-500/20 rounded">
-                                                              + Rs {(item as any).addonPrice}
+                                                              {Number((item as any).addonPrice) > 0 ? `+ Rs ${Math.abs((item as any).addonPrice)}` : `- Rs ${Math.abs((item as any).addonPrice)}`}
                                                             </span>
                                                           ) : null}
                                                         </div>
@@ -2817,13 +2816,18 @@ export default function PosPage() {
                           <option key={cat} value={cat}>{cat}</option>
                         ))}
                       </select>
-                      <input
-                        type="text"
-                        placeholder="Portion"
-                        value={newItemData.portion}
+                      <select
+                        value={newItemData.portion || "Large Portion"}
                         onChange={e => setNewItemData(prev => ({ ...prev, portion: e.target.value }))}
-                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35]"
-                      />
+                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+                      >
+                        <option value="Large Portion">Large Portion</option>
+                        <option value="Regular Portion">Regular Portion</option>
+                        <option value="Medium Portion">Medium Portion</option>
+                        <option value="Extra Large Portion">Extra Large Portion</option>
+                        <option value="1000 ml">1000 ml</option>
+                        <option value="1050 ml">1050 ml</option>
+                      </select>
                       <div className="relative bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-slate-400 flex items-center justify-between">
                         <span className="truncate">{newItemData.image ? "Photo Loaded" : "Upload Photo"}</span>
                         <input
@@ -2890,13 +2894,21 @@ export default function PosPage() {
                           <option key={cat} value={cat}>{cat}</option>
                         ))}
                       </select>
-                      <input
-                        type="text"
-                        placeholder="Portion"
+                      <select
                         value={editingItem.portion}
                         onChange={e => setEditingItem(prev => prev ? { ...prev, portion: e.target.value } : null)}
-                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
-                      />
+                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+                      >
+                        {!["Regular Portion", "Large Portion", "Medium Portion", "Extra Large Portion", "1000 ml", "1050 ml"].includes(editingItem.portion) && (
+                          <option value={editingItem.portion}>{editingItem.portion}</option>
+                        )}
+                        <option value="Large Portion">Large Portion</option>
+                        <option value="Regular Portion">Regular Portion</option>
+                        <option value="Medium Portion">Medium Portion</option>
+                        <option value="Extra Large Portion">Extra Large Portion</option>
+                        <option value="1000 ml">1000 ml</option>
+                        <option value="1050 ml">1050 ml</option>
+                      </select>
                       <div className="relative bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-slate-400 flex items-center justify-between">
                         <span className="truncate">{editingItem.image ? "Photo Loaded" : "Upload Photo"}</span>
                         <input
@@ -3650,14 +3662,14 @@ export default function PosPage() {
                         )}
                       </div>
                       {/* Comment & Addon display */}
-                      {commentEditingItemId !== item.menuItem.id && (item.comment || item.addonPrice) && (
+                      {commentEditingItemId !== item.menuItem.id && (item.comment || item.addonPrice !== undefined && item.addonPrice !== 0) && (
                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                           {item.comment && (
                             <span className="text-[9px] italic text-amber-400">💬 {item.comment}</span>
                           )}
-                          {item.addonPrice ? (
+                          {item.addonPrice !== undefined && item.addonPrice !== 0 ? (
                             <span className="text-[8px] font-black uppercase text-amber-500 bg-amber-500/10 px-1 border border-amber-500/20 rounded">
-                              + Rs {item.addonPrice.toLocaleString()}
+                              {item.addonPrice > 0 ? `+ Rs ${item.addonPrice.toLocaleString()}` : `- Rs ${Math.abs(item.addonPrice).toLocaleString()}`}
                             </span>
                           ) : null}
                         </div>

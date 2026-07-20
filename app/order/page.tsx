@@ -2,309 +2,574 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
-/* ── SVG Icons ─────────────────────────────────────────────────── */
-const WhatsAppIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 16, height: 16 }}>
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-    <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2 22l5.07-1.38A9.959 9.959 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.69 0-3.27-.5-4.6-1.36l-.33-.2-3.01.82.82-3.01-.2-.33C3.5 15.27 3 13.69 3 12c0-4.97 4.03-9 9-9s9 4.03 9 9-4.03 9-9 9z" />
-  </svg>
-);
+/* ── Types ─────────────────────────────────────────────────────── */
+interface MenuItem {
+  id: number;
+  title: string;
+  price: number;
+  category: string;
+  portion: string;
+  description?: string;
+  image?: string;
+  sku?: string;
+}
+interface CartItem { item: MenuItem; quantity: number; }
 
-const HomeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    <polyline points="9 22 9 12 15 12 15 22" />
-  </svg>
-);
-
-
+/* ── Constants ─────────────────────────────────────────────────── */
 const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Pasta", "Beverages"];
 
 function getFallbackDescription(title: string, category: string): string {
   if (category === "Beverages") {
-    const lowerTitle = title.toLowerCase();
-    if (lowerTitle.includes("cola")) {
-      return "Chilled Coca-Cola bottle from the Coca-Cola Company.";
-    }
-    if (lowerTitle.includes("sprite")) {
-      return "Chilled Sprite bottle from the Coca-Cola Company.";
-    }
-    if (lowerTitle.includes("fanta")) {
-      return "Chilled Fanta bottle from the Coca-Cola Company.";
-    }
-    if (lowerTitle.includes("egb")) {
-      return "Elephant House Ginger Beer (EGB) bottle.";
-    }
-    if (lowerTitle.includes("water")) {
-      return "Pure chilled mineral water bottle.";
-    }
-    if (lowerTitle.includes("shake")) {
-      return "Chilled, creamy milkshake.";
-    }
-    return `Chilled and refreshing beverage.`;
+    const t = title.toLowerCase();
+    if (t.includes("cola")) return "Chilled Coca-Cola bottle.";
+    if (t.includes("sprite")) return "Chilled Sprite bottle.";
+    if (t.includes("fanta")) return "Chilled Fanta bottle.";
+    if (t.includes("egb")) return "Elephant House Ginger Beer.";
+    if (t.includes("water")) return "Pure mineral water.";
+    if (t.includes("shake")) return "Chilled creamy milkshake.";
+    return "Refreshing chilled beverage.";
   }
-  return `Delicious ${title} prepared fresh in our kitchen with premium ingredients.`;
+  return `Delicious ${title} freshly prepared in our kitchen.`;
 }
 
+/* ── Icons ─────────────────────────────────────────────────────── */
+const Icons = {
+  bag: (cls = "w-5 h-5") => (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+    </svg>
+  ),
+  plus: (cls = "w-4 h-4") => (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  ),
+  minus: (cls = "w-4 h-4") => (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  ),
+  trash: (cls = "w-4 h-4") => (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+    </svg>
+  ),
+  x: (cls = "w-5 h-5") => (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  ),
+  wa: (cls = "w-5 h-5") => (
+    <svg className={cls} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+      <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2 22l5.07-1.38A9.959 9.959 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.69 0-3.27-.5-4.6-1.36l-.33-.2-3.01.82.82-3.01-.2-.33C3.5 15.27 3 13.69 3 12c0-4.97 4.03-9 9-9s9 4.03 9 9-4.03 9-9 9z"/>
+    </svg>
+  ),
+  search: (cls = "w-4 h-4") => (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  ),
+  star: (cls = "w-3.5 h-3.5") => (
+    <svg className={cls} viewBox="0 0 20 20" fill="currentColor">
+      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+    </svg>
+  ),
+  arrow: (cls = "w-4 h-4") => (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+    </svg>
+  ),
+  home: (cls = "w-4 h-4") => (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  ),
+  check: (cls = "w-4 h-4") => (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  ),
+};
+
+/* ── Main Component ─────────────────────────────────────────────── */
 export default function OrderPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: "add" | "remove" } | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
+  /* ── Data Loading + Realtime ─────────────────────────────────── */
   useEffect(() => {
     async function loadMenu() {
       try {
         const res = await fetch("/api/menu");
-        if (res.ok) {
-          const data = await res.json();
-          setMenuItems(data);
-        }
-      } catch (error) {
-        console.error("Failed to load menu:", error);
-      } finally {
-        setIsLoading(false);
-      }
+        if (res.ok) setMenuItems(await res.json());
+      } catch { /* silent */ } finally { setIsLoading(false); }
     }
     loadMenu();
 
-    // Subscribe to Realtime changes on menu_items table
     const channel = supabase
       .channel("customer-menu-sync")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "menu_items" },
-        (payload) => {
-          console.log("[Realtime] Customer menu update detected:", payload);
-          loadMenu();
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, () => loadMenu())
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
+  /* ── Cart Helpers ────────────────────────────────────────────── */
+  const showToast = (msg: string, type: "add" | "remove" = "add") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 2200);
+  };
+
+  const addToCart = (item: MenuItem) => {
+    setCart((prev) => {
+      const idx = prev.findIndex((ci) => ci.item.id === item.id);
+      if (idx > -1) { const u = [...prev]; u[idx].quantity += 1; return u; }
+      return [...prev, { item, quantity: 1 }];
+    });
+    showToast(`"${item.title}" added to cart`, "add");
+  };
+
+  const updateQuantity = (itemId: number, delta: number) => {
+    setCart((prev) =>
+      prev.map((ci) => ci.item.id === itemId ? { ...ci, quantity: ci.quantity + delta } : ci)
+          .filter((ci) => ci.quantity > 0)
+    );
+  };
+
+  const removeFromCart = (itemId: number) => {
+    setCart((prev) => prev.filter((ci) => ci.item.id !== itemId));
+    showToast("Item removed", "remove");
+  };
+
+  const clearCart = () => setCart([]);
+
+  const totalItems = cart.reduce((s, ci) => s + ci.quantity, 0);
+  const subtotal = cart.reduce((s, ci) => s + Number(ci.item.price) * ci.quantity, 0);
+
   const filteredItems = menuItems.filter((item) => {
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+    const matchCat = selectedCategory === "All" || item.category === selectedCategory;
+    return matchSearch && matchCat;
   });
 
+  const handleCheckout = () => {
+    if (!cart.length) return;
+    const lines = cart.map((ci) =>
+      `• ${ci.quantity}× ${ci.item.title} (${ci.item.portion}) — Rs ${(Number(ci.item.price) * ci.quantity).toLocaleString()}`
+    ).join("\n");
+    const msg = `Hi t-cloud eats! I'd like to place an order:\n\n${lines}\n\n*Total: Rs ${subtotal.toLocaleString()}*\n\nPlease confirm and arrange delivery. Thank you!`;
+    window.open(`https://wa.me/94706288109?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
   return (
-    <div className="min-h-screen bg-[#070e1e] text-[#FAF3E0] font-sans pb-16">
-      {/* Header */}
-      <header style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        background: "rgba(13, 27, 53, 0.95)",
-        backdropFilter: "blur(12px)",
-        borderBottom: "1px solid rgba(242, 111, 33, 0.15)",
-        padding: "16px 24px"
-      }}>
-        <div style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "0 20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between"
-        }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
-            <Image
-              src="/Round Logo.png"
-              alt="t-cloud eats logo"
-              width={42}
-              height={42}
-              className="object-contain"
-            />
-            <span style={{
-              fontSize: "1.1rem",
-              fontWeight: 800,
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
-              color: "#F26F21"
-            }}>
-              t-cloud eats
-            </span>
-          </Link>
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "rgba(242, 111, 33, 0.1)",
-              border: "1px solid rgba(242, 111, 33, 0.25)",
-              padding: "8px 16px",
-              borderRadius: "20px",
-              fontSize: "0.78rem",
-              fontWeight: 700,
-              color: "#F26F21",
-              textDecoration: "none",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              transition: "all 0.2s"
-            }}
-          >
-            <HomeIcon />
-            Home
-          </Link>
-        </div>
-      </header>
+    <>
+      {/* ── PAGE STYLES ──────────────────────────────────────────── */}
+      <style>{`
+        body { background: #F7F5F2; color: #0D0D0D; font-family: 'Inter', -apple-system, sans-serif; }
+        .scrollbar-none { -ms-overflow-style:none; scrollbar-width:none; }
+        .scrollbar-none::-webkit-scrollbar { display:none; }
+        .product-card { background:#fff; border-radius:20px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.07); transition:transform .25s ease, box-shadow .25s ease; }
+        .product-card:hover { transform:translateY(-5px); box-shadow:0 16px 40px rgba(242,111,33,0.13); }
+        .cat-pill { padding:8px 16px; border-radius:100px; font-size:11px; font-weight:800; transition:all .2s ease; border:2px solid transparent; cursor:pointer; white-space:nowrap; text-transform:uppercase; letter-spacing:0.04em; }
+        .cat-pill.active { background:#F26F21; color:#fff; box-shadow:0 6px 18px rgba(242,111,33,0.35); }
+        .cat-pill:not(.active) { background:#fff; color:#777; border-color:#e5e5e5; }
+        .cat-pill:not(.active):hover { border-color:#F26F21; color:#F26F21; }
+        @keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes slideRight { from{transform:translateX(100%)} to{transform:translateX(0)} }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes toastIn { 0%{transform:translateX(-50%) translateY(-16px);opacity:0} 100%{transform:translateX(-50%) translateY(0);opacity:1} }
+        @keyframes shimmer { to{background-position:-200% 0} }
+        .anim-slide-up { animation:slideUp .35s cubic-bezier(.16,1,.3,1) forwards; }
+        .anim-slide-right { animation:slideRight .35s cubic-bezier(.16,1,.3,1) forwards; }
+        .anim-fade { animation:fadeIn .25s ease forwards; }
+        .anim-toast { animation:toastIn .35s cubic-bezier(.16,1,.3,1) forwards; }
+        .shimmer { background:linear-gradient(110deg,#f0f0f0 30%,#e8e8e8 50%,#f0f0f0 70%); background-size:200% 100%; animation:shimmer 1.4s linear infinite; }
+        .qty-btn { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:all .15s ease; cursor:pointer; font-size:0; }
+        .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(4px); z-index:49; }
+      `}</style>
 
-      {/* Hero Section */}
-      <section style={{
-        background: "linear-gradient(180deg, #0D1B35 0%, #070e1e 100%)",
-        padding: "64px 24px",
-        textAlign: "center"
-      }}>
-        <div style={{ maxWidth: "800px", margin: "0 auto", padding: "0 20px" }}>
-          <span style={{
-            display: "inline-block",
-            fontSize: "0.72rem",
-            fontWeight: 900,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "#F26F21",
-            background: "rgba(242, 111, 33, 0.1)",
-            padding: "5px 16px",
-            borderRadius: "999px",
-            marginBottom: "18px"
-          }}>
-            Digital Menu
-          </span>
-          <h1 style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: "clamp(2.2rem, 5vw, 3.5rem)",
-            fontWeight: 900,
-            color: "#FAF3E0",
-            lineHeight: 1.1,
-            letterSpacing: "-0.02em",
-            margin: "0 0 16px"
-          }}>
-            Place Your Order
-          </h1>
-          <p style={{
-            fontSize: "1.05rem",
-            color: "rgba(250, 243, 224, 0.65)",
-            maxWidth: "520px",
-            margin: "0 auto",
-            lineHeight: 1.6
-          }}>
-            Browse our full selection of street-style favorites. Click any item to instantly order via WhatsApp.
-          </p>
-        </div>
-      </section>
+      <div className="min-h-screen bg-[#F7F5F2]" style={{ paddingBottom: totalItems > 0 ? "96px" : "32px" }}>
 
-      {/* Main Content Container with max-width and horizontal padding to fix bleeding */}
-      <div style={{
-        maxWidth: "1200px",
-        margin: "0 auto",
-        padding: "0 20px"
-      }}>
-        
-        {/* Search Bar - Separate horizontal row with vertical spacing */}
-        <div className="menu-search-wrapper" style={{ marginBottom: "28px" }}>
-          <div className="search-input-container">
-            <input
-              type="text"
-              placeholder="Search for your favorite dish..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="menu-search-input"
-            />
-            <svg className="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="menu-search-clear" aria-label="Clear search">
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Category Tabs - Separate horizontal row with vertical spacing */}
-        <div className="category-tabs-container" style={{ marginBottom: "36px" }}>
-          <div className="category-tabs" style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
-            {CATEGORIES.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`category-tab ${selectedCategory === category ? "active" : ""}`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Menu Grid */}
-        {isLoading ? (
-          <div className="text-center py-20 opacity-60">
-            <p className="text-sm font-bold tracking-widest uppercase">Loading fresh menu...</p>
-          </div>
-        ) : filteredItems.length > 0 ? (
-          <div className="menu-grid">
-            {filteredItems.map((item) => (
-          <div key={item.id} className="menu-card" style={{ padding: "24px" }} data-category={item.category}>
-                {item.image && (
-                  <div className="menu-card-image-wrapper">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="menu-card-image"
-                    />
-                  </div>
-                )}
-                <div className="menu-card-header">
-                  <h3 className="menu-card-title">{item.title}</h3>
-                  <span className="menu-card-price">Rs {Number(item.price).toLocaleString()}</span>
-                </div>
-                <div className="menu-card-meta">
-                  <span className="menu-card-portion">{item.portion}</span>
-                  <div className="menu-card-tags">
-                    <span className="menu-tag popular">{item.category}</span>
-                    {item.sku && <span className="menu-tag chef-special">{item.sku}</span>}
-                  </div>
-                </div>
-                <p className="menu-card-desc">{item.description || getFallbackDescription(item.title, item.category)}</p>
-                <div className="menu-card-actions">
-                  <a
-                    href={`https://wa.me/94706288109?text=Hi%20t-cloud%20eats!%20I%20would%20like%20to%20order%20the%20${encodeURIComponent(item.title)}%20(${encodeURIComponent(item.portion)}).`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="menu-order-btn"
-                  >
-                    <WhatsAppIcon />
-                    Order on WhatsApp
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="menu-no-results">
-            <p>No dishes found matching "{searchQuery}"</p>
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedCategory("All");
-              }}
-              className="menu-reset-btn"
-            >
-              Reset Filters
-            </button>
+        {/* ── TOAST ────────────────────────────────────────────────── */}
+        {toast && (
+          <div className="fixed top-20 left-1/2 z-[70] anim-toast flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-black text-white shadow-xl"
+            style={{ background: toast.type === "add" ? "#06C167" : "#F26F21", transform: "translateX(-50%)" }}>
+            {toast.type === "add" ? Icons.check() : Icons.trash()}
+            <span>{toast.msg}</span>
           </div>
         )}
+
+        {/* ── STICKY HEADER ────────────────────────────────────────── */}
+        <header style={{ background: "rgba(255,255,255,0.93)", backdropFilter: "blur(18px)", borderBottom: "1px solid #eee" }}
+          className="sticky top-0 z-40 px-4 py-3">
+          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+            <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+              <Image src="/Round Logo.png" alt="t-cloud eats" width={36} height={36} className="object-contain" />
+              <div>
+                <p className="text-sm font-black tracking-wider leading-none" style={{ color: "#F26F21" }}>t-cloud eats</p>
+                <p className="text-[9px] font-bold text-gray-400 tracking-widest uppercase">Digital Menu</p>
+              </div>
+            </Link>
+
+            {/* Live badge */}
+            <div className="hidden sm:flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
+              Kitchen Open · ~20 Min Prep
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Link href="/" className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-[#F26F21] transition-colors">
+                {Icons.home()} Home
+              </Link>
+
+              {/* Cart Button */}
+              <button onClick={() => setIsCartOpen(true)}
+                className="relative flex items-center gap-2 text-white text-xs font-black px-4 py-2.5 rounded-full transition-all active:scale-95"
+                style={{ background: "#F26F21", boxShadow: totalItems > 0 ? "0 6px 20px rgba(242,111,33,0.4)" : "none" }}>
+                {Icons.bag("w-4 h-4")}
+                <span className="hidden sm:inline">My Cart</span>
+                {totalItems > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#0D0D0D] text-white text-[10px] font-black rounded-full flex items-center justify-center shadow">
+                    {totalItems}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* ── HERO BANNER ──────────────────────────────────────────── */}
+        <section style={{ background: "linear-gradient(135deg,#F26F21 0%,#FF9248 50%,#e05c0d 100%)" }}
+          className="relative overflow-hidden px-5 pt-8 pb-24">
+          {/* decorative circles */}
+          <div className="absolute -right-10 -top-10 w-52 h-52 rounded-full bg-white/10" />
+          <div className="absolute right-20 bottom-0 w-32 h-32 rounded-full bg-white/10" />
+
+          <div className="max-w-6xl mx-auto relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="text-white text-center sm:text-left">
+              <p className="text-[11px] font-black uppercase tracking-widest bg-white/20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-3">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" /> Live Menu
+              </p>
+              <h1 className="text-2xl sm:text-4xl font-black leading-tight drop-shadow-sm mb-2">
+                Street Food. <br className="sm:hidden" />Your Way. 🍜
+              </h1>
+              <p className="text-white/80 text-sm max-w-sm leading-relaxed">
+                Add items to your cart and checkout via WhatsApp — it takes less than 30 seconds.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4 text-white">
+              {[["20+", "Dishes"], ["5.0★", "Rating"], ["~20m", "Prep"]].map(([v, l]) => (
+                <div key={l} className="text-center bg-white/15 backdrop-blur rounded-2xl px-4 py-3 border border-white/20">
+                  <p className="font-black text-lg leading-none">{v}</p>
+                  <p className="text-[10px] text-white/70 font-bold uppercase tracking-wider mt-0.5">{l}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── SEARCH + CATEGORIES ────────────────────────────────────── */}
+        <div className="max-w-6xl mx-auto px-4 -mt-8 relative z-10">
+          {/* Floating white search card */}
+          <div className="bg-white rounded-2xl p-4 shadow-xl mb-5" style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.10)" }}>
+            <div className="relative mb-4">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                {Icons.search("w-4 h-4")}
+              </span>
+              <input
+                ref={searchRef}
+                type="text"
+                placeholder="Search for dishes, categories..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm pl-10 pr-10 py-3 rounded-xl focus:outline-none focus:border-[#F26F21] focus:ring-2 focus:ring-[#F26F21]/10 transition-all"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 flex items-center justify-center text-[10px] transition-all">
+                  ×
+                </button>
+              )}
+            </div>
+
+            {/* Category pills */}
+            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-0.5">
+              {CATEGORIES.map((c) => (
+                <button key={c} onClick={() => setSelectedCategory(c)} className={`cat-pill ${selectedCategory === c ? "active" : ""}`}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── MENU GRID ─────────────────────────────────────────────── */}
+          {isLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="product-card">
+                  <div className="shimmer h-32 sm:h-40 w-full" />
+                  <div className="p-3 space-y-2">
+                    <div className="shimmer h-3 rounded w-3/4" />
+                    <div className="shimmer h-3 rounded w-1/2" />
+                    <div className="shimmer h-8 rounded-lg w-full mt-2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredItems.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {filteredItems.map((item) => {
+                const inCart = cart.find((ci) => ci.item.id === item.id);
+                const qty = inCart?.quantity ?? 0;
+
+                return (
+                  <div key={item.id} className="product-card flex flex-col">
+                    {/* Image */}
+                    <div className="relative h-32 sm:h-40 bg-orange-50 flex-shrink-0 overflow-hidden">
+                      {item.image
+                        ? <img src={item.image} alt={item.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                        : <div className="shimmer w-full h-full" />
+                      }
+
+                      {/* Category Badge */}
+                      <span className="absolute top-2.5 left-2.5 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"
+                        style={{ background: "rgba(13,13,13,0.75)", color: "#fff", backdropFilter: "blur(4px)" }}>
+                        {item.category}
+                      </span>
+
+                      {/* Quick add button (top-right) */}
+                      {qty === 0 && (
+                        <button onClick={() => addToCart(item)}
+                          className="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center text-white shadow-lg transition-all active:scale-90"
+                          style={{ background: "#F26F21" }}>
+                          {Icons.plus("w-4 h-4")}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-3 sm:p-3.5 flex flex-col flex-1 justify-between">
+                      <div className="mb-2.5">
+                        <h3 className="font-extrabold text-xs sm:text-sm text-gray-900 truncate leading-tight mb-0.5">{item.title}</h3>
+                        <p className="text-[10px] text-gray-400 leading-snug line-clamp-2 mb-1.5">
+                          {item.description || getFallbackDescription(item.title, item.category)}
+                        </p>
+
+                        <div className="flex items-center justify-between">
+                          <span className="font-black text-sm" style={{ color: "#F26F21" }}>
+                            Rs {Number(item.price).toLocaleString()}
+                          </span>
+                          <div className="flex items-center gap-0.5 text-yellow-400 text-[11px]">
+                            {Icons.star()} <span className="font-bold text-gray-500 text-[10px]">5.0</span>
+                          </div>
+                        </div>
+
+                        <span className="text-[9px] text-gray-400 font-semibold">{item.portion}</span>
+                      </div>
+
+                      {/* Cart controls */}
+                      {qty > 0 ? (
+                        <div className="flex items-center justify-between bg-gray-50 rounded-xl p-1.5 border border-gray-200">
+                          <button onClick={() => updateQuantity(item.id, -1)}
+                            className="qty-btn bg-white border border-gray-200 text-gray-700 hover:border-[#F26F21] hover:text-[#F26F21]">
+                            {Icons.minus("w-3.5 h-3.5")}
+                          </button>
+                          <span className="text-sm font-black text-gray-900 px-2">{qty}</span>
+                          <button onClick={() => updateQuantity(item.id, 1)}
+                            className="qty-btn text-white"
+                            style={{ background: "#F26F21" }}>
+                            {Icons.plus("w-3.5 h-3.5")}
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => addToCart(item)}
+                          className="w-full text-white text-xs font-black py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                          style={{ background: "#F26F21", boxShadow: "0 4px 14px rgba(242,111,33,0.3)" }}>
+                          {Icons.plus("w-3.5 h-3.5")} Add to Cart
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow">
+              <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🔍</div>
+              <h3 className="font-extrabold text-gray-800 mb-1">No dishes found</h3>
+              <p className="text-sm text-gray-500 mb-4">Try a different search or category</p>
+              <button onClick={() => { setSearchQuery(""); setSelectedCategory("All"); }}
+                className="text-white text-sm font-black px-6 py-2.5 rounded-full transition-all active:scale-95"
+                style={{ background: "#F26F21" }}>
+                Reset Filters
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* ── FLOATING CART BAR ────────────────────────────────────────── */}
+      {totalItems > 0 && !isCartOpen && (
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-40 anim-slide-up">
+          <div className="rounded-2xl flex items-center justify-between px-4 py-3.5 gap-3"
+            style={{ background: "#0D0D0D", boxShadow: "0 16px 48px rgba(0,0,0,0.4)" }}>
+            <div className="flex items-center gap-3">
+              <div className="relative w-10 h-10 rounded-xl flex items-center justify-center text-white"
+                style={{ background: "#F26F21" }}>
+                {Icons.bag("w-5 h-5")}
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white text-[#F26F21] text-[10px] font-black rounded-full flex items-center justify-center shadow">
+                  {totalItems}
+                </span>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Cart Subtotal</p>
+                <p className="font-black text-white">Rs {subtotal.toLocaleString()}</p>
+              </div>
+            </div>
+
+            <button onClick={() => setIsCartOpen(true)}
+              className="flex items-center gap-2 text-white text-xs font-black px-4 py-2.5 rounded-xl transition-all active:scale-95"
+              style={{ background: "#F26F21", boxShadow: "0 4px 16px rgba(242,111,33,0.45)" }}>
+              View Cart {Icons.arrow("w-3.5 h-3.5")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── CART DRAWER ──────────────────────────────────────────────── */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-50 flex sm:justify-end">
+          {/* Backdrop */}
+          <div className="drawer-backdrop anim-fade" onClick={() => setIsCartOpen(false)} />
+
+          {/* Panel */}
+          <aside className="relative w-full sm:w-[420px] mt-auto sm:mt-0 h-[90svh] sm:h-full bg-white flex flex-col z-50 anim-slide-up sm:anim-slide-right"
+            style={{ borderRadius: "24px 24px 0 0", boxShadow: "-8px 0 48px rgba(0,0,0,0.18)" }}>
+
+            {/* Drawer Header */}
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl text-white flex items-center justify-center"
+                  style={{ background: "#F26F21" }}>
+                  {Icons.bag("w-5 h-5")}
+                </div>
+                <div>
+                  <h2 className="font-black text-base text-gray-900">Your Cart</h2>
+                  <p className="text-xs text-gray-400 font-semibold">{totalItems} {totalItems === 1 ? "item" : "items"} selected</p>
+                </div>
+              </div>
+              <button onClick={() => setIsCartOpen(false)}
+                className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-all">
+                {Icons.x("w-4 h-4")}
+              </button>
+            </div>
+
+            {/* Items List */}
+            <div className="flex-1 overflow-y-auto scrollbar-none px-4 py-3 space-y-2.5">
+              {cart.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-12">
+                  <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center text-4xl">🛒</div>
+                  <div>
+                    <h3 className="font-extrabold text-gray-800 mb-1">Your cart is empty</h3>
+                    <p className="text-sm text-gray-500">Add some dishes to get started!</p>
+                  </div>
+                  <button onClick={() => setIsCartOpen(false)}
+                    className="text-white text-sm font-black px-6 py-3 rounded-2xl transition-all active:scale-95"
+                    style={{ background: "#F26F21", boxShadow: "0 6px 20px rgba(242,111,33,0.35)" }}>
+                    Explore Menu
+                  </button>
+                </div>
+              ) : (
+                cart.map(({ item, quantity }) => (
+                  <div key={item.id} className="flex items-center gap-3 bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                    {/* Thumbnail */}
+                    {item.image
+                      ? <img src={item.image} alt={item.title} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-gray-200" />
+                      : <div className="w-14 h-14 rounded-xl bg-orange-100 flex items-center justify-center text-[#F26F21] font-black text-xs flex-shrink-0">FOOD</div>
+                    }
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-extrabold text-sm text-gray-900 truncate">{item.title}</h4>
+                      <p className="text-[10px] text-gray-400 font-medium">{item.portion}</p>
+                      <p className="font-black text-sm mt-0.5" style={{ color: "#F26F21" }}>
+                        Rs {(Number(item.price) * quantity).toLocaleString()}
+                      </p>
+                    </div>
+
+                    {/* Qty + remove */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 p-1">
+                        <button onClick={() => updateQuantity(item.id, -1)}
+                          className="qty-btn bg-gray-100 hover:bg-gray-200 text-gray-700">
+                          {Icons.minus("w-3.5 h-3.5")}
+                        </button>
+                        <span className="text-sm font-black text-gray-900 w-5 text-center">{quantity}</span>
+                        <button onClick={() => updateQuantity(item.id, 1)}
+                          className="qty-btn text-white"
+                          style={{ background: "#F26F21" }}>
+                          {Icons.plus("w-3.5 h-3.5")}
+                        </button>
+                      </div>
+                      <button onClick={() => removeFromCart(item.id)}
+                        className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-400 flex items-center justify-center transition-colors">
+                        {Icons.trash("w-3.5 h-3.5")}
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Checkout Footer */}
+            {cart.length > 0 && (
+              <div className="px-4 py-4 border-t border-gray-100 space-y-3">
+                {/* Order Summary */}
+                <div className="bg-gray-50 rounded-2xl p-3.5 space-y-2 text-sm">
+                  <div className="flex justify-between text-gray-600">
+                    <span className="font-semibold">Subtotal ({totalItems} items)</span>
+                    <span className="font-bold text-gray-900">Rs {subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-500 text-xs">
+                    <span>Delivery fee</span>
+                    <span className="text-green-600 font-bold">Discussed on WhatsApp</span>
+                  </div>
+                  <div className="border-t border-gray-200 pt-2 flex justify-between font-black">
+                    <span className="text-gray-900">Order Total</span>
+                    <span style={{ color: "#F26F21" }} className="text-base">Rs {subtotal.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {/* Checkout CTA */}
+                <button onClick={handleCheckout}
+                  className="w-full flex items-center justify-center gap-2.5 text-white font-black text-sm py-4 rounded-2xl transition-all active:scale-[0.98]"
+                  style={{ background: "#25D366", boxShadow: "0 8px 24px rgba(37,211,102,0.4)" }}>
+                  {Icons.wa()} Proceed to WhatsApp Checkout
+                </button>
+
+                <div className="flex items-center justify-between text-xs text-gray-400 font-semibold">
+                  <span>⚡ Kitchen prep ~20 minutes</span>
+                  <button onClick={clearCart} className="text-red-400 hover:text-red-600 hover:underline transition-colors">
+                    Clear Cart
+                  </button>
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

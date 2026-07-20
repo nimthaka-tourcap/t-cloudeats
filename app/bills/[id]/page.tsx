@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { RotateCw, AlertTriangle, Printer, Phone, Globe, Mail, Heart, Check, Upload, MapPin, Star, X, CreditCard, Landmark, DollarSign, Copy, FileText } from "lucide-react";
+import { RotateCw, AlertTriangle, Printer, Phone, Globe, Mail, Heart, Check, Upload, MapPin, Star, X, CreditCard, Landmark, DollarSign, Copy, FileText, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 
 interface OrderItem {
@@ -347,6 +347,20 @@ export default function BillPage() {
     <div className="min-h-screen bg-[#080E1C] py-8 px-4 flex flex-col items-center justify-start relative select-none">
       
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] rounded-full bg-[#FF6B35]/5 blur-[120px] pointer-events-none" />
+      {/* Back Button */}
+      <div className="no-print w-full max-w-[400px] flex justify-start mb-3.5 z-10">
+        <button
+          onClick={() => {
+            const isCashier = localStorage.getItem("t-cloud-eats-user") === "cashier@t-cloudeats.com";
+            window.location.href = isCashier ? "/cashier" : "/";
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-slate-500/20 text-slate-300 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer"
+        >
+          <ArrowLeft size={10} className="text-[#FF6B35]" />
+          <span>Back</span>
+        </button>
+      </div>
+
       {/* Action Buttons */}
       <div className="no-print w-full max-w-[400px] flex justify-between gap-1.5 mb-6 z-10">
         <button 
@@ -376,7 +390,7 @@ export default function BillPage() {
           </button>
         )}
         <button
-          onClick={() => window.open("https://maps.app.goo.gl/ZDJLkduPmxjPQf8X6", "_blank")}
+          onClick={() => window.open("https://g.page/r/CcHhV6EC-0olEAI/review", "_blank")}
           className="flex-1 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-slate-500/20 text-slate-300 px-2 py-3 rounded-xl text-[8px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer"
         >
           <Star size={12} className="text-amber-400" />
@@ -674,9 +688,9 @@ export default function BillPage() {
                       {item.comment && (
                         <p className="text-[10px] text-amber-600 italic mt-0.5">💬 {item.comment}</p>
                       )}
-                      {addonPrice > 0 && (
+                      {addonPrice !== 0 && (
                         <p className="text-[9px] text-amber-600 font-bold mt-0.5">
-                          + Addon Price: LKR {addonPrice.toLocaleString()}
+                          {addonPrice > 0 ? "+ " : "- "}Addon Price: LKR {Math.abs(addonPrice).toLocaleString()}
                         </p>
                       )}
                       <p className="text-[10px] text-slate-500 mt-0.5 font-mono">

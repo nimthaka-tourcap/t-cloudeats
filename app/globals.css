@@ -1272,16 +1272,23 @@ footer {
   padding: 9px 20px;
 }
 
-/* ── Menu Card Image Styling ─────────────────────────────────────── */
+/* ── Menu Card Image Styling (Compact 2 per width) ───────────────── */
 .menu-card-image-wrapper {
   position: relative;
   width: 100%;
-  height: 180px;
-  border-radius: 14px;
+  height: 110px;
+  border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(250, 243, 224, 0.05);
+}
+
+@media (min-width: 640px) {
+  .menu-card-image-wrapper {
+    height: 140px;
+    margin-bottom: 12px;
+  }
 }
 
 .menu-card-image {
@@ -1294,4 +1301,143 @@ footer {
 .menu-card:hover .menu-card-image {
   transform: scale(1.05);
 }
+
+/* ── Cart Drawer & Mobile Touch Enhancements ─────────────────────── */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Updated Menu Card Cart Add Button */
+.menu-cart-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--orange);
+  border: 1.5px solid var(--orange);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.88rem;
+  padding: 11px 16px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(242, 111, 33, 0.25);
+  touch-action: manipulation;
+}
+
+.menu-cart-add-btn:hover {
+  background: #e05c0d;
+  border-color: #e05c0d;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(242, 111, 33, 0.4);
+}
+
+.menu-cart-add-btn:active {
+  transform: scale(0.98);
+}
+
+.menu-cart-add-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+}
+
+/* Floating Cart Trigger Bar */
+.floating-cart-bar {
+  background: rgba(13, 27, 53, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(242, 111, 33, 0.4);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(242, 111, 33, 0.2);
+}
+
+/* ── Modern Advanced UI & Glassmorphism ───────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; filter: blur(20px); }
+  50% { opacity: 0.8; filter: blur(30px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 5s ease-in-out 2s infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 6s ease-in-out infinite;
+}
+
+.glass-card {
+  background: rgba(22, 36, 71, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-4px);
+  border-color: rgba(242, 111, 33, 0.4);
+  box-shadow: 0 16px 40px rgba(242, 111, 33, 0.15), 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.glow-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.glow-button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.glow-button:hover::after {
+  opacity: 1;
+}
+
 
