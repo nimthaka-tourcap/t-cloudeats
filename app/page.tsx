@@ -365,17 +365,17 @@ export default function Home() {
 
       {/* ─────────── HERO SECTION ─────────────────────────────────── */}
       <section className="relative overflow-hidden" style={{ background: "#F26F21" }}>
-        {/* Background wave shape */}
-        <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-[#F7F5F2] z-0" style={{ borderRadius: "50% 50% 0 0 / 10% 10% 0 0" }} />
+        {/* Background wave shape (Moved down on mobile to prevent overlapping product cards) */}
+        <div className="absolute bottom-0 left-0 right-0 h-14 sm:h-24 lg:h-32 bg-[#F7F5F2] z-0" style={{ borderRadius: "50% 50% 0 0 / 10% 10% 0 0" }} />
 
         {/* Noise overlay */}
         <div className="absolute inset-0 z-0 opacity-[0.04]"
           style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E\")" }} />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-5 pt-10 pb-12 lg:pb-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+        <div className="relative z-10 max-w-6xl mx-auto px-5 pt-3 sm:pt-10 pb-12 lg:pb-12 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-10 items-center">
           {/* Left text */}
-          <div className="text-white space-y-5">
-            <h1 className="text-4xl sm:text-6xl font-black text-white leading-[1.05] tracking-tight pt-2 sm:pt-0 mb-4 lowercase">
+          <div className="text-white space-y-2.5 sm:space-y-5">
+            <h1 className="text-4xl sm:text-6xl font-black text-white leading-[1.05] tracking-tight pt-0 sm:pt-0 mb-1.5 sm:mb-4 lowercase">
               eat. enjoy. repeat.
             </h1>
 
@@ -393,7 +393,7 @@ export default function Home() {
             </div>
 
             {/* CTAs */}
-            <div className="pt-1">
+            <div className="pt-0.5 sm:pt-1">
               <Link href="/order"
                 className="inline-flex items-center gap-2 bg-white font-black text-sm px-7 py-3.5 rounded-2xl transition-all active:scale-95 shadow-xl"
                 style={{ color: "#F26F21", boxShadow: "0 10px 30px rgba(0,0,0,0.18)" }}>
@@ -401,8 +401,8 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Delivery & Payment Partner Logos (Desktop View: In White Area of Left Column) */}
-            <div className="hidden lg:flex pt-6 sm:pt-8 flex-wrap items-start gap-8 sm:gap-10">
+            {/* Delivery & Payment Partner Logos (Inside Orange Section directly under Browse Menu) */}
+            <div className="pt-2 sm:pt-3 flex flex-wrap items-start gap-6 sm:gap-8">
               {/* Delivery Partners Block */}
               <div className="flex flex-col items-start gap-1.5">
                 <div className="flex items-center gap-3">
@@ -411,31 +411,31 @@ export default function Home() {
                     rel="noopener noreferrer"
                     className="inline-block transition-transform hover:scale-105 active:scale-95 shadow-md rounded-[14px] overflow-hidden"
                     title="Order on Uber Eats">
-                    <img src="/ubereats.png" alt="Uber Eats" className="h-10 sm:h-12 w-auto object-contain rounded-[14px]" />
+                    <img src="/ubereats.png" alt="Uber Eats" className="h-10 sm:h-11 w-auto object-contain rounded-[14px]" />
                   </a>
                   <div className="inline-block shadow-md rounded-[14px] overflow-hidden" title="PickMe Delivery">
-                    <img src="/pickme.png" alt="PickMe" className="h-10 sm:h-12 w-auto object-contain rounded-[14px]" />
+                    <img src="/pickme.png" alt="PickMe" className="h-10 sm:h-11 w-auto object-contain rounded-[14px]" />
                   </div>
                 </div>
-                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-gray-800 mt-0.5">Delivery Partners</span>
+                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white mt-0.5 drop-shadow-sm">DELIVERY PARTNERS</span>
               </div>
 
-              <div className="h-12 w-px bg-gray-300/70 hidden sm:block self-center" />
+              <div className="h-10 w-px bg-white/30 hidden sm:block self-center" />
 
               {/* Payment Partner Block */}
               <div className="flex flex-col items-start gap-1.5">
                 <div className="flex items-center gap-3">
                   <div className="inline-block shadow-md rounded-[14px] overflow-hidden" title="HelaPOS Payment Partner">
-                    <img src="/helapos.png" alt="HelaPOS" className="h-10 sm:h-12 w-auto object-contain rounded-[14px]" />
+                    <img src="/helapos.png" alt="HelaPOS" className="h-10 sm:h-11 w-auto object-contain rounded-[14px]" />
                   </div>
                 </div>
-                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-gray-800 mt-0.5">Payment Solutions</span>
+                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white mt-0.5 drop-shadow-sm">PAYMENT SOLUTIONS</span>
               </div>
             </div>
           </div>
 
           {/* Right top seller food cards - Desktop side-by-side simultaneously; Mobile swipeable overlay stack */}
-          <div className="relative flex items-center justify-center py-6 min-h-[300px] sm:min-h-[340px] select-none"
+          <div className="relative flex items-center justify-center pt-1 pb-4 sm:py-6 min-h-[260px] sm:min-h-[340px] select-none"
             onTouchStart={(e) => (window as any)._touchX = e.touches[0].clientX}
             onTouchEnd={(e) => {
               const startX = (window as any)._touchX;
@@ -571,174 +571,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Delivery & Payment Partner Logos (Mobile View: Under Best Seller Products, in White Area) */}
-          <div className="flex lg:hidden pt-4 pb-2 flex-wrap items-start justify-start gap-6 sm:gap-8">
-            {/* Delivery Partners Block */}
-            <div className="flex flex-col items-start gap-1.5">
-              <div className="flex items-center gap-3">
-                <a href="https://www.ubereats.com/store/t-cloud-eats-mulleriyawa/xPLzS9QwXiKq9YB07U5yEQ"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block transition-transform hover:scale-105 active:scale-95 shadow-md rounded-[14px] overflow-hidden"
-                  title="Order on Uber Eats">
-                  <img src="/ubereats.png" alt="Uber Eats" className="h-10 sm:h-12 w-auto object-contain rounded-[14px]" />
-                </a>
-                <div className="inline-block shadow-md rounded-[14px] overflow-hidden" title="PickMe Delivery">
-                  <img src="/pickme.png" alt="PickMe" className="h-10 sm:h-12 w-auto object-contain rounded-[14px]" />
-                </div>
-              </div>
-              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-gray-800 mt-0.5">Delivery Partners</span>
-            </div>
-
-            <div className="h-12 w-px bg-gray-300/70 hidden sm:block self-center" />
-
-            {/* Payment Partner Block */}
-            <div className="flex flex-col items-start gap-1.5">
-              <div className="flex items-center gap-3">
-                <div className="inline-block shadow-md rounded-[14px] overflow-hidden" title="HelaPOS Payment Partner">
-                  <img src="/helapos.png" alt="HelaPOS" className="h-10 sm:h-12 w-auto object-contain rounded-[14px]" />
-                </div>
-              </div>
-              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-gray-800 mt-0.5">Payment Solutions</span>
-            </div>
-          </div>
-
-          {/* Right top seller food cards - Desktop side-by-side simultaneously; Mobile swipeable overlay stack */}
-          <div className="relative flex items-center justify-center py-6 min-h-[300px] sm:min-h-[340px] select-none"
-            onTouchStart={(e) => (window as any)._touchX = e.touches[0].clientX}
-            onTouchEnd={(e) => {
-              const startX = (window as any)._touchX;
-              if (startX !== undefined) {
-                const diff = e.changedTouches[0].clientX - startX;
-                if (diff < -40) setHeroSlide(1);
-                if (diff > 40) setHeroSlide(0);
-              }
-            }}>
-            {/* Glow disc */}
-            <div className="absolute w-72 h-72 sm:w-96 sm:h-96 bg-white/20 rounded-full blur-3xl" />
-
-            {/* Desktop View: Side by side simultaneously */}
-            <div className="hidden sm:flex relative z-10 flex-row gap-4 items-center justify-center">
-              {/* Card 1 */}
-              <div className="w-64 sm:w-72 bg-white rounded-[24px] p-3.5 shadow-2xl hero-float">
-                <div className="relative h-40 sm:h-44 rounded-xl overflow-hidden bg-orange-50 mb-2.5">
-                  <img src="/Product Images/FR-05.avif" alt="Seafood Fried Rice" className="w-full h-full object-cover" />
-                  <span className="absolute top-2.5 left-2.5 tag-chip bg-[#F26F21] text-white text-[9px]">{Icon.fire("w-3 h-3")} #1 Best Seller</span>
-                </div>
-                <div className="flex items-center justify-between mb-1">
-                  <div>
-                    <h3 className="font-extrabold text-xs sm:text-sm text-gray-900">Seafood Fried Rice</h3>
-                    <p className="text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-0.5">
-                      Serves 2
-                      <svg className="w-3 h-3 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
-                      </svg>
-                    </p>
-                  </div>
-                  <span className="font-black text-[#F26F21] text-sm">Rs 1,500</span>
-                </div>
-                <Link href="/order"
-                  className="w-full flex items-center justify-center gap-2 text-white text-xs font-black py-2 rounded-xl transition-all active:scale-95 mt-2"
-                  style={{ background: "#F26F21", boxShadow: "0 4px 14px rgba(242,111,33,0.35)" }}>
-                  {Icon.bag("w-3.5 h-3.5")} Order Now
-                </Link>
-              </div>
-
-              {/* Card 2 */}
-              <div className="w-64 sm:w-72 bg-white rounded-[24px] p-3.5 shadow-2xl hero-float" style={{ animationDelay: "1.5s" }}>
-                <div className="relative h-40 sm:h-44 rounded-xl overflow-hidden bg-orange-50 mb-2.5">
-                  <img src="/Product Images/FR-07.avif" alt="Nasi Goreng" className="w-full h-full object-cover" />
-                  <span className="absolute top-2.5 left-2.5 tag-chip bg-[#0D0D0D] text-white text-[9px]">⭐ #2 Top Seller</span>
-                </div>
-                <div className="flex items-center justify-between mb-1">
-                  <div>
-                    <h3 className="font-extrabold text-xs sm:text-sm text-gray-900">Nasi Goreng</h3>
-                    <p className="text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-0.5">
-                      Serves 2
-                      <svg className="w-3 h-3 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
-                      </svg>
-                    </p>
-                  </div>
-                  <span className="font-black text-[#F26F21] text-sm">Rs 1,400</span>
-                </div>
-                <Link href="/order"
-                  className="w-full flex items-center justify-center gap-2 text-white text-xs font-black py-2 rounded-xl transition-all active:scale-95 mt-2"
-                  style={{ background: "#F26F21", boxShadow: "0 4px 14px rgba(242,111,33,0.35)" }}>
-                  {Icon.bag("w-3.5 h-3.5")} Order Now
-                </Link>
-              </div>
-            </div>
-
-            {/* Mobile View: Touch Swipeable Cards Stack (Ultra Fast 150ms Snappy Transitions) */}
-            <div className="flex sm:hidden relative z-10 w-full max-w-md items-center justify-center min-h-[290px] py-4 px-2 select-none">
-              {/* Card 1: #1 Best Seller (Seafood Fried Rice) */}
-              <div
-                onClick={() => setHeroSlide(0)}
-                className={`w-60 bg-white rounded-[24px] p-3.5 transition-all duration-150 ease-in-out cursor-pointer ${
-                  heroSlide === 0
-                    ? "relative z-20 scale-100 opacity-100 shadow-xl pointer-events-auto -translate-x-10"
-                    : "absolute z-10 scale-90 opacity-60 -translate-x-24 blur-[0.2px] hover:opacity-80 pointer-events-auto"
-                }`}>
-                <div className="relative h-36 rounded-xl overflow-hidden bg-orange-50 mb-2.5">
-                  <img src="/Product Images/FR-05.avif" alt="Seafood Fried Rice" className="w-full h-full object-cover" />
-                  <span className="absolute top-2.5 left-2.5 tag-chip bg-[#F26F21] text-white text-[9px]">{Icon.fire("w-3 h-3")} #1 Best Seller</span>
-                </div>
-                <div className="flex items-center justify-between mb-1">
-                  <div>
-                    <h3 className="font-extrabold text-xs text-gray-900">Seafood Fried Rice</h3>
-                    <p className="text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-0.5">
-                      Serves 2
-                      <svg className="w-3 h-3 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
-                      </svg>
-                    </p>
-                  </div>
-                  <span className="font-black text-[#F26F21] text-sm">Rs 1,500</span>
-                </div>
-                <Link href="/order"
-                  className="w-full flex items-center justify-center gap-2 text-white text-xs font-black py-2 rounded-xl transition-all active:scale-95 mt-2"
-                  style={{ background: "#F26F21", boxShadow: "0 4px 14px rgba(242,111,33,0.35)" }}>
-                  {Icon.bag("w-3.5 h-3.5")} Order Now
-                </Link>
-              </div>
-
-              {/* Card 2: #2 Top Seller (Nasi Goreng) */}
-              <div
-                onClick={() => setHeroSlide(1)}
-                className={`w-60 bg-white rounded-[24px] p-3.5 transition-all duration-150 ease-in-out cursor-pointer ${
-                  heroSlide === 1
-                    ? "relative z-20 scale-100 opacity-100 shadow-xl pointer-events-auto translate-x-10"
-                    : "absolute z-10 scale-90 opacity-60 translate-x-24 blur-[0.2px] hover:opacity-80 pointer-events-auto"
-                }`}>
-                <div className="relative h-36 rounded-xl overflow-hidden bg-orange-50 mb-2.5">
-                  <img src="/Product Images/FR-07.avif" alt="Nasi Goreng" className="w-full h-full object-cover" />
-                  <span className="absolute top-2.5 left-2.5 tag-chip bg-[#0D0D0D] text-white text-[9px]">⭐ #2 Top Seller</span>
-                </div>
-                <div className="flex items-center justify-between mb-1">
-                  <div>
-                    <h3 className="font-extrabold text-xs text-gray-900">Nasi Goreng</h3>
-                    <p className="text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-0.5">
-                      Serves 2
-                      <svg className="w-3 h-3 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
-                      </svg>
-                    </p>
-                  </div>
-                  <span className="font-black text-[#F26F21] text-sm">Rs 1,400</span>
-                </div>
-                <Link href="/order"
-                  className="w-full flex items-center justify-center gap-2 text-white text-xs font-black py-2 rounded-xl transition-all active:scale-95 mt-2"
-                  style={{ background: "#F26F21", boxShadow: "0 4px 14px rgba(242,111,33,0.35)" }}>
-                  {Icon.bag("w-3.5 h-3.5")} Order Now
-                </Link>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
