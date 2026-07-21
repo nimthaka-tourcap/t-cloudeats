@@ -372,7 +372,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0 opacity-[0.04]"
           style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E\")" }} />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-5 pt-3 sm:pt-10 pb-12 lg:pb-12 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-10 items-center">
+        <div className="relative z-10 max-w-6xl mx-auto px-5 pt-3 sm:pt-10 pb-12 lg:pb-12 grid grid-cols-1 lg:grid-cols-2 gap-7 sm:gap-10 items-center">
           {/* Left text */}
           <div className="text-white space-y-2.5 sm:space-y-5">
             <h1 className="text-4xl sm:text-6xl font-black text-white leading-[1.05] tracking-tight pt-0 sm:pt-0 mb-1.5 sm:mb-4 lowercase">
@@ -435,7 +435,7 @@ export default function Home() {
           </div>
 
           {/* Right top seller food cards - Desktop side-by-side simultaneously; Mobile swipeable overlay stack */}
-          <div className="relative flex items-center justify-center pt-1 pb-4 sm:py-6 min-h-[260px] sm:min-h-[340px] select-none"
+          <div className="relative flex items-center justify-center pt-3 pb-4 sm:py-6 min-h-[260px] sm:min-h-[340px] select-none"
             onTouchStart={(e) => (window as any)._touchX = e.touches[0].clientX}
             onTouchEnd={(e) => {
               const startX = (window as any)._touchX;
