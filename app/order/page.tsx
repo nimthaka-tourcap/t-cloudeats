@@ -280,7 +280,7 @@ export default function OrderPage() {
                 Street Food. <br className="sm:hidden" />Your Way. 🍜
               </h1>
               <p className="text-white/80 text-sm max-w-sm leading-relaxed">
-                Add items to your cart and checkout via WhatsApp — it takes less than 30 seconds.
+                Add items to your cart and checkout via WhatsApp. It takes less than 30 seconds.
               </p>
             </div>
 
@@ -664,7 +664,7 @@ export default function OrderPage() {
                         category: "Beverages",
                         portion: "1.05L Bottle",
                         description: "Chilled Elephant House Orange Crush.",
-                        image: "/fanta.png"
+                        image: "/Product Images/BV-07.avif"
                       });
                     }
                     beverages = beverages.slice(0, 6);

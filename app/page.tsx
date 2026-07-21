@@ -119,8 +119,8 @@ const REVIEWS = [
 const FAQS = [
   { q: "How fast is delivery?", a: "Orders are prepped fresh in 15–20 min and delivered hot within 25–35 minutes." },
   { q: "Which areas do you deliver to?", a: "We cover Mulleriyawa, Angoda, Kotikawatta, Kelanimulla, IDH & surrounding suburbs within 3 km." },
-  { q: "How do I place an order?", a: 'Use our Digital Menu to build a cart and checkout, or tap "WhatsApp Order" for 1-click ordering.' },
-  { q: "What payment methods are accepted?", a: "Cash on Delivery (COD) and online bank transfers with receipt upload." },
+  { q: "How do I place an order?", a: 'Use our Digital Menu to build a cart and checkout, or tap "Contact via WhatsApp" for 1-click ordering.' },
+  { q: "What payment methods are accepted?", a: "HelaPOS payments, Cash on Delivery (COD), and online bank transfers with receipt upload." },
 ];
 
 const CATS = ["All", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Pasta", "Beverages"];
@@ -225,12 +225,20 @@ export default function Home() {
 
   const pool = items.length >= 4 ? items : FEATURED;
   
-  // Always show exactly these 4 dishes in the popular section for "All"
+  // Always show exactly these 4 dishes in the popular section
   const popularDishes = [
     pool.find(i => i.title?.toLowerCase().includes("seafood fried")) || FEATURED[0],
     pool.find(i => i.title?.toLowerCase().includes("chicken kottu")) || FEATURED[1],
     pool.find(i => i.title?.toLowerCase().includes("nasi")) || FEATURED[2],
     pool.find(i => i.title?.toLowerCase().includes("prawn chop")) || pool.find(i => i.title?.toLowerCase().includes("prawn")) || FEATURED[3],
+  ].filter(Boolean);
+
+  // Second row — desktop only
+  const secondRowDishes = [
+    pool.find(i => i.title?.toLowerCase().includes("surf") && i.title?.toLowerCase().includes("kottu")) || { id: 201, title: "Surf & Turf Kottu", price: "Rs 1,700", label: "🔥 Chef's Pick", category: "Kottu", image: "/Product Images/KT-05.avif" },
+    pool.find(i => i.title?.toLowerCase().includes("chicken fried rice") && !i.title?.toLowerCase().includes("nasi")) || { id: 202, title: "Classic Chicken Fried Rice", price: "Rs 1,100", label: "💚 Best Value", category: "Fried Rice", image: "/Product Images/FR-02.avif" },
+    pool.find(i => i.title?.toLowerCase().includes("egg kottu")) || { id: 203, title: "Egg Kottu", price: "Rs 800", label: "⭐ Classic", category: "Kottu", image: "/Product Images/KT-01.avif" },
+    pool.find(i => i.title?.toLowerCase().includes("egg fried rice")) || { id: 204, title: "Egg Fried Rice", price: "Rs 800", label: "💚 Budget Pick", category: "Fried Rice", image: "/Product Images/FR-01.avif" },
   ].filter(Boolean);
 
   const getCategoryItems = (category: string) => {
@@ -272,10 +280,11 @@ export default function Home() {
       }
       if (category === "Beverages") {
         return [
-          { id: 301, title: "Coca-Cola 500ml", price: "Rs 250", label: "🥤 Chilled", category: "Beverages" },
-          { id: 302, title: "Sprite 500ml", price: "Rs 250", label: "🍋 Refreshing", category: "Beverages" },
-          { id: 303, title: "Fanta Orange 500ml", price: "Rs 250", label: "🍊 Fruity", category: "Beverages" },
-          { id: 304, title: "EGB Ginger Beer", price: "Rs 250", label: "🍺 Classic", category: "Beverages" },
+          { id: 301, title: "Coca-Cola (1050 ml)", price: "Rs 300", label: "🥤 Chilled", category: "Beverages", image: "/Product Images/BV-03.avif" },
+          { id: 302, title: "Sprite (1050 ml)", price: "Rs 300", label: "🍋 Refreshing", category: "Beverages", image: "/Product Images/BV-04.avif" },
+          { id: 303, title: "Fanta (1050 ml)", price: "Rs 300", label: "🍊 Fruity", category: "Beverages", image: "/Product Images/BV-05.avif" },
+          { id: 304, title: "EGB (1000 ml)", price: "Rs 320", label: "🍺 Classic", category: "Beverages", image: "/Product Images/BV-06.avif" },
+          { id: 305, title: "Orange Crush (1000 ml)", price: "Rs 320", label: "🍊 Refreshing", category: "Beverages", image: "/Product Images/BV-07.avif" },
         ];
       }
     }
@@ -363,14 +372,14 @@ export default function Home() {
         <div className="absolute inset-0 z-0 opacity-[0.04]"
           style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E\")" }} />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-5 pt-10 pb-20 lg:pb-14 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+        <div className="relative z-10 max-w-6xl mx-auto px-5 pt-10 pb-12 lg:pb-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           {/* Left text */}
           <div className="text-white space-y-5">
             <h1 className="text-4xl sm:text-6xl font-black text-white leading-[1.05] tracking-tight pt-2 sm:pt-0 mb-4 lowercase">
               eat. enjoy. repeat.
             </h1>
 
-            <p className="text-white/80 text-sm sm:text-base leading-relaxed max-w-md">
+            <p className="text-white/90 text-sm sm:text-base leading-relaxed max-w-md font-medium">
               Flame-wok Kottu, Basmati Fried Rice & Chopsuey cooked fresh on demand. Hot doorstep delivery within 3 km of Mulleriyawa.
             </p>
 
@@ -380,16 +389,48 @@ export default function Home() {
                 {[1,2,3,4,5].map(s => <span key={s} className="text-yellow-300 text-base">★</span>)}
               </div>
               <span className="text-white font-black text-sm">5.0</span>
-              <span className="text-white/60 text-xs font-semibold">Google Reviews</span>
+              <span className="text-white/80 text-xs font-semibold">Google Reviews</span>
             </div>
 
             {/* CTAs */}
-            <div className="flex gap-3 flex-wrap pt-1">
+            <div className="pt-1">
               <Link href="/order"
-                className="flex items-center gap-2 bg-white font-black text-sm px-7 py-3.5 rounded-2xl transition-all active:scale-95 shadow-xl"
+                className="inline-flex items-center gap-2 bg-white font-black text-sm px-7 py-3.5 rounded-2xl transition-all active:scale-95 shadow-xl"
                 style={{ color: "#F26F21", boxShadow: "0 10px 30px rgba(0,0,0,0.18)" }}>
                 {Icon.bag("w-4 h-4")} Browse Menu
               </Link>
+            </div>
+
+            {/* Delivery & Payment Partner Logos (In White Area) */}
+            <div className="pt-6 sm:pt-8 flex flex-wrap items-start gap-8 sm:gap-10">
+              {/* Delivery Partners Block */}
+              <div className="flex flex-col items-start gap-1.5">
+                <div className="flex items-center gap-3">
+                  <a href="https://www.ubereats.com/store/t-cloud-eats-mulleriyawa/xPLzS9QwXiKq9YB07U5yEQ"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block transition-transform hover:scale-105 active:scale-95 shadow-md rounded-[14px] overflow-hidden"
+                    title="Order on Uber Eats">
+                    <img src="/ubereats.png" alt="Uber Eats" className="h-10 sm:h-12 w-auto object-contain rounded-[14px]" />
+                  </a>
+                  <div className="inline-block shadow-md rounded-[14px] overflow-hidden" title="PickMe Delivery">
+                    <img src="/pickme.png" alt="PickMe" className="h-10 sm:h-12 w-auto object-contain rounded-[14px]" />
+                  </div>
+                </div>
+                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-gray-800 mt-0.5">Delivery Partners</span>
+              </div>
+
+              <div className="h-12 w-px bg-gray-300/70 hidden sm:block self-center" />
+
+              {/* Payment Partner Block */}
+              <div className="flex flex-col items-start gap-1.5">
+                <div className="flex items-center gap-3">
+                  <div className="inline-block shadow-md rounded-[14px] overflow-hidden" title="HelaPOS Payment Partner">
+                    <img src="/helapos.png" alt="HelaPOS" className="h-10 sm:h-12 w-auto object-contain rounded-[14px]" />
+                  </div>
+                </div>
+                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-gray-800 mt-0.5">Payment System</span>
+              </div>
             </div>
           </div>
 
@@ -549,9 +590,9 @@ export default function Home() {
           <div className="rounded-3xl relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6 p-6 sm:p-8 border border-white/10 shadow-2xl"
             style={{ background: "linear-gradient(135deg, #0D0D0D 0%, #1A1A1A 60%, #111111 100%)" }}>
             {/* Dark background overlay over soda bottles image for high contrast readability */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-45">
+            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-70">
               <img src="/beverage offer.avif?v=2" alt="Beverage Offer" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-black/85" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/40 to-black/50" />
             </div>
 
             {/* Glowing Accent Glows */}
@@ -597,21 +638,16 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Category pills */}
-          <div className="flex gap-2 overflow-x-auto scrollbar-none pb-3 mb-5" data-reveal data-reveal-delay="2">
-            {CATS.map((c) => (
-              <button key={c} onClick={() => setCat(c)} className={`cat-pill ${cat === c ? "active" : ""}`}>{c}</button>
-            ))}
-          </div>
 
-          {/* Product grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-            {visible.map((item, idx) => {
-              const price = typeof item.price === "string" ? item.price : `Rs ${Number(item.price).toLocaleString()}`;
+
+          {/* Product grid — 1 row on mobile, 2 rows on desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+            {[...popularDishes, ...secondRowDishes.map(d => ({ ...d, _desktopOnly: true }))].map((item: any, idx) => {
+              const isDesktopOnly = item._desktopOnly;
               return (
                 <div key={item.id}
                   onClick={() => setSelectedProduct(item)}
-                  className="product-card cursor-pointer group"
+                  className={`product-card cursor-pointer group${isDesktopOnly ? " hidden lg:block" : ""}`}
                   style={{ animationDelay: `${idx * 60}ms`, animation: "cardFadeIn .4s ease both" }}>
                   <div className="relative h-36 sm:h-44 bg-gray-100 overflow-hidden">
                     {item.image
@@ -636,7 +672,7 @@ export default function Home() {
                       )}
                     </p>
                     <div className="flex items-center justify-between">
-                      <span className="font-black text-[#F26F21] text-sm">{price}</span>
+                      <span className="font-black text-[#F26F21] text-sm">{typeof item.price === 'string' ? item.price : `Rs ${Number(item.price).toLocaleString()}`}</span>
                       <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white transition-all active:scale-95 shadow-md"
                         style={{ background: "#F26F21" }}>
                         {Icon.plus("w-4 h-4")}
@@ -670,9 +706,9 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { icon: Icon.fire("w-6 h-6"), title: "Master Wok Cooking", desc: "High-heat wok searing with authentic Sri Lankan spices for bold, smoky street-style taste.", color: "rgba(242,111,33,0.12)", textColor: "#F26F21" },
-              { icon: Icon.clock("w-6 h-6"), title: "Express 25-Min Delivery", desc: "Thermal-insulated delivery bags keep your meal piping hot, from kitchen to doorstep.", color: "rgba(99,102,241,0.12)", textColor: "#818CF8" },
+              { icon: Icon.clock("w-6 h-6"), title: "Express 25-Min Delivery", desc: "Delivering your meal piping hot, from kitchen to doorstep.", color: "rgba(99,102,241,0.12)", textColor: "#818CF8" },
               { icon: Icon.wa("w-6 h-6"), title: "WhatsApp Instant Orders", desc: "Real-time confirmations, item updates and digital receipts sent directly on WhatsApp.", color: "rgba(37,211,102,0.12)", textColor: "#25D366" },
-              { icon: Icon.shield("w-6 h-6"), title: "Fresh Every Day", desc: "Ingredients sourced fresh daily. No frozen shortcuts — just real food cooked with care.", color: "rgba(6,193,103,0.12)", textColor: "#06C167" },
+              { icon: Icon.shield("w-6 h-6"), title: "Fresh Every Day", desc: "Ingredients sourced fresh daily. Real food cooked with care.", color: "rgba(6,193,103,0.12)", textColor: "#06C167" },
             ].map(({ icon, title, desc, color, textColor }, idx) => (
               <div key={title} data-reveal data-reveal-delay={String(idx + 1) as any}
                 className="rounded-2xl p-5 border border-white/5 hover:border-white/10 transition-all"
@@ -772,7 +808,7 @@ export default function Home() {
                 </a>
                 <a href="https://wa.me/94706288109" target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm font-bold text-[#25D366] hover:underline">
-                  {Icon.wa("w-4 h-4")} WhatsApp Order
+                  {Icon.wa("w-4 h-4")} Contact via WhatsApp
                 </a>
               </div>
 
@@ -787,7 +823,13 @@ export default function Home() {
               <iframe
                 title="t-cloud eats location"
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d990.161254038916!2d79.92902197881799!3d6.932962699999993!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae257fcc5fb0da5%3A0x254afb02a157e1c1!2st-cloud%20eats!5e0!3m2!1sen!2sus!4v1782627430513!5m2!1sen!2sus"
-                width="100%" height="100%" style={{ border: 0, display: "block", minHeight: 280 }} loading="lazy"
+                width="100%"
+                height="100%"
+                style={{ border: 0, minHeight: "280px" }}
+                allowFullScreen={false}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="rounded-3xl shadow-lg"
               />
             </div>
           </div>
@@ -795,26 +837,21 @@ export default function Home() {
       </section>
 
       {/* ─────────── FOOTER ─────────────────────────────────────────── */}
-      <footer className="bg-[#0D0D0D] text-white py-10 px-5">
+      <footer className="bg-[#090909] text-white pt-12 pb-8 border-t border-white/10 px-5">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pb-8 border-b border-white/10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-white/10">
             {/* Brand */}
-            <div className="space-y-3">
+            <div className="space-y-3 md:col-span-2">
               <div className="flex items-center gap-2.5">
-                <Image src="/Round Logo.png" alt="t-cloud eats" width={36} height={36} />
-                <span className="font-black text-base" style={{ color: "#F26F21" }}>t-cloud eats</span>
+                <Image src="/Round Logo.png" alt="t-cloud eats" width={40} height={40} className="object-contain" />
+                <div>
+                  <p className="text-base font-black tracking-wider leading-tight" style={{ color: "#F26F21" }}>t-cloud eats</p>
+                  <p className="text-[10px] font-bold text-gray-500 tracking-widest uppercase">Cloud Kitchen · Mulleriyawa</p>
+                </div>
               </div>
-              <p className="text-xs text-white/50 leading-relaxed">Mulleriyawa's premium cloud kitchen. Bold street flavors cooked fresh, delivered hot.</p>
-              <div className="flex items-center gap-2 pt-1">
-                {[Icon.ig, Icon.fb, Icon.tt].map((Comp, i) => (
-                  <a key={i}
-                    href={["https://www.instagram.com/tcloudeats/", "https://www.facebook.com/tcloudeats", "https://www.tiktok.com/@tcloudeats"][i]}
-                    target="_blank" rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:text-white hover:bg-[#F26F21] transition-all">
-                    <Comp />
-                  </a>
-                ))}
-              </div>
+              <p className="text-xs text-white/50 max-w-sm leading-relaxed">
+                Flame-wok Kottu, Basmati Fried Rice & Chopsuey. Prepared fresh with high heat & real spices.
+              </p>
             </div>
 
             {/* Quick links */}
@@ -838,7 +875,7 @@ export default function Home() {
                   {Icon.phone()} 070 628 8109
                 </a>
                 <a href="https://wa.me/94706288109" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-white/70 hover:text-[#F26F21] transition-colors font-semibold">
-                  {Icon.wa()} WhatsApp Order
+                  {Icon.wa()} Contact via WhatsApp
                 </a>
                 <a href="mailto:tcloudeats@gmail.com" className="flex items-center gap-2 text-xs text-white/70 hover:text-[#F26F21] transition-colors font-semibold">
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>

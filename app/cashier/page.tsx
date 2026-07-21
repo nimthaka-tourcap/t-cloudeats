@@ -409,11 +409,11 @@ const INITIAL_MENU_ITEMS: MenuItem[] = [
   // Beverages
   { id: 26, title: "Mineral Water Bottle (1000 ml)", price: 100, category: "Beverages", portion: "1000 ml", sku: "BV-01" },
   { id: 27, title: "Milk Shake", price: 600, category: "Beverages", portion: "Regular", sku: "BV-02" },
-  { id: 28, title: "Coca Cola (1050 ml)", price: 300, category: "Beverages", portion: "1050 ml", sku: "BV-03" },
-  { id: 29, title: "Sprite (1050 ml)", price: 300, category: "Beverages", portion: "1050 ml", sku: "BV-04" },
-  { id: 30, title: "Fanta (1050 ml)", price: 300, category: "Beverages", portion: "1050 ml", sku: "BV-05" },
-  { id: 31, title: "EGB (1000 ml)", price: 320, category: "Beverages", portion: "1000 ml", sku: "BV-06" },
-  { id: 32, title: "Orange Crush (1000 ml)", price: 320, category: "Beverages", portion: "1000 ml", sku: "BV-07" },
+  { id: 28, title: "Coca Cola (1050 ml)", price: 300, category: "Beverages", portion: "1050 ml", image: "/Product Images/BV-03.avif", sku: "BV-03" },
+  { id: 29, title: "Sprite (1050 ml)", price: 300, category: "Beverages", portion: "1050 ml", image: "/Product Images/BV-04.avif", sku: "BV-04" },
+  { id: 30, title: "Fanta (1050 ml)", price: 300, category: "Beverages", portion: "1050 ml", image: "/Product Images/BV-05.avif", sku: "BV-05" },
+  { id: 31, title: "EGB (1000 ml)", price: 320, category: "Beverages", portion: "1000 ml", image: "/Product Images/BV-06.avif", sku: "BV-06" },
+  { id: 32, title: "Orange Crush (1000 ml)", price: 320, category: "Beverages", portion: "1000 ml", image: "/Product Images/BV-07.avif", sku: "BV-07" },
 
   // Pasta
   { id: 33, title: "Creamy Mushroom Sauce", price: 1400, category: "Pasta", portion: "Large Portion", sku: "PA-01" },
