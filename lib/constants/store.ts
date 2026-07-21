@@ -1,0 +1,15 @@
+export const STORE_CONFIG = {
+  name: "T-Cloud Eats",
+  tagline: "eat. enjoy. repeat.",
+  phone: "070 628 8109",
+  whatsappPhone: "94706288109",
+  whatsappFormattedPhone: "+94 70 628 8109",
+  address: "No. 450, Mulleriyawa New Town, Mulleriyawa, Sri Lanka",
+  deliveryRadiusKm: 3,
+  deliveryZones: ["Mulleriyawa", "Angoda", "Kotikawatta", "IDH"],
+  googleReviewsRating: "5.0",
+  uberEatsUrl: "https://www.ubereats.com/store/t-cloud-eats-mulleriyawa/xPLzS9QwXiKq9YB07U5yEQ",
+  currency: "Rs",
+  currencyCode: "LKR",
+  acceptedPayments: ["Cash on Delivery", "HelaPOS Card Payment", "PickMe Pay"],
+};
