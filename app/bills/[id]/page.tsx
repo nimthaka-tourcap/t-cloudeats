@@ -22,6 +22,7 @@ interface Order {
   items: OrderItem[];
   subtotal: number;
   tax: number;
+  delivery_fee?: number;
   total: number;
   status: string;
   type: string;
@@ -38,6 +39,7 @@ interface Order {
     discount_type?: "percentage" | "fixed";
     discount_value?: number;
     discount_amount?: number;
+    delivery_fee?: number;
   };
 }
 
@@ -677,29 +679,46 @@ export default function BillPage() {
           <div className="space-y-2">
             {order.items.map((item, idx) => {
               const itemTitle = item.menuItem ? item.menuItem.title : (item as any).title;
-              const basePrice = item.menuItem ? item.menuItem.price : (item as any).price || 0;
-              const addonPrice = item.addonPrice || 0;
-              const finalItemPrice = basePrice + addonPrice;
+              const isFree = (item as any).isFree === true;
+              const customPrice = (item as any).customItemPrice;
+              const basePrice = isFree ? 0 : (customPrice !== undefined ? customPrice : (item.menuItem ? item.menuItem.price : (item as any).price || 0));
+              const addonPrice = isFree ? 0 : (item.addonPrice || 0);
+              const finalItemPrice = isFree ? 0 : Math.max(0, basePrice + addonPrice);
               return (
                 <div key={idx} className="text-xs">
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
-                      <p className="font-bold text-slate-900 leading-tight">{itemTitle}</p>
+                      <p className="font-bold text-slate-900 leading-tight">
+                        {itemTitle} {isFree && <span className="text-emerald-600 text-[10px] font-black uppercase ml-1.5">(🎁 FREE)</span>}
+                      </p>
                       {item.comment && (
                         <p className="text-[10px] text-amber-600 italic mt-0.5">💬 {item.comment}</p>
                       )}
-                      {addonPrice !== 0 && (
+                      {!isFree && addonPrice !== 0 && (
                         <p className="text-[9px] text-amber-600 font-bold mt-0.5">
                           {addonPrice > 0 ? "+ " : "- "}Addon Price: LKR {Math.abs(addonPrice).toLocaleString()}
                         </p>
                       )}
                       <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                        {item.quantity} x LKR {finalItemPrice.toLocaleString()}
+                        {item.quantity} x {isFree ? "LKR 0" : `LKR ${finalItemPrice.toLocaleString()}`}
                       </p>
                     </div>
-                    <span className="font-mono font-bold text-slate-950 whitespace-nowrap">
-                      LKR {(finalItemPrice * item.quantity).toLocaleString()}
-                    </span>
+                    <div className="flex flex-col items-end">
+                      {isFree || (customPrice !== undefined && customPrice !== (item.menuItem ? item.menuItem.price : (item as any).price || 0)) ? (
+                        <>
+                          <span className="line-through text-[10px] text-slate-400 font-mono">
+                            LKR {(( (item.menuItem ? item.menuItem.price : (item as any).price || 0) + (item.addonPrice || 0) ) * item.quantity).toLocaleString()}
+                          </span>
+                          <span className="font-mono font-bold text-slate-950 whitespace-nowrap">
+                            {isFree ? "LKR 0" : `LKR ${(finalItemPrice * item.quantity).toLocaleString()}`}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="font-mono font-bold text-slate-950 whitespace-nowrap">
+                          LKR ${(finalItemPrice * item.quantity).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -719,6 +738,12 @@ export default function BillPage() {
                 Discount ({order.customer.discount_type === "percentage" ? `${order.customer.discount_value}%` : "LKR"}):
               </span>
               <span className="font-mono">- LKR {order.customer.discount_amount.toLocaleString()}</span>
+            </div>
+          ) : null}
+          {(order.delivery_fee || order.customer?.delivery_fee) ? (
+            <div className="flex justify-between text-blue-600 font-medium">
+              <span>Delivery Charge:</span>
+              <span className="font-mono">+ LKR {(order.delivery_fee || order.customer?.delivery_fee || 0).toLocaleString()}</span>
             </div>
           ) : null}
           <div className="flex justify-between">

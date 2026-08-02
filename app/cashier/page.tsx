@@ -31,7 +31,10 @@ import {
   Wifi,
   WifiOff,
   Eye,
-  EyeOff
+  EyeOff,
+  Truck,
+  Smartphone,
+  Utensils
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -55,6 +58,15 @@ interface CartItem {
   isNew?: boolean;
   comment?: string;
   addonPrice?: number;
+  isFree?: boolean;
+  customItemPrice?: number;
+}
+
+function getItemUnitPrice(item: CartItem): number {
+  if (item.isFree) return 0;
+  const basePrice = item.customItemPrice !== undefined ? item.customItemPrice : (item.menuItem ? item.menuItem.price : (item as any).price || 0);
+  const totalUnitPrice = basePrice + (item.addonPrice || 0);
+  return Math.max(0, totalUnitPrice);
 }
 
 interface CustomerDetails {
@@ -67,6 +79,7 @@ interface CustomerDetails {
   discount_type?: "percentage" | "fixed";
   discount_value?: number;
   discount_amount?: number;
+  delivery_fee?: number;
 }
 
 interface Order {
@@ -75,9 +88,10 @@ interface Order {
   items: CartItem[];
   subtotal: number;
   tax: number;
+  delivery_fee?: number;
   total: number;
   status: "Preparing" | "Ready" | "Dispatched" | "Completed" | "Voided" | "Ignored";
-  type: "POS" | "Direct" | "3rd Party" | "Take Away" | "Pick Up" | "Delivery";
+  type: "POS" | "Direct" | "3rd Party" | "Take Away" | "Pick Up" | "Delivery" | "Dine In";
   customer?: CustomerDetails;
 }
 
@@ -89,7 +103,7 @@ interface ToastMessage {
   type: ToastType;
 }
 
-const CATEGORIES = ["All Categories", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Pasta", "Beverages"];
+const CATEGORIES = ["All Categories", "Fried Rice", "Chopsuey", "Kottu", "Pasta", "Ultimate Bites", "Beverages"];
 
 const MONTHS = [
   { value: "01", label: "January" },
@@ -396,6 +410,11 @@ const INITIAL_MENU_ITEMS: MenuItem[] = [
   { id: 16, title: "Surf & Turf Kottu", price: 1700, category: "Kottu", portion: "Large Portion", image: "/Product Images/KT-05.avif", sku: "KT-05" },
   { id: 17, title: "Fried Chicken Cheese Kottu", price: 1600, category: "Kottu", portion: "Large Portion", sku: "KT-06" },
 
+  // Pasta
+  { id: 33, title: "Creamy Mushroom Sauce", price: 1400, category: "Pasta", portion: "Large Portion", sku: "PA-01" },
+  { id: 34, title: "Chicken with Cheese sauce", price: 1400, category: "Pasta", portion: "Large Portion", sku: "PA-02" },
+  { id: 35, title: "Seafood with Creamy White Sauce", price: 1600, category: "Pasta", portion: "Large Portion", sku: "PA-03" },
+
   // Ultimate Bites
   { id: 18, title: "Sri Lankan Chicken Devilled", price: 1200, category: "Ultimate Bites", portion: "Large Portion", sku: "UB-01" },
   { id: 19, title: "Fried Fish", price: 1500, category: "Ultimate Bites", portion: "Large Portion", sku: "UB-02" },
@@ -413,12 +432,7 @@ const INITIAL_MENU_ITEMS: MenuItem[] = [
   { id: 29, title: "Sprite (1050 ml)", price: 300, category: "Beverages", portion: "1050 ml", image: "/Product Images/BV-04.avif", sku: "BV-04" },
   { id: 30, title: "Fanta (1050 ml)", price: 300, category: "Beverages", portion: "1050 ml", image: "/Product Images/BV-05.avif", sku: "BV-05" },
   { id: 31, title: "EGB (1000 ml)", price: 320, category: "Beverages", portion: "1000 ml", image: "/Product Images/BV-06.avif", sku: "BV-06" },
-  { id: 32, title: "Orange Crush (1000 ml)", price: 320, category: "Beverages", portion: "1000 ml", image: "/Product Images/BV-07.avif", sku: "BV-07" },
-
-  // Pasta
-  { id: 33, title: "Creamy Mushroom Sauce", price: 1400, category: "Pasta", portion: "Large Portion", sku: "PA-01" },
-  { id: 34, title: "Chicken with Cheese sauce", price: 1400, category: "Pasta", portion: "Large Portion", sku: "PA-02" },
-  { id: 35, title: "Seafood with Creamy White Sauce", price: 1600, category: "Pasta", portion: "Large Portion", sku: "PA-03" }
+  { id: 32, title: "Orange Crush (1000 ml)", price: 320, category: "Beverages", portion: "1000 ml", image: "/Product Images/BV-07.avif", sku: "BV-07" }
 ];
 
 // ============================================================================
@@ -608,27 +622,47 @@ function getBusinessDateStr(dateInput: Date | string = new Date()): string {
   return `${yy}${mm}${dd}`;
 }
 
+function isWithinOneHour(timestamp: string): boolean {
+  if (!timestamp) return false;
+  const diffMs = Date.now() - new Date(timestamp).getTime();
+  return diffMs <= 60 * 60 * 1000;
+}
+
 function getNextInvoiceNumber(history: Order[]): string {
   const currentBizDateStr = getBusinessDateStr(new Date());
-  const todaysValidOrders = history.filter(o => 
+  
+  // Get all of today's orders (excluding Ignored)
+  const todaysOrders = history.filter(o => 
     getBusinessDateStr(o.timestamp) === currentBizDateStr && 
     o.status !== "Ignored" && 
     o.id.startsWith("INV-")
   );
-  
-  let nextSeq = 1;
-  if (todaysValidOrders.length > 0) {
-    const seqs = todaysValidOrders
-      .map(o => {
-        const parts = o.id.split("-");
-        return parts.length === 3 ? parseInt(parts[2], 10) : 0;
-      })
-      .filter(Boolean);
-    if (seqs.length > 0) {
-      nextSeq = Math.max(...seqs) + 1;
-    }
+
+  if (todaysOrders.length === 0) {
+    return `INV-${currentBizDateStr}-001`;
   }
-  return `INV-${currentBizDateStr}-${String(nextSeq).padStart(3, "0")}`;
+
+  // Find the highest sequence number and its order
+  let maxSeq = 0;
+  let maxSeqOrder: Order | null = null;
+
+  todaysOrders.forEach(o => {
+    const parts = o.id.split("-");
+    if (parts.length === 3) {
+      const seq = parseInt(parts[2], 10);
+      if (seq > maxSeq) {
+        maxSeq = seq;
+        maxSeqOrder = o;
+      }
+    }
+  });
+
+  // If the highest sequence order of today is Voided, reuse it!
+  if (maxSeqOrder && (maxSeqOrder as Order).status === "Voided") {
+    return `INV-${currentBizDateStr}-${String(maxSeq).padStart(3, "0")}`;
+  }
+
+  return `INV-${currentBizDateStr}-${String(maxSeq + 1).padStart(3, "0")}`;
 }
 
 function getStatusBadgeStyle(status: Order["status"]): { bg: string; text: string; border: string } {
@@ -708,7 +742,7 @@ export default function PosPage() {
   const [activeCategory, setActiveCategory] = useState("All Categories");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [orderType, setOrderType] = useState<"POS" | "Direct" | "3rd Party">("POS");
+  const [orderType, setOrderType] = useState<"POS" | "Direct" | "3rd Party" | "Dine In">("POS");
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [commentEditingItemId, setCommentEditingItemId] = useState<number | null>(null);
@@ -735,11 +769,13 @@ export default function PosPage() {
   
   // Customer CMS States
   const [customers, setCustomers] = useState<{ phone: string; name: string; address: string; birthday?: string | null; address_label?: string | null }[]>([]);
+  const [showOrderTypeModal, setShowOrderTypeModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerCountryCode, setCustomerCountryCode] = useState("+94");
   const [customerName, setCustomerName] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [showNameSuggestions, setShowNameSuggestions] = useState(false);
 
   // Structured Address States (POS Checkout)
@@ -750,6 +786,13 @@ export default function PosPage() {
   const [originalAutofilledAddress, setOriginalAutofilledAddress] = useState<string | null>(null);
   const [showAddressSelector, setShowAddressSelector] = useState(false);
   const [activeAddressTab, setActiveAddressTab] = useState<"saved" | "new">("saved");
+  const [showAllTopSelling, setShowAllTopSelling] = useState(false);
+
+  // Security PIN Pending Actions States
+  const [voidTargetOrderId, setVoidTargetOrderId] = useState<string | null>(null);
+  const [pendingRemoveItemId, setPendingRemoveItemId] = useState<number | null>(null);
+  const [pendingRemoveDelta, setPendingRemoveDelta] = useState<number | null>(null);
+  const [isUpdateOrderPending, setIsUpdateOrderPending] = useState(false);
 
 
   // CMS Profiles Modal & Edit States
@@ -768,6 +811,47 @@ export default function PosPage() {
   const [editCustBirthDay, setEditCustBirthDay] = useState("");
   const [editCustAddressLabel, setEditCustAddressLabel] = useState("");
   const [isUpdatingCust, setIsUpdatingCust] = useState(false);
+
+  // Custom / Special Order Product State & Logic
+  const [showCustomItemModal, setShowCustomItemModal] = useState(false);
+  const [customTitle, setCustomTitle] = useState("");
+  const [customPrice, setCustomPrice] = useState("");
+  const [customCategory, setCustomCategory] = useState("Special Orders");
+  const [customPortion, setCustomPortion] = useState("Custom Portion");
+
+  const handleOpenCustomItemModal = () => {
+    setCustomTitle("");
+    setCustomPrice("");
+    setCustomCategory("Special Orders");
+    setCustomPortion("Custom Portion");
+    setShowCustomItemModal(true);
+  };
+
+  const handleAddCustomItemToCart = () => {
+    if (!customTitle.trim()) {
+      triggerToast("Please enter a product name", "warning");
+      return;
+    }
+    const parsedPrice = parseFloat(customPrice);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      triggerToast("Please enter a valid price", "warning");
+      return;
+    }
+
+    const customMenuItem: MenuItem = {
+      id: 900000 + (Date.now() % 100000),
+      title: customTitle.trim(),
+      price: parsedPrice,
+      category: customCategory || "Special Orders",
+      portion: customPortion || "Custom Portion",
+      sku: "CUSTOM"
+    };
+
+    addToCart(customMenuItem);
+    setShowCustomItemModal(false);
+    setCustomTitle("");
+    setCustomPrice("");
+  };
 
 
 
@@ -820,11 +904,13 @@ export default function PosPage() {
           setCart(order.items.map(item => ({ ...item, isNew: false })));
           setDiscountType(order.customer?.discount_type || "percentage");
           setDiscountValue(order.customer?.discount_value || 0);
-          let mappedType: "POS" | "Direct" | "3rd Party" = "POS";
+          let mappedType: "POS" | "Direct" | "3rd Party" | "Dine In" = "POS";
           if (order.type === "Delivery" || order.type === "Direct") {
             mappedType = "Direct";
           } else if (order.type === "3rd Party") {
             mappedType = "3rd Party";
+          } else if (order.type === "Dine In") {
+            mappedType = "Dine In";
           }
           setOrderType(mappedType);
         }
@@ -1178,11 +1264,13 @@ export default function PosPage() {
         if (payload.selectedInvoiceId !== undefined) setSelectedInvoiceId(payload.selectedInvoiceId);
         if (payload.activeSidebar !== undefined) setActiveSidebar(payload.activeSidebar);
         if (payload.orderType !== undefined) {
-          let mappedType: "POS" | "Direct" | "3rd Party" = "POS";
+          let mappedType: "POS" | "Direct" | "3rd Party" | "Dine In" = "POS";
           if (payload.orderType === "Delivery" || payload.orderType === "Direct") {
             mappedType = "Direct";
           } else if (payload.orderType === "3rd Party") {
             mappedType = "3rd Party";
+          } else if (payload.orderType === "Dine In") {
+            mappedType = "Dine In";
           }
           setOrderType(mappedType);
         }
@@ -1407,6 +1495,19 @@ export default function PosPage() {
       });
   };
 
+  const handleVoidOrder = (orderId: string) => {
+    if (isAdminUnlocked) {
+      updateOrderStatus(orderId, "Voided");
+    } else {
+      setVoidTargetOrderId(orderId);
+      setPinPurpose("prices"); // Reuses keypad
+      setShowPinModal(true);
+      setPinInput("");
+      setPinError("");
+      triggerToast("PIN required to void order", "warning");
+    }
+  };
+
   const handleStatusAdvance = () => {
     if (!selectedOrder) return;
     let nextStatus: Order["status"] = "Completed";
@@ -1553,10 +1654,25 @@ export default function PosPage() {
 
   const handleUpdateOrder = async () => {
     if (!selectedInvoiceId) return;
-    const newSubtotal = cart.reduce((sum, item) => sum + (item.menuItem.price + (item.addonPrice || 0)) * item.quantity, 0);
+
+    const existingOrder = orderHistory.find(o => o.id === selectedInvoiceId);
+    if (existingOrder) {
+      const withinHour = isWithinOneHour(existingOrder.timestamp);
+      if (!withinHour && !isAdminUnlocked) {
+        setIsUpdateOrderPending(true);
+        setPinPurpose("prices");
+        setShowPinModal(true);
+        setPinInput("");
+        setPinError("");
+        triggerToast("PIN required to update order older than 1 hour", "warning");
+        return;
+      }
+    }
+
+    const newSubtotal = cart.reduce((sum, item) => sum + getItemUnitPrice(item) * item.quantity, 0);
     const newTax = 0;
     const newDiscountAmount = discountType === "percentage" ? (newSubtotal * discountValue) / 100 : discountValue;
-    const newTotal = Math.max(0, newSubtotal - newDiscountAmount);
+    const newTotal = Math.max(0, newSubtotal - newDiscountAmount) + (existingOrder?.delivery_fee || 0);
 
     // Strip temporary isNew flag from items before saving
     const cleanCart = cart.map(item => {
@@ -1564,12 +1680,12 @@ export default function PosPage() {
       return rest;
     });
 
-    const existingOrder = orderHistory.find(o => o.id === selectedInvoiceId);
     const updatedCustomer = existingOrder ? {
       ...existingOrder.customer,
       discount_type: discountType,
       discount_value: discountValue,
-      discount_amount: newDiscountAmount
+      discount_amount: newDiscountAmount,
+      delivery_fee: existingOrder.delivery_fee
     } : undefined;
 
     // 1. Update local state
@@ -1627,6 +1743,20 @@ export default function PosPage() {
       triggerToast("Ticket is empty", "warning");
       return;
     }
+    setShowOrderTypeModal(true);
+  };
+
+  const handleSelectOrderType = (selectedType: "Delivery" | "Take Away" | "3rd Party" | "Dine In") => {
+    setOrderType(
+      selectedType === "Delivery"
+        ? "Direct"
+        : selectedType === "Take Away"
+        ? "POS"
+        : selectedType === "3rd Party"
+        ? "3rd Party"
+        : "Dine In"
+    );
+    setShowOrderTypeModal(false);
     setShowCustomerModal(true);
     setCustomerPhone("");
     setCustomerName("");
@@ -1672,26 +1802,19 @@ export default function PosPage() {
       });
 
     // 3. Create new order in "Preparing" status
-    const currentBizDateStr = getBusinessDateStr(new Date());
-    const todaysValidOrders = orderHistory.filter(o => 
-      getBusinessDateStr(o.timestamp) === currentBizDateStr && 
-      o.status !== "Ignored" && 
-      o.id.startsWith("INV-")
-    );
-    
-    let nextSeq = 1;
-    if (todaysValidOrders.length > 0) {
-      const seqs = todaysValidOrders
-        .map(o => {
-          const parts = o.id.split("-");
-          return parts.length === 3 ? parseInt(parts[2], 10) : 0;
-        })
-        .filter(Boolean);
-      if (seqs.length > 0) {
-        nextSeq = Math.max(...seqs) + 1;
-      }
-    }
-    const newInvoiceId = `INV-${currentBizDateStr}-${String(nextSeq).padStart(3, "0")}`;
+    const newInvoiceId = getNextInvoiceNumber(orderHistory);
+
+    // If there is an old voided order with this exact ID, remove it locally and from DB to reuse sequence
+    const cleanHistory = orderHistory.filter(o => o.id !== newInvoiceId);
+    Promise.resolve(
+      supabase
+        .from("orders")
+        .delete()
+        .eq("id", newInvoiceId)
+    ).catch(e => console.error("Error deleting old reused invoice:", e));
+
+    const finalDeliveryFee = orderType === "Direct" ? (deliveryFee || 0) : 0;
+    const finalTotal = Math.max(0, subtotal - discountAmount) + finalDeliveryFee;
 
     const newOrder: Order = {
       id: newInvoiceId,
@@ -1699,19 +1822,21 @@ export default function PosPage() {
       items: cart,
       subtotal,
       tax,
-      total,
+      delivery_fee: finalDeliveryFee,
+      total: finalTotal,
       status: "Preparing",
-      type: orderType,
+      type: orderType === "POS" ? "Take Away" : orderType === "Direct" ? "Delivery" : orderType,
       customer: {
         ...newCustomer,
         discount_type: discountType,
         discount_value: discountValue,
-        discount_amount: discountAmount
+        discount_amount: discountAmount,
+        delivery_fee: finalDeliveryFee
       }
     };
 
     // 4. Update local order logs state and localStorage
-    const updatedHistory = [newOrder, ...orderHistory];
+    const updatedHistory = [newOrder, ...cleanHistory];
     setOrderHistory(updatedHistory);
     localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
 
@@ -1755,9 +1880,9 @@ export default function PosPage() {
   const addToCart = (item: MenuItem) => {
     if (selectedInvoiceId) {
       const loadedOrder = orderHistory.find(o => o.id === selectedInvoiceId);
-      const isEditable = loadedOrder && (loadedOrder.status === "Preparing" || loadedOrder.status === "Ready");
-      if (!isEditable) {
-        triggerToast("This settled order cannot be modified", "warning");
+      if (!loadedOrder) return;
+      if (loadedOrder.status === "Voided" || loadedOrder.status === "Ignored") {
+        triggerToast("This order is voided or ignored and cannot be modified", "warning");
         return;
       }
     }
@@ -1775,16 +1900,32 @@ export default function PosPage() {
   const updateQuantity = (itemId: number, delta: number) => {
     if (selectedInvoiceId) {
       const loadedOrder = orderHistory.find(o => o.id === selectedInvoiceId);
-      const isEditable = loadedOrder && (loadedOrder.status === "Preparing" || loadedOrder.status === "Ready");
-      if (!isEditable) {
-        triggerToast("This settled order cannot be modified", "warning");
+      if (!loadedOrder) return;
+      if (loadedOrder.status === "Voided" || loadedOrder.status === "Ignored") {
+        triggerToast("This order is voided or ignored and cannot be modified", "warning");
         return;
+      }
+      
+      const withinHour = isWithinOneHour(loadedOrder.timestamp);
+      if (delta < 0) {
+        const cartItem = cart.find(ci => ci.menuItem.id === itemId);
+        const isPersistedItem = cartItem && !cartItem.isNew;
+        if (!withinHour && isPersistedItem && !isAdminUnlocked) {
+          setPendingRemoveItemId(itemId);
+          setPendingRemoveDelta(delta);
+          setPinPurpose("prices");
+          setShowPinModal(true);
+          setPinInput("");
+          setPinError("");
+          triggerToast("PIN required to decrease item in order older than 1 hour", "warning");
+          return;
+        }
       }
     }
     setCart(prev => {
       const isEditingLoadedOrder = !!selectedInvoiceId;
       return prev.map(item => {
-        if (item.menuItem.id === itemId && (!isEditingLoadedOrder || item.isNew === true)) {
+        if (item.menuItem.id === itemId && (!isEditingLoadedOrder || item.isNew === true || isAdminUnlocked || (selectedInvoiceId && isWithinOneHour(orderHistory.find(o => o.id === selectedInvoiceId)?.timestamp || "")))) {
           const newQty = item.quantity + delta;
           return newQty > 0 ? { ...item, quantity: newQty } : null;
         }
@@ -1796,21 +1937,55 @@ export default function PosPage() {
   const removeFromCart = (itemId: number) => {
     if (selectedInvoiceId) {
       const loadedOrder = orderHistory.find(o => o.id === selectedInvoiceId);
-      const isEditable = loadedOrder && (loadedOrder.status === "Preparing" || loadedOrder.status === "Ready");
-      if (!isEditable) {
-        triggerToast("This settled order cannot be modified", "warning");
+      if (!loadedOrder) return;
+      if (loadedOrder.status === "Voided" || loadedOrder.status === "Ignored") {
+        triggerToast("This order is voided or ignored and cannot be modified", "warning");
+        return;
+      }
+      
+      const withinHour = isWithinOneHour(loadedOrder.timestamp);
+      const cartItem = cart.find(ci => ci.menuItem.id === itemId);
+      const isPersistedItem = cartItem && !cartItem.isNew;
+      if (!withinHour && isPersistedItem && !isAdminUnlocked) {
+        setPendingRemoveItemId(itemId);
+        setPendingRemoveDelta(null);
+        setPinPurpose("prices");
+        setShowPinModal(true);
+        setPinInput("");
+        setPinError("");
+        triggerToast("PIN required to remove item from order older than 1 hour", "warning");
         return;
       }
     }
     setCart(prev => {
-      const isEditingLoadedOrder = !!selectedInvoiceId;
-      return prev.filter(item => !(item.menuItem.id === itemId && (!isEditingLoadedOrder || item.isNew === true)));
+      return prev.filter(item => item.menuItem.id !== itemId);
     });
     triggerToast("Item removed from ticket", "info");
   };
 
+  const toggleFreeItem = (itemId: number, isNew?: boolean) => {
+    if (selectedInvoiceId) {
+      const loadedOrder = orderHistory.find(o => o.id === selectedInvoiceId);
+      if (!loadedOrder) return;
+      if (loadedOrder.status === "Voided" || loadedOrder.status === "Ignored") {
+        triggerToast("This order is voided or ignored and cannot be modified", "warning");
+        return;
+      }
+    }
+    setCart(prev => prev.map(ci => {
+      const itemMatch = ci.menuItem.id === itemId && (!selectedInvoiceId || ci.isNew === isNew);
+      if (itemMatch) {
+        const nextState = !ci.isFree;
+        const title = ci.menuItem ? ci.menuItem.title : (ci as any).title || "Item";
+        triggerToast(nextState ? `Marked ${title} as FREE ITEM` : `Removed free status from ${title}`, nextState ? "success" : "info");
+        return { ...ci, isFree: nextState };
+      }
+      return ci;
+    }));
+  };
+
   // Financial Calculations
-  const subtotal = cart.reduce((sum, item) => sum + (item.menuItem.price + (item.addonPrice || 0)) * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + getItemUnitPrice(item) * item.quantity, 0);
   const tax = 0;
   const discountAmount = useMemo(() => {
     if (discountType === "percentage") {
@@ -2030,6 +2205,38 @@ export default function PosPage() {
             setShowPinModal(false);
             if (pinPurpose === "menu") {
               setActiveSidebar("menu_management");
+            } else {
+              // Execute pending actions
+              if (voidTargetOrderId) {
+                updateOrderStatus(voidTargetOrderId, "Voided");
+                setVoidTargetOrderId(null);
+              }
+              if (pendingRemoveItemId !== null) {
+                const itemId = pendingRemoveItemId;
+                const delta = pendingRemoveDelta;
+                setPendingRemoveItemId(null);
+                setPendingRemoveDelta(null);
+                if (delta !== null) {
+                  // Decrease quantity
+                  setCart(prev => prev.map(item => {
+                    if (item.menuItem.id === itemId) {
+                      const newQty = item.quantity + delta;
+                      return newQty > 0 ? { ...item, quantity: newQty } : null;
+                    }
+                    return item;
+                  }).filter(Boolean) as CartItem[]);
+                } else {
+                  // Remove item
+                  setCart(prev => prev.filter(item => item.menuItem.id !== itemId));
+                  triggerToast("Item removed from ticket", "info");
+                }
+              }
+              if (isUpdateOrderPending) {
+                setIsUpdateOrderPending(false);
+                setTimeout(() => {
+                  handleUpdateOrder();
+                }, 100);
+              }
             }
             triggerToast("Admin unlocked", "success");
           } else {
@@ -2137,11 +2344,23 @@ export default function PosPage() {
   };
 
   // Filters
-  const filteredMenuItems = menuItems.filter(item => {
-    const matchesCategory = activeCategory === "All Categories" || item.category === activeCategory;
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredMenuItems = useMemo(() => {
+    const CATEGORY_ORDER = ["Fried Rice", "Chopsuey", "Kottu", "Pasta", "Ultimate Bites", "Beverages"];
+    return menuItems
+      .filter(item => {
+        const matchesCategory = activeCategory === "All Categories" || item.category === activeCategory;
+        const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+      })
+      .sort((a, b) => {
+        const catA = CATEGORY_ORDER.indexOf(a.category);
+        const catB = CATEGORY_ORDER.indexOf(b.category);
+        const orderA = catA === -1 ? 99 : catA;
+        const orderB = catB === -1 ? 99 : catB;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.id - b.id;
+      });
+  }, [menuItems, activeCategory, searchQuery]);
 
   return (
     <div className="h-screen w-screen bg-[#060B18] p-3 text-[#F2F4F8] font-sans antialiased selection:bg-[#F26F21] selection:text-white flex overflow-hidden relative">
@@ -2436,6 +2655,17 @@ export default function PosPage() {
                   </button>
                 );
               })}
+
+              {/* Quick Custom Order Button */}
+              <button
+                type="button"
+                onClick={handleOpenCustomItemModal}
+                className="flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 font-bold text-[11px] uppercase tracking-wider rounded-xl px-4 py-2.5 transition-all duration-200 bg-[#FF6B35]/15 hover:bg-[#FF6B35]/25 text-[#FF6B35] border border-[#FF6B35]/35 hover:scale-105 active:scale-95 shadow-sm"
+                title="Add Custom / Special Order Product"
+              >
+                <Plus size={14} className="text-[#FF6B35]" />
+                <span>Custom Order</span>
+              </button>
             </div>
           )}
 
@@ -2451,6 +2681,66 @@ export default function PosPage() {
                     onAdd={addToCart}
                   />
                 ))}
+
+                {/* Custom / Special Order Card (Always as the last product card) */}
+                <div
+                  onClick={handleOpenCustomItemModal}
+                  className="group relative bg-[#0E1628] border-2 border-dashed border-[#F26F21]/60 hover:border-[#F26F21] rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all duration-250 hover:shadow-[0_8px_32px_rgba(242,111,33,0.2)] select-none"
+                  style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
+                >
+                  <div className="h-[3px] w-full shrink-0 bg-[#F26F21]" />
+                  <div
+                    className="relative w-full flex flex-col items-center justify-center shrink-0 gap-2"
+                    style={{ height: "120px", background: "rgba(242,111,33,0.08)" }}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#F26F21]/20 border border-[#F26F21]/40 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <Plus size={24} className="text-[#F26F21]" />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#F26F21]">
+                      Special Order
+                    </span>
+
+                    <div
+                      className="absolute top-2.5 left-2.5 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md"
+                      style={{ background: "#F26F21", color: "white" }}
+                    >
+                      CUSTOM
+                    </div>
+                    <div
+                      className="absolute bottom-2.5 left-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
+                      style={{ background: "rgba(0,0,0,0.6)", color: "rgba(255,255,255,0.75)", backdropFilter: "blur(4px)" }}
+                    >
+                      Open Item
+                    </div>
+                    <div
+                      className="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 scale-75 group-hover:scale-100 bg-[#F26F21]"
+                    >
+                      <Plus size={15} className="text-white" />
+                    </div>
+                  </div>
+
+                  <div className="px-4 py-4 flex flex-col gap-3 flex-1 justify-between">
+                    <div>
+                      <h3 className="font-bold text-[12px] text-slate-100 leading-snug line-clamp-2 group-hover:text-[#F26F21] transition-colors duration-150">
+                        + Custom Item / Special Order
+                      </h3>
+                      <p className="text-[10px] text-slate-400 font-medium mt-1 leading-tight">
+                        Add any first-time dish or special order with custom name &amp; price
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-[#1E2D4E]">
+                      <span className="text-[13px] font-black font-mono text-[#F26F21]">
+                        Set Price
+                      </span>
+                      <span
+                        className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-[#F26F21]/15 text-[#F26F21]"
+                      >
+                        Custom
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -2730,28 +3020,12 @@ export default function PosPage() {
                                       Load
                                     </button>
                                     {order.status !== "Voided" && order.status !== "Ignored" && (
-                                      <>
-                                        <button
-                                          onClick={() => updateOrderStatus(order.id, "Voided")}
-                                          className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all cursor-pointer border border-red-500/20 active:scale-95"
-                                        >
-                                          Void
-                                        </button>
-                                        {(() => {
-                                          const orderAgeMs = Date.now() - new Date(order.timestamp).getTime();
-                                          const canIgnore = orderAgeMs <= 3 * 60 * 1000;
-                                          if (!canIgnore) return null;
-                                          return (
-                                            <button
-                                              onClick={() => updateOrderStatus(order.id, "Ignored")}
-                                              className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg border border-slate-600 bg-[#25324D] text-slate-400 hover:bg-slate-700 hover:text-white active:scale-95 cursor-pointer transition-all"
-                                              title="Ignore order"
-                                            >
-                                              Ignore
-                                            </button>
-                                          );
-                                        })()}
-                                      </>
+                                      <button
+                                        onClick={() => handleVoidOrder(order.id)}
+                                        className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all cursor-pointer border border-red-500/20 active:scale-95"
+                                      >
+                                        Void
+                                      </button>
                                     )}
                                   </div>
                                 </td>
@@ -3427,7 +3701,7 @@ export default function PosPage() {
                             {/* POS Orders */}
                             <div className="space-y-1">
                               <div className="flex justify-between text-[10px] font-bold">
-                                <span className="text-amber-400">POS Orders</span>
+                                <span className="text-amber-400">Takeaway</span>
                                 <span className="text-slate-300">{posOrders} ({pctPOS}%)</span>
                               </div>
                               <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
@@ -3437,7 +3711,7 @@ export default function PosPage() {
                             {/* Direct Orders */}
                             <div className="space-y-1">
                               <div className="flex justify-between text-[10px] font-bold">
-                                <span className="text-blue-400">Direct Orders (Website)</span>
+                                <span className="text-blue-400">Delivery</span>
                                 <span className="text-slate-300">{directOrders} ({pctDir}%)</span>
                               </div>
                               <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
@@ -3447,7 +3721,7 @@ export default function PosPage() {
                             {/* 3rd Party */}
                             <div className="space-y-1">
                               <div className="flex justify-between text-[10px] font-bold">
-                                <span className="text-purple-400">3rd Party (Uber / PickMe)</span>
+                                <span className="text-purple-400">3rd Party</span>
                                 <span className="text-slate-300">{thirdParty} ({pct3P}%)</span>
                               </div>
                               <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
@@ -3461,9 +3735,23 @@ export default function PosPage() {
 
                     {/* Top Selling Items Card */}
                     <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-4">
-                      <h4 className="font-bold text-xs uppercase tracking-wider text-slate-300">Top Selling Dishes</h4>
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-slate-300">Top Selling Dishes</h4>
+                        <button
+                          type="button"
+                          onClick={() => setShowAllTopSelling(!showAllTopSelling)}
+                          className="text-[9px] font-bold text-[#FF6B35] hover:text-[#F26F21] transition-colors cursor-pointer bg-transparent border-none p-0 uppercase tracking-wider"
+                        >
+                          {showAllTopSelling ? "Show Less" : "View All"}
+                        </button>
+                      </div>
                       {(() => {
                         const counts: Record<string, number> = {};
+                        // Initialize all menu items to 0 sales
+                        menuItems.forEach(item => {
+                          counts[item.title] = 0;
+                        });
+
                         orderHistory
                           .filter(o => o.status !== "Voided" && o.status !== "Ignored")
                           .forEach(order => {
@@ -3473,18 +3761,17 @@ export default function PosPage() {
                             });
                           });
 
-                        const sorted = Object.entries(counts)
-                          .sort((a, b) => b[1] - a[1])
-                          .slice(0, 4);
+                        const allSorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+                        const sorted = showAllTopSelling ? allSorted : allSorted.slice(0, 4);
 
-                        const maxQty = sorted[0]?.[1] || 1;
+                        const maxQty = allSorted[0]?.[1] || 1;
 
                         if (sorted.length === 0) {
                           return <div className="text-[10px] text-slate-500 py-3 text-center">No sales items logged yet.</div>;
                         }
 
                         return (
-                          <div className="space-y-3">
+                          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1" style={{ scrollbarWidth: "none" }}>
                             {sorted.map(([title, qty], index) => {
                               const pct = Math.round((qty / maxQty) * 100);
                               return (
@@ -3569,8 +3856,8 @@ export default function PosPage() {
               </div>
 
               {/* Today's Invoice Number Switcher Dropdown */}
-              <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold bg-[#090D1A] p-2 rounded-lg border border-[#1A2640]">
-                <span>INVOICE NO:</span>
+              <label className="flex items-center justify-between text-[11px] text-slate-400 font-black bg-[#090D1A] py-3.5 px-4 rounded-xl border border-[#1E2D4E] hover:border-[#F26F21]/40 transition-all cursor-pointer w-full shadow-sm hover:scale-[1.01] active:scale-[0.99]">
+                <span className="tracking-wider uppercase text-slate-500 text-[10px]">INVOICE NO:</span>
                 <select
                   value={selectedInvoiceId || "active"}
                   onChange={(e) => {
@@ -3581,7 +3868,7 @@ export default function PosPage() {
                       setSelectedInvoiceId(val);
                     }
                   }}
-                  className="font-mono text-[#F26F21] font-black bg-transparent outline-none cursor-pointer border-none p-0 focus:ring-0 text-[10px] text-right"
+                  className="font-mono text-[#F26F21] font-black bg-transparent outline-none cursor-pointer border-none p-0 focus:ring-0 text-[11px] text-right"
                   style={{ direction: "rtl" }}
                 >
                   <option value="active" style={{ background: "#080E1C", color: "#F26F21", direction: "ltr" }}>
@@ -3593,47 +3880,9 @@ export default function PosPage() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </label>
 
-              {/* High-Attention Segmented Tab Bar (Hidden when viewing settled invoice) */}
-              {!selectedInvoiceId ? (
-                <div className="flex bg-[#0E1628] p-1 rounded-xl border border-[#1E2D4E] w-full">
-                  <button
-                    type="button"
-                    onClick={() => setOrderType("POS")}
-                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
-                      orderType === "POS" 
-                        ? "bg-[#F26F21] text-white shadow-lg shadow-orange-500/20" 
-                        : "text-[#4B5E82] hover:text-slate-300"
-                    }`}
-                  >
-                    POS
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOrderType("Direct")}
-                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
-                      orderType === "Direct" 
-                        ? "bg-[#3B82F6] text-white shadow-lg shadow-blue-500/20" 
-                        : "text-[#4B5E82] hover:text-slate-300"
-                    }`}
-                  >
-                    Direct
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOrderType("3rd Party")}
-                    className={`flex-1 text-[9px] font-black uppercase tracking-widest py-2 rounded-lg transition-all cursor-pointer text-center ${
-                      orderType === "3rd Party" 
-                        ? "bg-[#8B5CF6] text-white shadow-lg shadow-purple-500/20" 
-                        : "text-[#4B5E82] hover:text-slate-300"
-                    }`}
-                    title="3rd Party Delivery (Uber Eats & PickMe Food)"
-                  >
-                    3rd Party
-                  </button>
-                </div>
-              ) : (
+              {selectedInvoiceId && (
                 <div className="text-[9px] font-bold text-center uppercase tracking-wider text-slate-500">
                   Fulfillment: <span style={{
                     color: (selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "#F59E0B" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "#A855F7" : "#3B82F6"
@@ -3647,7 +3896,8 @@ export default function PosPage() {
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {displayedItems.map((item) => {
-                const isItemEditable = !selectedInvoiceId || item.isNew === true;
+                const loadedOrder = selectedInvoiceId ? orderHistory.find(o => o.id === selectedInvoiceId) : null;
+                const isItemEditable = !loadedOrder || (loadedOrder.status !== "Voided" && loadedOrder.status !== "Ignored");
                 return (
                   <div
                     key={`${item.menuItem.id}-${item.isNew ? "new" : "old"}`}
@@ -3656,13 +3906,26 @@ export default function PosPage() {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="font-semibold text-[11px] leading-snug" style={{ color: "#CBD5E1" }}>{item.menuItem ? item.menuItem.title : (item as any).title}</h4>
+                        <h4 className="font-semibold text-[11px] leading-snug" style={{ color: "#CBD5E1" }}>
+                          {item.menuItem ? item.menuItem.title : (item as any).title}
+                        </h4>
                         {selectedInvoiceId && item.isNew && (
                           <span className="text-[7px] font-black uppercase bg-emerald-500/10 text-emerald-400 px-1 py-0.5 rounded border border-emerald-500/25">New</span>
                         )}
+                        {item.isFree && (
+                          <span className="text-[7px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            🎁 FREE ITEM
+                          </span>
+                        )}
+                        {item.customItemPrice !== undefined && !item.isFree && (
+                          <span className="text-[7px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded">
+                            Price: Rs {item.customItemPrice.toLocaleString()}
+                          </span>
+                        )}
                       </div>
-                      {/* Comment & Addon display */}
-                      {commentEditingItemId !== item.menuItem.id && (item.comment || item.addonPrice !== undefined && item.addonPrice !== 0) && (
+
+                      {/* Comment, Addon & Free Display */}
+                      {commentEditingItemId !== item.menuItem.id && (item.comment || (item.addonPrice !== undefined && item.addonPrice !== 0) || item.isFree) && (
                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                           {item.comment && (
                             <span className="text-[9px] italic text-amber-400">💬 {item.comment}</span>
@@ -3674,66 +3937,108 @@ export default function PosPage() {
                           ) : null}
                         </div>
                       )}
-                      {/* Inline comment & addon editor */}
+
+                      {/* Inline comment, addon & price editor */}
                       {commentEditingItemId === item.menuItem.id && (
-                        <div className="flex flex-col gap-1.5 mt-1.5 p-2 rounded-lg border border-[#FBBF24]/30 bg-[#0A101F]/80">
-                          <div className="flex gap-1.5">
+                        <div className="flex flex-col gap-1.5 mt-1.5 p-2.5 rounded-xl border border-[#FBBF24]/30 bg-[#0A101F]/90">
+                          <div className="flex flex-col gap-1.5">
                             <input
                               id={`desc-edit-${item.menuItem.id}`}
                               type="text"
-                              placeholder="Addon (e.g. Extra Rice)"
+                              placeholder="Addon Note (e.g. Extra Cheese)"
                               defaultValue={item.comment || ""}
-                              className="flex-1 text-[10px] px-2 py-1 rounded border outline-none bg-[#0E1628] border-slate-700 text-slate-200"
+                              className="w-full text-[10px] px-2 py-1.5 rounded-lg border outline-none bg-[#0E1628] border-slate-700 text-slate-200"
                               onKeyDown={(e) => {
                                 if (e.key === "Escape") setCommentEditingItemId(null);
                               }}
                             />
-                            <input
-                              id={`price-edit-${item.menuItem.id}`}
-                              type="number"
-                              placeholder="Price"
-                              defaultValue={item.addonPrice || ""}
-                              className="w-16 text-[10px] px-2 py-1 rounded border outline-none bg-[#0E1628] border-slate-700 text-slate-200"
-                              onKeyDown={(e) => {
-                                if (e.key === "Escape") setCommentEditingItemId(null);
-                              }}
-                            />
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <div>
+                                <label className="text-[8px] font-bold text-slate-400 block mb-0.5">Addon Price (+/- LKR)</label>
+                                <input
+                                  id={`price-edit-${item.menuItem.id}`}
+                                  type="number"
+                                  placeholder="0"
+                                  defaultValue={item.addonPrice || ""}
+                                  className="w-full text-[10px] px-2 py-1 rounded-lg border outline-none bg-[#0E1628] border-slate-700 text-slate-200 font-mono"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[8px] font-bold text-slate-400 block mb-0.5">Unit Price / Override (LKR)</label>
+                                <input
+                                  id={`unit-price-edit-${item.menuItem.id}`}
+                                  type="number"
+                                  placeholder={String(item.menuItem?.price || "")}
+                                  defaultValue={item.customItemPrice !== undefined ? item.customItemPrice : ""}
+                                  className="w-full text-[10px] px-2 py-1 rounded-lg border outline-none bg-[#0E1628] border-slate-700 text-slate-200 font-mono"
+                                />
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex justify-end gap-1.5">
+
+                          <div className="flex justify-between items-center pt-1 border-t border-[#1A2640]">
                             <button
                               type="button"
-                              onClick={() => setCommentEditingItemId(null)}
-                              className="text-[9px] font-black uppercase text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-white/5 cursor-pointer bg-transparent border-none"
+                              onClick={() => toggleFreeItem(item.menuItem.id, item.isNew)}
+                              className={`text-[8px] font-black uppercase px-2 py-1 rounded-lg transition-colors cursor-pointer border ${
+                                item.isFree
+                                  ? "bg-emerald-500 text-white border-emerald-400"
+                                  : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                              }`}
                             >
-                              Cancel
+                              {item.isFree ? "✓ 100% Free Item" : "🎁 Make 100% Free"}
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const descInput = document.getElementById(`desc-edit-${item.menuItem.id}`) as HTMLInputElement;
-                                const priceInput = document.getElementById(`price-edit-${item.menuItem.id}`) as HTMLInputElement;
-                                const descVal = descInput?.value.trim();
-                                const priceVal = parseFloat(priceInput?.value) || 0;
-                                
-                                setCart(prev => prev.map(ci => 
-                                  ci.menuItem.id === item.menuItem.id && ci.isNew === item.isNew 
-                                    ? { ...ci, comment: descVal || undefined, addonPrice: priceVal || undefined } 
-                                    : ci
-                                ));
-                                setCommentEditingItemId(null);
-                              }}
-                              className="text-[9px] font-black uppercase text-white bg-[#FBBF24] hover:bg-[#D97706] px-2.5 py-1 rounded cursor-pointer border-none"
-                            >
-                              Save Addon
-                            </button>
+
+                            <div className="flex gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setCommentEditingItemId(null)}
+                                className="text-[9px] font-black uppercase text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-white/5 cursor-pointer bg-transparent border-none"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const descInput = document.getElementById(`desc-edit-${item.menuItem.id}`) as HTMLInputElement;
+                                  const priceInput = document.getElementById(`price-edit-${item.menuItem.id}`) as HTMLInputElement;
+                                  const unitPriceInput = document.getElementById(`unit-price-edit-${item.menuItem.id}`) as HTMLInputElement;
+
+                                  const descVal = descInput?.value.trim();
+                                  const priceVal = parseFloat(priceInput?.value) || 0;
+                                  const unitPriceRaw = unitPriceInput?.value.trim();
+                                  const unitPriceVal = unitPriceRaw !== "" && !isNaN(parseFloat(unitPriceRaw)) ? parseFloat(unitPriceRaw) : undefined;
+                                  
+                                  setCart(prev => prev.map(ci => 
+                                    ci.menuItem.id === item.menuItem.id && ci.isNew === item.isNew 
+                                      ? { 
+                                          ...ci, 
+                                          comment: descVal || undefined, 
+                                          addonPrice: priceVal || undefined,
+                                          customItemPrice: unitPriceVal
+                                        } 
+                                      : ci
+                                  ));
+                                  setCommentEditingItemId(null);
+                                }}
+                                className="text-[9px] font-black uppercase text-white bg-[#F26F21] hover:bg-[#e05c0d] px-2.5 py-1 rounded-lg cursor-pointer border-none"
+                              >
+                                Save Changes
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
+
                       <p className="text-[10px] mt-0.5 font-mono" style={{ color: "#4B5E82" }}>
-                        {item.quantity} × Rs {(item.menuItem.price + (item.addonPrice || 0)).toLocaleString()}
+                        {item.quantity} × {item.isFree ? (
+                          <span className="line-through opacity-60">Rs {(item.menuItem?.price || 0).toLocaleString()} → Rs 0</span>
+                        ) : (
+                          `Rs ${getItemUnitPrice(item).toLocaleString()}`
+                        )}
                       </p>
-                      <p className="text-[10px] font-bold font-mono mt-0.5" style={{ color: "#F26F21" }}>
-                        Rs {(item.quantity * (item.menuItem.price + (item.addonPrice || 0))).toLocaleString()}
+                      <p className="text-[10px] font-bold font-mono mt-0.5" style={{ color: item.isFree ? "#10B981" : "#F26F21" }}>
+                        {item.isFree ? "Rs 0 (FREE)" : `Rs ${(item.quantity * getItemUnitPrice(item)).toLocaleString()}`}
                       </p>
                     </div>
 
@@ -3741,10 +4046,24 @@ export default function PosPage() {
                       <div className="flex items-center gap-1">
                         {isItemEditable && (
                           <button
+                            type="button"
+                            onClick={() => toggleFreeItem(item.menuItem.id, item.isNew)}
+                            className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded transition-all cursor-pointer border ${
+                              item.isFree
+                                ? "bg-emerald-500 text-white border-emerald-400"
+                                : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/30"
+                            }`}
+                            title={item.isFree ? "Remove free status" : "Make this item 100% Free"}
+                          >
+                            {item.isFree ? "FREE" : "🎁 Free"}
+                          </button>
+                        )}
+                        {isItemEditable && (
+                          <button
                             onClick={() => setCommentEditingItemId(commentEditingItemId === item.menuItem.id ? null : item.menuItem.id)}
                             className="cursor-pointer p-0.5 rounded transition-colors"
-                            style={{ color: item.comment ? "#FBBF24" : "#2A3A5A" }}
-                            title="Add comment"
+                            style={{ color: item.comment || item.customItemPrice !== undefined ? "#FBBF24" : "#2A3A5A" }}
+                            title="Edit comment & item price"
                           >
                             <MessageCircle size={12} className="hover:text-amber-400 transition-colors" />
                           </button>
@@ -3955,17 +4274,19 @@ export default function PosPage() {
               <p className="text-[10px] text-slate-500">Order: {latestOrder.id}</p>
               <div className="mt-1.5 px-2 py-0.5 rounded text-[8px] font-bold tracking-wider inline-block"
                 style={{
-                  background: (latestOrder.type === "Take Away" || latestOrder.type === "POS") ? "rgba(245,158,11,0.1)" : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") ? "rgba(168,85,247,0.1)" : "rgba(59,130,246,0.1)",
-                  color: (latestOrder.type === "Take Away" || latestOrder.type === "POS") ? "#D97706" : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") ? "#7C3AED" : "#2563EB",
-                  border: `1px solid ${(latestOrder.type === "Take Away" || latestOrder.type === "POS") ? "rgba(245,158,11,0.2)" : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") ? "rgba(168,85,247,0.2)" : "rgba(59,130,246,0.2)"}`
+                  background: latestOrder.type === "Dine In" ? "rgba(16,185,129,0.1)" : (latestOrder.type === "Take Away" || latestOrder.type === "POS") ? "rgba(245,158,11,0.1)" : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") ? "rgba(168,85,247,0.1)" : "rgba(59,130,246,0.1)",
+                  color: latestOrder.type === "Dine In" ? "#10B981" : (latestOrder.type === "Take Away" || latestOrder.type === "POS") ? "#D97706" : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") ? "#7C3AED" : "#2563EB",
+                  border: `1px solid ${latestOrder.type === "Dine In" ? "rgba(16,185,129,0.2)" : (latestOrder.type === "Take Away" || latestOrder.type === "POS") ? "rgba(245,158,11,0.2)" : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") ? "rgba(168,85,247,0.2)" : "rgba(59,130,246,0.2)"}`
                 }}
               >
                 {latestOrder.type.toUpperCase()} — {
-                  (latestOrder.type === "Take Away" || latestOrder.type === "POS") 
-                    ? "POS ORDER" 
-                    : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") 
-                      ? "3RD PARTY (UBER & PICK ME)" 
-                      : "DIRECT ORDER (WEBSITE)"
+                  latestOrder.type === "Dine In"
+                    ? "DINE IN ORDER"
+                    : (latestOrder.type === "Take Away" || latestOrder.type === "POS") 
+                      ? "POS ORDER" 
+                      : (latestOrder.type === "Pick Up" || latestOrder.type === "3rd Party") 
+                        ? "3RD PARTY (UBER & PICK ME)" 
+                        : "DIRECT ORDER (WEBSITE)"
                 }
               </div>
               <p className="text-[8px] font-bold text-orange-600 uppercase mt-1">Status: {latestOrder.status}</p>
@@ -3992,12 +4313,31 @@ export default function PosPage() {
               {latestOrder.items.map((item, idx) => {
                 const itemId = item.menuItem ? item.menuItem.id : (item as any).id;
                 const itemTitle = item.menuItem ? item.menuItem.title : (item as any).title;
-                const itemPrice = item.menuItem ? item.menuItem.price : (item as any).price;
+                const unitPrice = getItemUnitPrice(item);
+                const itemTotal = unitPrice * item.quantity;
+                const basePrice = (item.menuItem ? item.menuItem.price : (item as any).price || 0) + (item.addonPrice || 0);
+                const isDiscounted = item.isFree || (item.customItemPrice !== undefined && item.customItemPrice !== (item.menuItem ? item.menuItem.price : (item as any).price || 0));
+                
                 return (
                   <div key={`${itemId}-${idx}`}>
-                    <div className="flex justify-between">
-                      <span>{itemTitle} x{item.quantity}</span>
-                      <span>Rs {((itemPrice || 0) * item.quantity).toLocaleString()}</span>
+                    <div className="flex justify-between items-start">
+                      <div className="flex flex-col">
+                        <span>{itemTitle} x{item.quantity}</span>
+                        {item.isFree && <span className="text-[8px] font-bold text-emerald-600 uppercase tracking-wider">100% Free Item</span>}
+                        {item.customItemPrice !== undefined && !item.isFree && (
+                          <span className="text-[8px] font-bold text-blue-600 uppercase tracking-wider">Discount Override</span>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end">
+                        {isDiscounted ? (
+                          <>
+                            <span className="line-through text-[9px] text-slate-400 font-mono">Rs {(basePrice * item.quantity).toLocaleString()}</span>
+                            <span className="font-bold text-slate-900 font-mono">Rs {itemTotal.toLocaleString()}</span>
+                          </>
+                        ) : (
+                          <span className="font-mono">Rs {itemTotal.toLocaleString()}</span>
+                        )}
+                      </div>
                     </div>
                     {item.comment && (
                       <p className="text-[8px] text-amber-600 italic ml-2">💬 {item.comment}</p>
@@ -4006,6 +4346,12 @@ export default function PosPage() {
                 );
               })}
             </div>
+            {latestOrder.delivery_fee !== undefined && latestOrder.delivery_fee > 0 && (
+              <div className="flex justify-between text-slate-600 text-xs pt-1 border-t border-dashed border-slate-200">
+                <span>Delivery Charge</span>
+                <span>Rs {latestOrder.delivery_fee.toLocaleString()}</span>
+              </div>
+            )}
             <div className="flex justify-between font-black text-sm">
               <span>Total Amount</span>
               <span>Rs {latestOrder.total.toLocaleString()}</span>
@@ -4070,6 +4416,84 @@ export default function PosPage() {
         </div>
       )}
 
+      {/* Order Type Selection Modal (Pops up when clicking Place Order) */}
+      {showOrderTypeModal && (
+        <div className="fixed inset-0 bg-[#050814]/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[#111625] border border-[#222E4E] rounded-3xl p-6 max-w-sm w-full text-center space-y-5 shadow-2xl relative">
+            <button
+              onClick={() => setShowOrderTypeModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="space-y-1">
+              <span className="text-[9px] font-black uppercase text-[#FF6B35] tracking-widest block">Order Fulfillment</span>
+              <h3 className="text-sm font-black uppercase tracking-wider text-white">Delivery or Takeaway?</h3>
+              <p className="text-[10px] text-slate-400">Select order type to proceed to customer details</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => handleSelectOrderType("Delivery")}
+                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#090D1A] hover:bg-[#3B82F6]/10 border border-[#222E4E] hover:border-[#3B82F6]/50 transition-all cursor-pointer text-left group active:scale-95"
+              >
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform shrink-0">
+                  <Truck size={20} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">Direct Delivery</h4>
+                  <p className="text-[9px] text-slate-400 mt-0.5">Home delivery with customer address</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectOrderType("Take Away")}
+                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#090D1A] hover:bg-[#F26F21]/10 border border-[#222E4E] hover:border-[#F26F21]/50 transition-all cursor-pointer text-left group active:scale-95"
+              >
+                <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform shrink-0">
+                  <ShoppingBag size={20} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors">Takeaway / Pickup</h4>
+                  <p className="text-[9px] text-slate-400 mt-0.5">Customer collects order at counter</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectOrderType("3rd Party")}
+                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#090D1A] hover:bg-[#8B5CF6]/10 border border-[#222E4E] hover:border-[#8B5CF6]/50 transition-all cursor-pointer text-left group active:scale-95"
+              >
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform shrink-0">
+                  <Smartphone size={20} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">3rd Party Delivery</h4>
+                  <p className="text-[9px] text-slate-400 mt-0.5">Uber Eats / PickMe Food rider pickup</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectOrderType("Dine In")}
+                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#090D1A] hover:bg-emerald-500/10 border border-[#222E4E] hover:border-emerald-500/50 transition-all cursor-pointer text-left group active:scale-95"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform shrink-0">
+                  <Utensils size={20} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">Dine In</h4>
+                  <p className="text-[9px] text-slate-400 mt-0.5">Customer eats inside the restaurant</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Customer Details Modal */}
       {showCustomerModal && (
         <div className="fixed inset-0 bg-[#050814]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -4084,6 +4508,54 @@ export default function PosPage() {
             <div className="text-center space-y-1.5">
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-100">Customer Details</h3>
               <p className="text-[10px] text-slate-500">Search customer by phone or create new profile</p>
+            </div>
+
+            {/* Order Type Pill Selector inside Customer Modal */}
+            <div className="flex bg-[#090D1A] p-1 rounded-xl border border-[#222E4E] gap-0.5">
+              <button
+                type="button"
+                onClick={() => setOrderType("Direct")}
+                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
+                  orderType === "Direct"
+                    ? "bg-[#3B82F6] text-white shadow" 
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                🚚 Delivery
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrderType("POS")}
+                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
+                  orderType === "POS"
+                    ? "bg-[#F26F21] text-white shadow" 
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                🛍️ Takeaway
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrderType("3rd Party")}
+                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
+                  orderType === "3rd Party" 
+                    ? "bg-[#8B5CF6] text-white shadow" 
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                🛵 3rd Party
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrderType("Dine In")}
+                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
+                  orderType === "Dine In" 
+                    ? "bg-emerald-500 text-white shadow" 
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                🍽️ Dine In
+              </button>
             </div>
 
             <div className="space-y-4">
@@ -4340,6 +4812,28 @@ export default function PosPage() {
                 </div>
               </div>
             </div>
+
+            {/* Delivery Charges Input Box (Shown when orderType is Direct/Delivery) */}
+            {orderType === "Direct" && (
+              <div className="space-y-1.5 bg-[#090D1A] p-3.5 rounded-2xl border border-blue-500/30">
+                <div className="flex justify-between items-center">
+                  <label className="block text-[9px] font-black text-blue-400 uppercase tracking-widest">
+                    🚚 Delivery Charges (LKR)
+                  </label>
+                  <span className="text-[9px] font-bold text-slate-300 font-mono">
+                    {deliveryFee > 0 ? `+ LKR ${deliveryFee.toLocaleString()}` : "Free Delivery"}
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0 (Free Delivery)"
+                  value={deliveryFee || ""}
+                  onChange={(e) => setDeliveryFee(Math.max(0, parseFloat(e.target.value) || 0))}
+                  className="w-full bg-[#111625] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-blue-500 font-mono"
+                />
+              </div>
+            )}
 
             <div className="pt-2 flex gap-2">
               <button
@@ -4668,6 +5162,111 @@ export default function PosPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Custom / Special Order Product Modal */}
+      {showCustomItemModal && (
+        <div className="fixed inset-0 bg-[#050814]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-[#111625] border border-[#222E4E] rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl relative" style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
+            <button
+              type="button"
+              onClick={() => setShowCustomItemModal(false)}
+              className="absolute top-5 right-5 text-slate-500 hover:text-white cursor-pointer transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-[#F26F21]/20 border border-[#F26F21]/40 flex items-center justify-center shrink-0">
+                <Plus size={20} className="text-[#F26F21]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-slate-100">Add Custom Product</h3>
+                <p className="text-[10px] text-slate-500">First-time item, special request or open price product</p>
+              </div>
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); handleAddCustomItemToCart(); }} className="space-y-4 pt-1">
+              <div className="space-y-1.5">
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  Product Name / Title <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Special Seafood Kottu / First Time Dish"
+                  value={customTitle}
+                  onChange={(e) => setCustomTitle(e.target.value)}
+                  className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-[#F26F21]"
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    Price (LKR) <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 1500"
+                    value={customPrice}
+                    onChange={(e) => setCustomPrice(e.target.value)}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white font-mono outline-none focus:border-[#F26F21]"
+                    min="0"
+                    step="any"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    Category
+                  </label>
+                  <select
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#F26F21] cursor-pointer"
+                  >
+                    <option value="Special Orders">Special Orders</option>
+                    {CATEGORIES.filter(c => c !== "All Categories").map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  Portion / Size
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Large Portion, Regular, Portion 1"
+                  value={customPortion}
+                  onChange={(e) => setCustomPortion(e.target.value)}
+                  className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-[#F26F21]"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#F26F21] hover:bg-[#e05c0d] text-white font-bold py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Plus size={15} /> Add to Ticket
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCustomItemModal(false)}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-700 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

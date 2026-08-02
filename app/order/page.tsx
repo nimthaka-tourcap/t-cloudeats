@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 
 /* ── Types ─────────────────────────────────────────────────────── */
@@ -171,12 +171,24 @@ export default function OrderPage() {
   const totalItems = cart.reduce((s, ci) => s + ci.quantity, 0);
   const subtotal = cart.reduce((s, ci) => s + Number(ci.item.price) * ci.quantity, 0);
 
-  const filteredItems = menuItems.filter((item) => {
-    const matchSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
-    const matchCat = selectedCategory === "All" || item.category === selectedCategory;
-    return matchSearch && matchCat;
-  });
+  const filteredItems = useMemo(() => {
+    const CATEGORY_ORDER = ["Fried Rice", "Chopsuey", "Kottu", "Pasta", "Ultimate Bites", "Beverages"];
+    return menuItems
+      .filter((item) => {
+        const matchSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+        const matchCat = selectedCategory === "All" || item.category === selectedCategory;
+        return matchSearch && matchCat;
+      })
+      .sort((a, b) => {
+        const catA = CATEGORY_ORDER.indexOf(a.category);
+        const catB = CATEGORY_ORDER.indexOf(b.category);
+        const orderA = catA === -1 ? 99 : catA;
+        const orderB = catB === -1 ? 99 : catB;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.id - b.id;
+      });
+  }, [menuItems, searchQuery, selectedCategory]);
 
   const handleCheckout = () => {
     if (!cart.length) return;

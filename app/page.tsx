@@ -365,14 +365,14 @@ export default function Home() {
 
       {/* ─────────── HERO SECTION ─────────────────────────────────── */}
       <section className="relative overflow-hidden" style={{ background: "#F26F21" }}>
-        {/* Background wave shape (Moved down on mobile to prevent overlapping product cards) */}
-        <div className="absolute bottom-0 left-0 right-0 h-14 sm:h-24 lg:h-32 bg-[#F7F5F2] z-0" style={{ borderRadius: "50% 50% 0 0 / 10% 10% 0 0" }} />
+        {/* Background wave shape (Moved down to prevent overlapping delivery partner text and product cards) */}
+        <div className="absolute bottom-0 left-0 right-0 h-10 sm:h-16 lg:h-20 bg-[#F7F5F2] z-0" style={{ borderRadius: "50% 50% 0 0 / 10% 10% 0 0" }} />
 
         {/* Noise overlay */}
         <div className="absolute inset-0 z-0 opacity-[0.04]"
           style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E\")" }} />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-5 pt-3 sm:pt-10 pb-12 lg:pb-12 grid grid-cols-1 lg:grid-cols-2 gap-7 sm:gap-10 items-center">
+        <div className="relative z-10 max-w-6xl mx-auto px-5 pt-3 sm:pt-10 pb-16 sm:pb-24 lg:pb-28 grid grid-cols-1 lg:grid-cols-2 gap-7 sm:gap-10 items-center">
           {/* Left text */}
           <div className="text-white space-y-2.5 sm:space-y-5">
             <h1 className="text-4xl sm:text-6xl font-black text-white leading-[1.05] tracking-tight pt-0 sm:pt-0 mb-1.5 sm:mb-4 lowercase">
