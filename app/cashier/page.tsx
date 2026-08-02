@@ -34,7 +34,8 @@ import {
   EyeOff,
   Truck,
   Smartphone,
-  Utensils
+  Utensils,
+  Boxes
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -67,6 +68,20 @@ function getItemUnitPrice(item: CartItem): number {
   const basePrice = item.customItemPrice !== undefined ? item.customItemPrice : (item.menuItem ? item.menuItem.price : (item as any).price || 0);
   const totalUnitPrice = basePrice + (item.addonPrice || 0);
   return Math.max(0, totalUnitPrice);
+}
+
+interface InventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  sku: string;
+  unit: string;
+  parLevel: number;
+  quantity: number;
+  unitCost: number;
+  supplier: string;
+  expirationDate: string;
+  storageLocation: "Cooler" | "Freezer" | "Dry Shelf";
 }
 
 interface CustomerDetails {
@@ -613,7 +628,7 @@ function getBusinessDateStr(dateInput: Date | string = new Date()): string {
   const d = new Date(dateInput);
   const hours = d.getHours();
   const dateCopy = new Date(d);
-  if (hours < 2) {
+  if (hours < 14) {
     dateCopy.setDate(dateCopy.getDate() - 1);
   }
   const yy = String(dateCopy.getFullYear()).slice(-2);
@@ -738,12 +753,32 @@ export default function PosPage() {
     const dd = String(local.getDate()).padStart(2, "0");
     return `${yy}-${mm}-${dd}`;
   });
-  const [activeSidebar, setActiveSidebar] = useState<"new_order" | "order_history" | "menu_management" | "reports" | "settings">("new_order");
+  const [activeSidebar, setActiveSidebar] = useState<"new_order" | "order_history" | "menu_management" | "reports" | "settings" | "inventory">("new_order");
   const [activeCategory, setActiveCategory] = useState("All Categories");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderType, setOrderType] = useState<"POS" | "Direct" | "3rd Party" | "Dine In">("POS");
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [showInventoryModal, setShowInventoryModal] = useState(false);
+  const [editingInventoryItem, setEditingInventoryItem] = useState<InventoryItem | null>(null);
+  
+  // Inventory form fields
+  const [invName, setInvName] = useState("");
+  const [invCategory, setInvCategory] = useState("Produce");
+  const [invSku, setInvSku] = useState("");
+  const [invUnit, setInvUnit] = useState("lbs");
+  const [invParLevel, setInvParLevel] = useState(0);
+  const [invQuantity, setInvQuantity] = useState(0);
+  const [invUnitCost, setInvUnitCost] = useState(0);
+  const [invSupplier, setInvSupplier] = useState("");
+  const [invExpirationDate, setInvExpirationDate] = useState("");
+  const [invStorageLocation, setInvStorageLocation] = useState<"Cooler" | "Freezer" | "Dry Shelf">("Cooler");
+
+  // Inventory search & filter
+  const [invSearchQuery, setInvSearchQuery] = useState("");
+  const [invFilterLocation, setInvFilterLocation] = useState<"All" | "Cooler" | "Freezer" | "Dry Shelf">("All");
+  const [invFilterStockStatus, setInvFilterStockStatus] = useState<"All" | "Low Stock" | "Out of Stock" | "Normal">("All");
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [commentEditingItemId, setCommentEditingItemId] = useState<number | null>(null);
   const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
@@ -766,8 +801,96 @@ export default function PosPage() {
       };
     }
   }, []);
+
+  // Initialize and load inventory items
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("t-cloud-eats-inventory");
+      if (saved) {
+        try {
+          setInventoryItems(JSON.parse(saved));
+        } catch (e) {
+          console.error("Error parsing inventory items:", e);
+        }
+      } else {
+        const sampleInventory: InventoryItem[] = [
+          {
+            id: "INV-1",
+            name: "Cheese Block",
+            category: "Dairy",
+            sku: "INV-DAI-001",
+            unit: "lbs",
+            parLevel: 10,
+            quantity: 15,
+            unitCost: 1200,
+            supplier: "Richlife Dairy Ltd",
+            expirationDate: "2026-09-12",
+            storageLocation: "Cooler"
+          },
+          {
+            id: "INV-2",
+            name: "Kottu Roti Strips",
+            category: "Produce",
+            sku: "INV-DRY-001",
+            unit: "lbs",
+            parLevel: 50,
+            quantity: 80,
+            unitCost: 250,
+            supplier: "Prima Flour Bakery",
+            expirationDate: "2026-08-15",
+            storageLocation: "Dry Shelf"
+          },
+          {
+            id: "INV-3",
+            name: "Boneless Chicken Breast",
+            category: "Meat",
+            sku: "INV-MEA-001",
+            unit: "lbs",
+            parLevel: 30,
+            quantity: 45,
+            unitCost: 950,
+            supplier: "Keells Foods",
+            expirationDate: "2026-08-10",
+            storageLocation: "Freezer"
+          },
+          {
+            id: "INV-4",
+            name: "Penne Pasta",
+            category: "Dry Goods",
+            sku: "INV-DRY-002",
+            unit: "cases",
+            parLevel: 15,
+            quantity: 8,
+            unitCost: 2200,
+            supplier: "Barilla Importers",
+            expirationDate: "2027-02-28",
+            storageLocation: "Dry Shelf"
+          },
+          {
+            id: "INV-5",
+            name: "Chopped Leeks & Carrots",
+            category: "Produce",
+            sku: "INV-PRO-001",
+            unit: "lbs",
+            parLevel: 20,
+            quantity: 25,
+            unitCost: 180,
+            supplier: "Manning Market Vendor",
+            expirationDate: "2026-08-05",
+            storageLocation: "Cooler"
+          }
+        ];
+        setInventoryItems(sampleInventory);
+        localStorage.setItem("t-cloud-eats-inventory", JSON.stringify(sampleInventory));
+      }
+    }
+  }, []);
   
   // Customer CMS States
+  const saveInventory = (items: InventoryItem[]) => {
+    setInventoryItems(items);
+    localStorage.setItem("t-cloud-eats-inventory", JSON.stringify(items));
+  };
   const [customers, setCustomers] = useState<{ phone: string; name: string; address: string; birthday?: string | null; address_label?: string | null }[]>([]);
   const [showOrderTypeModal, setShowOrderTypeModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -2141,6 +2264,91 @@ export default function PosPage() {
     triggerToast("Tally unlocked for editing", "info");
   };
 
+  const handleOpenAddInventory = () => {
+    setEditingInventoryItem(null);
+    setInvName("");
+    setInvCategory("Produce");
+    setInvSku(`SKU-${Math.floor(100000 + Math.random() * 900000)}`);
+    setInvUnit("lbs");
+    setInvParLevel(0);
+    setInvQuantity(0);
+    setInvUnitCost(0);
+    setInvSupplier("");
+    setInvExpirationDate("");
+    setInvStorageLocation("Cooler");
+    setShowInventoryModal(true);
+  };
+
+  const handleOpenEditInventory = (item: InventoryItem) => {
+    setEditingInventoryItem(item);
+    setInvName(item.name);
+    setInvCategory(item.category);
+    setInvSku(item.sku);
+    setInvUnit(item.unit);
+    setInvParLevel(item.parLevel);
+    setInvQuantity(item.quantity);
+    setInvUnitCost(item.unitCost);
+    setInvSupplier(item.supplier);
+    setInvExpirationDate(item.expirationDate);
+    setInvStorageLocation(item.storageLocation);
+    setShowInventoryModal(true);
+  };
+
+  const handleSaveInventoryItem = () => {
+    if (!invName || !invSku || !invCategory) {
+      triggerToast("Please fill in Name, SKU, and Category", "warning");
+      return;
+    }
+
+    if (editingInventoryItem) {
+      const updated = inventoryItems.map(item => {
+        if (item.id === editingInventoryItem.id) {
+          return {
+            ...item,
+            name: invName,
+            category: invCategory,
+            sku: invSku,
+            unit: invUnit,
+            parLevel: Number(invParLevel),
+            quantity: Number(invQuantity),
+            unitCost: Number(invUnitCost),
+            supplier: invSupplier,
+            expirationDate: invExpirationDate,
+            storageLocation: invStorageLocation
+          };
+        }
+        return item;
+      });
+      saveInventory(updated);
+      triggerToast("Inventory item updated successfully", "success");
+    } else {
+      const newItem: InventoryItem = {
+        id: `INV-${Date.now()}`,
+        name: invName,
+        category: invCategory,
+        sku: invSku,
+        unit: invUnit,
+        parLevel: Number(invParLevel),
+        quantity: Number(invQuantity),
+        unitCost: Number(invUnitCost),
+        supplier: invSupplier,
+        expirationDate: invExpirationDate,
+        storageLocation: invStorageLocation
+      };
+      saveInventory([...inventoryItems, newItem]);
+      triggerToast("Inventory item added successfully", "success");
+    }
+    setShowInventoryModal(false);
+  };
+
+  const handleDeleteInventoryItem = (id: string) => {
+    if (confirm("Are you sure you want to delete this inventory item?")) {
+      const updated = inventoryItems.filter(item => item.id !== id);
+      saveInventory(updated);
+      triggerToast("Inventory item deleted", "success");
+    }
+  };
+
   const reportData = useMemo(() => {
     const groups: Record<string, { dateStr: string; orderCount: number; revenue: number }> = {};
     
@@ -2165,6 +2373,30 @@ export default function PosPage() {
     return Object.values(groups).sort((a, b) => b.dateStr.localeCompare(a.dateStr));
   }, [orderHistory]);
 
+  const filteredInventory = useMemo(() => {
+    return inventoryItems.filter(item => {
+      const query = invSearchQuery.toLowerCase();
+      const matchesSearch = 
+        item.name.toLowerCase().includes(query) ||
+        item.sku.toLowerCase().includes(query) ||
+        item.category.toLowerCase().includes(query) ||
+        item.supplier.toLowerCase().includes(query);
+
+      const matchesLocation = invFilterLocation === "All" || item.storageLocation === invFilterLocation;
+
+      let matchesStock = true;
+      if (invFilterStockStatus === "Low Stock") {
+        matchesStock = item.quantity <= item.parLevel && item.quantity > 0;
+      } else if (invFilterStockStatus === "Out of Stock") {
+        matchesStock = item.quantity === 0;
+      } else if (invFilterStockStatus === "Normal") {
+        matchesStock = item.quantity > item.parLevel;
+      }
+
+      return matchesSearch && matchesLocation && matchesStock;
+    });
+  }, [inventoryItems, invSearchQuery, invFilterLocation, invFilterStockStatus]);
+
   // Checkout Operations
   // Removed old handleCheckout function to use handlePlaceOrderClick and handleConfirmPlaceOrder
 
@@ -2179,7 +2411,7 @@ export default function PosPage() {
   };
 
   // Sidebar access check
-  const handleSidebarClick = (view: "new_order" | "order_history" | "menu_management" | "reports" | "settings") => {
+  const handleSidebarClick = (view: "new_order" | "order_history" | "menu_management" | "reports" | "settings" | "inventory") => {
     if (view === "menu_management") {
       if (isAdminUnlocked) {
         setActiveSidebar("menu_management");
@@ -2424,6 +2656,7 @@ export default function PosPage() {
                 { key: "new_order",       icon: <ShoppingBag size={19} />, label: "POS" },
                 { key: "order_history",   icon: <History size={19} />,     label: "Logs" },
                 { key: "menu_management", icon: <FolderKanban size={19} />, label: "Menu" },
+                { key: "inventory",       icon: <Boxes size={19} />,       label: "Stock" },
                 { key: "reports",         icon: <BarChart3 size={19} />,   label: "Reports" },
                 { key: "settings",        icon: <SettingsIcon size={19} />, label: "Conf" },
               ] as { key: typeof activeSidebar; icon: React.ReactNode; label: string }[]).map(({ key, icon, label }) => (
@@ -2470,6 +2703,7 @@ export default function PosPage() {
                 {activeSidebar === "new_order" && "POS Terminal"}
                 {activeSidebar === "order_history" && "Order Logs"}
                 {activeSidebar === "menu_management" && "Menu Database"}
+                {activeSidebar === "inventory" && "Kitchen Inventory"}
                 {activeSidebar === "reports" && "Kitchen Reports"}
                 {activeSidebar === "settings" && "Settings"}
               </h1>
@@ -2751,7 +2985,7 @@ export default function PosPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300 flex items-center gap-2">
                       <TrendingUp size={14} className="text-[#FF6B35]" />
-                      Shift Sales (2 PM - 2 AM)
+                      Shift Sales
                     </h3>
                     <div className="flex items-center gap-2">
                       <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Select Date:</span>
@@ -3213,6 +3447,189 @@ export default function PosPage() {
                   onEdit={setEditingItem}
                   onDelete={handleDeleteItem}
                 />
+              </div>
+            )}
+
+            {activeSidebar === "inventory" && (
+              <div className="space-y-6 overflow-y-auto pb-12 pr-1 max-h-full" style={{ scrollbarWidth: "thin" }}>
+                
+                {/* Stats row */}
+                {(() => {
+                  const totalValuation = inventoryItems.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
+                  const lowStockCount = inventoryItems.filter(item => item.quantity <= item.parLevel && item.quantity > 0).length;
+                  const outOfStockCount = inventoryItems.filter(item => item.quantity === 0).length;
+                  return (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-2xl flex flex-col gap-1">
+                        <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Total Products</span>
+                        <span className="text-lg font-black text-white font-mono">{inventoryItems.length}</span>
+                      </div>
+                      <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-2xl flex flex-col gap-1">
+                        <span className="text-[9px] font-black uppercase text-amber-500 tracking-wider">Low Stock Items</span>
+                        <span className="text-lg font-black text-amber-400 font-mono">{lowStockCount}</span>
+                      </div>
+                      <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-2xl flex flex-col gap-1">
+                        <span className="text-[9px] font-black uppercase text-red-500 tracking-wider">Out of Stock</span>
+                        <span className="text-lg font-black text-red-400 font-mono">{outOfStockCount}</span>
+                      </div>
+                      <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-2xl flex flex-col gap-1">
+                        <span className="text-[9px] font-black uppercase text-emerald-500 tracking-wider">Total Stock Value</span>
+                        <span className="text-lg font-black text-emerald-400 font-mono">Rs {totalValuation.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Filter and search row */}
+                <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex-1 relative max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={14} />
+                    <input
+                      type="text"
+                      placeholder="Search inventory name, SKU, category..."
+                      value={invSearchQuery}
+                      onChange={(e) => setInvSearchQuery(e.target.value)}
+                      className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-[#FF6B35]/60 transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-1.5 bg-[#090D1A] border border-[#222E4E] px-2.5 py-1.5 rounded-xl">
+                      <span className="text-[9px] font-black text-slate-500 uppercase">Storage:</span>
+                      <select
+                        value={invFilterLocation}
+                        onChange={(e) => setInvFilterLocation(e.target.value as any)}
+                        className="bg-transparent text-xs text-slate-300 font-bold outline-none cursor-pointer border-none p-0 focus:ring-0"
+                      >
+                        <option value="All" style={{ background: "#080E1C" }}>All Storage</option>
+                        <option value="Cooler" style={{ background: "#080E1C" }}>Cooler</option>
+                        <option value="Freezer" style={{ background: "#080E1C" }}>Freezer</option>
+                        <option value="Dry Shelf" style={{ background: "#080E1C" }}>Dry Shelf</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 bg-[#090D1A] border border-[#222E4E] px-2.5 py-1.5 rounded-xl">
+                      <span className="text-[9px] font-black text-slate-500 uppercase">Status:</span>
+                      <select
+                        value={invFilterStockStatus}
+                        onChange={(e) => setInvFilterStockStatus(e.target.value as any)}
+                        className="bg-transparent text-xs text-slate-300 font-bold outline-none cursor-pointer border-none p-0 focus:ring-0"
+                      >
+                        <option value="All" style={{ background: "#080E1C" }}>All Statuses</option>
+                        <option value="Normal" style={{ background: "#080E1C" }}>Normal Stock</option>
+                        <option value="Low Stock" style={{ background: "#080E1C" }}>Low Stock</option>
+                        <option value="Out of Stock" style={{ background: "#080E1C" }}>Out of Stock</option>
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={handleOpenAddInventory}
+                      className="bg-[#FF6B35] hover:bg-[#FF6B35]/90 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-lg shadow-[#FF6B35]/20"
+                    >
+                      <Plus size={14} />
+                      Add Item
+                    </button>
+                  </div>
+                </div>
+
+                {/* Inventory data table */}
+                <div className="bg-[#111625] border border-[#222E4E] rounded-2xl overflow-hidden shadow-xl">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-[#222E4E] text-[10px] uppercase tracking-wider text-slate-500 font-black" style={{ background: "#0B1122" }}>
+                          <th className="py-3.5 px-4">SKU / Item Name</th>
+                          <th className="py-3.5 px-4">Category</th>
+                          <th className="py-3.5 px-4">Location</th>
+                          <th className="py-3.5 px-4 text-center">Stock Level</th>
+                          <th className="py-3.5 px-4 text-right">Unit Cost</th>
+                          <th className="py-3.5 px-4 text-right">Value</th>
+                          <th className="py-3.5 px-4">Supplier</th>
+                          <th className="py-3.5 px-4">Expires</th>
+                          <th className="py-3.5 px-4 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#222E4E]">
+                        {filteredInventory.length === 0 ? (
+                          <tr>
+                            <td colSpan={9} className="py-10 text-center text-slate-500 font-bold">
+                              No inventory items found. Click "Add Item" to record stock.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredInventory.map(item => {
+                            const isOut = item.quantity === 0;
+                            const isLow = item.quantity <= item.parLevel && item.quantity > 0;
+                            const totalVal = item.quantity * item.unitCost;
+                            return (
+                              <tr key={item.id} className="hover:bg-[#1A233D]/30 transition-colors">
+                                <td className="py-3.5 px-4">
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-white leading-normal">{item.name}</span>
+                                    <span className="font-mono text-[9px] text-[#FF6B35] mt-0.5 font-bold">{item.sku}</span>
+                                  </div>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span className="bg-[#1D2C4E] text-[#93C5FD] border border-[#2B3F6C] font-semibold px-2 py-0.5 rounded text-[10px]">
+                                    {item.category}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span className={`font-bold ${
+                                    item.storageLocation === "Cooler" ? "text-cyan-400" :
+                                    item.storageLocation === "Freezer" ? "text-blue-400" :
+                                    "text-amber-400"
+                                  }`}>
+                                    {item.storageLocation}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-center">
+                                  <div className="flex flex-col items-center gap-1.5">
+                                    <span className={`font-black font-mono text-xs ${isOut ? "text-red-400" : isLow ? "text-amber-400" : "text-emerald-400"}`}>
+                                      {item.quantity} / {item.parLevel} <span className="text-[10px] text-slate-500 font-medium">{item.unit}</span>
+                                    </span>
+                                    {isOut ? (
+                                      <span className="bg-red-500/10 text-red-400 border border-red-500/20 font-bold px-1.5 py-0.2 rounded text-[8px] uppercase tracking-wider">Out of Stock</span>
+                                    ) : isLow ? (
+                                      <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold px-1.5 py-0.2 rounded text-[8px] uppercase tracking-wider">Low Stock</span>
+                                    ) : (
+                                      <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold px-1.5 py-0.2 rounded text-[8px] uppercase tracking-wider">In Stock</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-300">
+                                  Rs {item.unitCost.toLocaleString()}
+                                </td>
+                                <td className="py-3.5 px-4 text-right font-mono font-bold text-[#FF6B35]">
+                                  Rs {totalVal.toLocaleString()}
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-400 font-semibold">{item.supplier || "—"}</td>
+                                <td className="py-3.5 px-4 font-mono font-semibold text-slate-400">{item.expirationDate || "—"}</td>
+                                <td className="py-3.5 px-4 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => handleOpenEditInventory(item)}
+                                      className="text-blue-400 hover:text-blue-300 font-bold uppercase text-[9px] tracking-wider cursor-pointer transition-colors"
+                                    >
+                                      Edit
+                                    </button>
+                                    <span className="text-slate-700">|</span>
+                                    <button
+                                      onClick={() => handleDeleteInventoryItem(item.id)}
+                                      className="text-red-400 hover:text-red-300 font-bold uppercase text-[9px] tracking-wider cursor-pointer transition-colors"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -3691,10 +4108,12 @@ export default function PosPage() {
                         const posOrders = settled.filter(o => o.type === "Take Away" || o.type === "POS").length;
                         const thirdParty = settled.filter(o => o.type === "Pick Up" || o.type === "3rd Party").length;
                         const directOrders = settled.filter(o => o.type === "Delivery" || o.type === "Direct").length;
+                        const dineInOrders = settled.filter(o => o.type === "Dine In").length;
 
                         const pctPOS = Math.round((posOrders / totalO) * 100);
                         const pct3P = Math.round((thirdParty / totalO) * 100);
                         const pctDir = Math.round((directOrders / totalO) * 100);
+                        const pctDine = Math.round((dineInOrders / totalO) * 100);
 
                         return (
                           <div className="space-y-3.5">
@@ -3726,6 +4145,16 @@ export default function PosPage() {
                               </div>
                               <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
                                 <div className="bg-purple-400 h-full rounded-full transition-all duration-500" style={{ width: `${pct3P}%` }} />
+                              </div>
+                            </div>
+                            {/* Dine In */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] font-bold">
+                                <span className="text-emerald-400">Dine In</span>
+                                <span className="text-slate-300">{dineInOrders} ({pctDine}%)</span>
+                              </div>
+                              <div className="w-full bg-[#090D1A] h-2 rounded-full overflow-hidden border border-[#1A2640]">
+                                <div className="bg-emerald-400 h-full rounded-full transition-all duration-500" style={{ width: `${pctDine}%` }} />
                               </div>
                             </div>
                           </div>
@@ -4845,6 +5274,183 @@ export default function PosPage() {
               <button
                 onClick={() => setShowCustomerModal(false)}
                 className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inventory Item Form Modal */}
+      {showInventoryModal && (
+        <div className="fixed inset-0 bg-[#050814]/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[#111625] border border-[#222E4E] rounded-3xl p-6 max-w-md w-full space-y-6 shadow-2xl relative" style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
+            <button
+              onClick={() => setShowInventoryModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="text-center space-y-1">
+              <h3 className="text-sm font-black uppercase tracking-wider text-slate-100">
+                {editingInventoryItem ? "Edit Inventory Item" : "Add Inventory Item"}
+              </h3>
+              <p className="text-[10px] text-slate-500">Record and track kitchen stock levels</p>
+            </div>
+
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
+              {/* Item Name */}
+              <div className="space-y-1.5">
+                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Item Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Cheese Block"
+                  value={invName}
+                  onChange={(e) => setInvName(e.target.value)}
+                  className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                  required
+                />
+              </div>
+
+              {/* SKU & Category */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">SKU / Barcode</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. SKU-12345"
+                    value={invSku}
+                    onChange={(e) => setInvSku(e.target.value)}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Category</label>
+                  <select
+                    value={invCategory}
+                    onChange={(e) => setInvCategory(e.target.value)}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none cursor-pointer focus:border-[#FF6B35]/60"
+                  >
+                    <option value="Produce">Produce</option>
+                    <option value="Meat">Meat</option>
+                    <option value="Dairy">Dairy</option>
+                    <option value="Dry Goods">Dry Goods</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Packaging">Packaging</option>
+                    <option value="Spices">Spices</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Measurement & Stock */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1.5">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Unit</label>
+                  <select
+                    value={invUnit}
+                    onChange={(e) => setInvUnit(e.target.value)}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-2 py-3 text-xs text-white outline-none cursor-pointer focus:border-[#FF6B35]/60"
+                  >
+                    <option value="lbs">Pounds (lbs)</option>
+                    <option value="oz">Ounces (oz)</option>
+                    <option value="cases">Cases</option>
+                    <option value="liters">Liters</option>
+                    <option value="kg">Kilograms (kg)</option>
+                    <option value="units">Units</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Par Level</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Min Stock"
+                    value={invParLevel || ""}
+                    onChange={(e) => setInvParLevel(Number(e.target.value))}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60 font-mono"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Quantity</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Current Stock"
+                    value={invQuantity || ""}
+                    onChange={(e) => setInvQuantity(Number(e.target.value))}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60 font-mono"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Cost & Supplier */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Unit Cost (LKR)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Cost per unit"
+                    value={invUnitCost || ""}
+                    onChange={(e) => setInvUnitCost(Number(e.target.value))}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60 font-mono"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Supplier Name</label>
+                  <input
+                    type="text"
+                    placeholder="Supplier Co."
+                    value={invSupplier}
+                    onChange={(e) => setInvSupplier(e.target.value)}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                  />
+                </div>
+              </div>
+
+              {/* Expiration & Storage Location */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Expiration Date</label>
+                  <input
+                    type="date"
+                    value={invExpirationDate}
+                    onChange={(e) => setInvExpirationDate(e.target.value)}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60 cursor-pointer font-mono"
+                    style={{ colorScheme: "dark" }}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Storage Location</label>
+                  <select
+                    value={invStorageLocation}
+                    onChange={(e) => setInvStorageLocation(e.target.value as any)}
+                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none cursor-pointer focus:border-[#FF6B35]/60"
+                  >
+                    <option value="Cooler">Cooler</option>
+                    <option value="Freezer">Freezer</option>
+                    <option value="Dry Shelf">Dry Shelf</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                onClick={handleSaveInventoryItem}
+                className="flex-1 bg-[#FF6B35] hover:bg-[#F26F21] text-white font-bold py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider transition-colors active:scale-95"
+              >
+                Save Product
+              </button>
+              <button
+                onClick={() => setShowInventoryModal(false)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-700 active:scale-95"
               >
                 Cancel
               </button>
