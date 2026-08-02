@@ -802,94 +802,80 @@ export default function PosPage() {
     }
   }, []);
 
-  // Initialize and load inventory items
+  // Load inventory from Supabase (zb_inventory), fallback to localStorage
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("t-cloud-eats-inventory");
-      if (saved) {
-        try {
-          setInventoryItems(JSON.parse(saved));
-        } catch (e) {
-          console.error("Error parsing inventory items:", e);
+    const loadInventory = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("zb_inventory")
+          .select("*")
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const mapped: InventoryItem[] = data.map((row: any) => ({
+            id: row.id,
+            name: row.name,
+            category: row.category,
+            sku: row.sku,
+            unit: row.unit,
+            parLevel: Number(row.par_level),
+            quantity: Number(row.quantity),
+            unitCost: Number(row.unit_cost),
+            supplier: row.supplier || "",
+            expirationDate: row.expiration_date || "",
+            storageLocation: row.storage_location as "Cooler" | "Freezer" | "Dry Shelf"
+          }));
+          setInventoryItems(mapped);
+          localStorage.setItem("t-cloud-eats-inventory", JSON.stringify(mapped));
+          return;
         }
-      } else {
-        const sampleInventory: InventoryItem[] = [
-          {
-            id: "INV-1",
-            name: "Cheese Block",
-            category: "Dairy",
-            sku: "INV-DAI-001",
-            unit: "lbs",
-            parLevel: 10,
-            quantity: 15,
-            unitCost: 1200,
-            supplier: "Richlife Dairy Ltd",
-            expirationDate: "2026-09-12",
-            storageLocation: "Cooler"
-          },
-          {
-            id: "INV-2",
-            name: "Kottu Roti Strips",
-            category: "Produce",
-            sku: "INV-DRY-001",
-            unit: "lbs",
-            parLevel: 50,
-            quantity: 80,
-            unitCost: 250,
-            supplier: "Prima Flour Bakery",
-            expirationDate: "2026-08-15",
-            storageLocation: "Dry Shelf"
-          },
-          {
-            id: "INV-3",
-            name: "Boneless Chicken Breast",
-            category: "Meat",
-            sku: "INV-MEA-001",
-            unit: "lbs",
-            parLevel: 30,
-            quantity: 45,
-            unitCost: 950,
-            supplier: "Keells Foods",
-            expirationDate: "2026-08-10",
-            storageLocation: "Freezer"
-          },
-          {
-            id: "INV-4",
-            name: "Penne Pasta",
-            category: "Dry Goods",
-            sku: "INV-DRY-002",
-            unit: "cases",
-            parLevel: 15,
-            quantity: 8,
-            unitCost: 2200,
-            supplier: "Barilla Importers",
-            expirationDate: "2027-02-28",
-            storageLocation: "Dry Shelf"
-          },
-          {
-            id: "INV-5",
-            name: "Chopped Leeks & Carrots",
-            category: "Produce",
-            sku: "INV-PRO-001",
-            unit: "lbs",
-            parLevel: 20,
-            quantity: 25,
-            unitCost: 180,
-            supplier: "Manning Market Vendor",
-            expirationDate: "2026-08-05",
-            storageLocation: "Cooler"
-          }
-        ];
-        setInventoryItems(sampleInventory);
-        localStorage.setItem("t-cloud-eats-inventory", JSON.stringify(sampleInventory));
+      } catch (e) {
+        console.warn("Supabase inventory fetch failed, falling back to localStorage:", e);
       }
-    }
+
+      // localStorage fallback
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("t-cloud-eats-inventory");
+        if (saved) {
+          try {
+            setInventoryItems(JSON.parse(saved));
+          } catch (e) {
+            console.error("Error parsing inventory items:", e);
+          }
+        }
+      }
+    };
+    loadInventory();
   }, []);
-  
+
   // Customer CMS States
-  const saveInventory = (items: InventoryItem[]) => {
+  const saveInventory = (items: InventoryItem[], upsertItem?: InventoryItem) => {
     setInventoryItems(items);
     localStorage.setItem("t-cloud-eats-inventory", JSON.stringify(items));
+
+    // Persist to Supabase in background
+    if (upsertItem) {
+      supabase
+        .from("zb_inventory")
+        .upsert({
+          id: upsertItem.id,
+          name: upsertItem.name,
+          category: upsertItem.category,
+          sku: upsertItem.sku,
+          unit: upsertItem.unit,
+          par_level: upsertItem.parLevel,
+          quantity: upsertItem.quantity,
+          unit_cost: upsertItem.unitCost,
+          supplier: upsertItem.supplier,
+          expiration_date: upsertItem.expirationDate || null,
+          storage_location: upsertItem.storageLocation
+        }, { onConflict: "id" })
+        .then(({ error }) => {
+          if (error) console.error("Supabase inventory upsert error:", error);
+        });
+    }
   };
   const [customers, setCustomers] = useState<{ phone: string; name: string; address: string; birthday?: string | null; address_label?: string | null }[]>([]);
   const [showOrderTypeModal, setShowOrderTypeModal] = useState(false);
@@ -2301,25 +2287,23 @@ export default function PosPage() {
     }
 
     if (editingInventoryItem) {
-      const updated = inventoryItems.map(item => {
-        if (item.id === editingInventoryItem.id) {
-          return {
-            ...item,
-            name: invName,
-            category: invCategory,
-            sku: invSku,
-            unit: invUnit,
-            parLevel: Number(invParLevel),
-            quantity: Number(invQuantity),
-            unitCost: Number(invUnitCost),
-            supplier: invSupplier,
-            expirationDate: invExpirationDate,
-            storageLocation: invStorageLocation
-          };
-        }
-        return item;
-      });
-      saveInventory(updated);
+      const updatedItem: InventoryItem = {
+        ...editingInventoryItem,
+        name: invName,
+        category: invCategory,
+        sku: invSku,
+        unit: invUnit,
+        parLevel: Number(invParLevel),
+        quantity: Number(invQuantity),
+        unitCost: Number(invUnitCost),
+        supplier: invSupplier,
+        expirationDate: invExpirationDate,
+        storageLocation: invStorageLocation
+      };
+      const updated = inventoryItems.map(item =>
+        item.id === editingInventoryItem.id ? updatedItem : item
+      );
+      saveInventory(updated, updatedItem);
       triggerToast("Inventory item updated successfully", "success");
     } else {
       const newItem: InventoryItem = {
@@ -2335,7 +2319,7 @@ export default function PosPage() {
         expirationDate: invExpirationDate,
         storageLocation: invStorageLocation
       };
-      saveInventory([...inventoryItems, newItem]);
+      saveInventory([...inventoryItems, newItem], newItem);
       triggerToast("Inventory item added successfully", "success");
     }
     setShowInventoryModal(false);
@@ -2345,6 +2329,14 @@ export default function PosPage() {
     if (confirm("Are you sure you want to delete this inventory item?")) {
       const updated = inventoryItems.filter(item => item.id !== id);
       saveInventory(updated);
+      // Delete from Supabase in background
+      supabase
+        .from("zb_inventory")
+        .delete()
+        .eq("id", id)
+        .then(({ error }) => {
+          if (error) console.error("Supabase inventory delete error:", error);
+        });
       triggerToast("Inventory item deleted", "success");
     }
   };
