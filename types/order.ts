@@ -10,6 +10,7 @@ export interface Customer {
   phone: string;
   address?: string;
   notes?: string;
+  payment_status?: string;
 }
 
 export interface OrderItem {
@@ -33,7 +34,7 @@ export interface Order {
   total: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
-  paymentStatus: "PENDING" | "PAID" | "REFUNDED";
+  paymentStatus: "PENDING" | "PAID" | "REFUNDED" | "NOT_PAID" | "CREDIT";
   orderType: OrderType;
   tableNumber?: string;
   created_at: string;

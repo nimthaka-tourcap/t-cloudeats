@@ -95,6 +95,7 @@ interface CustomerDetails {
   discount_value?: number;
   discount_amount?: number;
   delivery_fee?: number;
+  payment_status?: "Paid" | "Not Paid" | string;
 }
 
 interface Order {
@@ -108,6 +109,7 @@ interface Order {
   status: "Preparing" | "Ready" | "Dispatched" | "Completed" | "Voided" | "Ignored";
   type: "POS" | "Direct" | "3rd Party" | "Take Away" | "Pick Up" | "Delivery" | "Dine In";
   customer?: CustomerDetails;
+  payment_status?: "Paid" | "Not Paid" | string;
 }
 
 type ToastType = "success" | "error" | "info" | "warning";
@@ -116,6 +118,45 @@ interface ToastMessage {
   id: string;
   message: string;
   type: ToastType;
+}
+
+type ReportDateFilter = "7_days" | "14_days" | "30_days" | "this_month" | "last_month" | "all_time";
+
+function isOrderInReportRange(timestamp: string, filter: ReportDateFilter): boolean {
+  if (filter === "all_time") return true;
+  const orderDate = new Date(timestamp);
+  if (isNaN(orderDate.getTime())) return true;
+
+  const now = new Date();
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  
+  if (filter === "7_days") {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0, 0);
+    return orderDate >= start && orderDate <= endOfToday;
+  }
+  
+  if (filter === "14_days") {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 13, 0, 0, 0, 0);
+    return orderDate >= start && orderDate <= endOfToday;
+  }
+  
+  if (filter === "30_days") {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29, 0, 0, 0, 0);
+    return orderDate >= start && orderDate <= endOfToday;
+  }
+  
+  if (filter === "this_month") {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    return orderDate >= start && orderDate <= endOfToday;
+  }
+  
+  if (filter === "last_month") {
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+    const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    return orderDate >= start && orderDate <= end;
+  }
+  
+  return true;
 }
 
 const CATEGORIES = ["All Categories", "Fried Rice", "Chopsuey", "Kottu", "Pasta", "Ultimate Bites", "Beverages"];
@@ -885,6 +926,7 @@ export default function PosPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [showNameSuggestions, setShowNameSuggestions] = useState(false);
 
   // Structured Address States (POS Checkout)
@@ -902,6 +944,13 @@ export default function PosPage() {
   const [pendingRemoveItemId, setPendingRemoveItemId] = useState<number | null>(null);
   const [pendingRemoveDelta, setPendingRemoveDelta] = useState<number | null>(null);
   const [isUpdateOrderPending, setIsUpdateOrderPending] = useState(false);
+  const [pendingDeleteCustomerPhone, setPendingDeleteCustomerPhone] = useState<string | null>(null);
+
+  // Financial Reports Filter State (Defaults to 'this_month')
+  const [reportFilter, setReportFilter] = useState<ReportDateFilter>("this_month");
+
+  // Unclosed Shift Tally Warning Modal State
+  const [showUnsettledTallyModal, setShowUnsettledTallyModal] = useState(false);
 
 
   // CMS Profiles Modal & Edit States
@@ -1083,8 +1132,8 @@ export default function PosPage() {
     }
   }, []);
 
-  const loadOrdersAndCMS = useCallback(async () => {
-    if (isLoadingRef.current) return;
+  const loadOrdersAndCMS = useCallback(async (forceRefresh = false) => {
+    if (isLoadingRef.current && !forceRefresh) return;
     isLoadingRef.current = true;
     setLoadingOrders(true);
 
@@ -1141,18 +1190,25 @@ export default function PosPage() {
                 return ageMs <= 2 * 24 * 60 * 60 * 1000;
               }
               return true;
-            });
+            }).map((o: any) => ({
+              ...o,
+              payment_status: o.payment_status || (o.customer && o.customer.payment_status) || "Paid"
+            }));
             setOrderHistory(filtered);
           }
         } else if (dbOrders) {
-          const formatted = dbOrders.map((o: any) => ({
-            ...o,
-            items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
-            customer: typeof o.customer === 'string' ? JSON.parse(o.customer) : o.customer,
-            subtotal: Number(o.subtotal),
-            tax: Number(o.tax),
-            total: Number(o.total)
-          }));
+          const formatted = dbOrders.map((o: any) => {
+            const parsedCust = typeof o.customer === 'string' ? JSON.parse(o.customer) : o.customer;
+            return {
+              ...o,
+              items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
+              customer: parsedCust,
+              subtotal: Number(o.subtotal),
+              tax: Number(o.tax),
+              total: Number(o.total),
+              payment_status: o.payment_status || (parsedCust && parsedCust.payment_status) || "Paid"
+            };
+          });
           const filtered = formatted.filter((o: any) => {
             if (o.status === "Ignored") {
               const ageMs = Date.now() - new Date(o.timestamp).getTime();
@@ -1438,7 +1494,7 @@ export default function PosPage() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
-  const [pinPurpose, setPinPurpose] = useState<"menu" | "prices">("menu");
+  const [pinPurpose, setPinPurpose] = useState<"menu" | "prices" | "delete_customer">("menu");
 
   const renderAdminMetric = (value: React.ReactNode, textClass: string = "") => {
     if (isAdminUnlocked) {
@@ -1604,6 +1660,52 @@ export default function PosPage() {
       });
   };
 
+  const handlePaymentStatusChange = async (orderId: string, newPaymentStatus: "Paid" | "Not Paid") => {
+    // 1. Optimistically update local state & localStorage
+    const target = orderHistory.find(o => o.id === orderId);
+    if (!target) return;
+
+    const updatedCustomer: CustomerDetails = {
+      ...(target.customer || { phone: "", name: "", address: "" }),
+      payment_status: newPaymentStatus
+    };
+
+    const updatedHistory = orderHistory.map(o => {
+      if (o.id === orderId) {
+        return {
+          ...o,
+          payment_status: newPaymentStatus,
+          customer: updatedCustomer
+        };
+      }
+      return o;
+    });
+
+    setOrderHistory(updatedHistory);
+    localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
+    slideCacheWindow();
+
+    // 2. Immediately push update to database (Supabase)
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({
+          customer: updatedCustomer
+        })
+        .eq("id", orderId);
+
+      if (error) {
+        console.error("Supabase payment status update error:", error);
+        triggerToast("Saved locally, database sync pending", "warning");
+      } else {
+        triggerToast(`Invoice ${orderId} payment set to ${newPaymentStatus}`, "success");
+      }
+    } catch (err) {
+      console.error("Network error updating payment status:", err);
+      triggerToast("Saved locally (offline mode active)", "warning");
+    }
+  };
+
   const handleVoidOrder = (orderId: string) => {
     if (isAdminUnlocked) {
       updateOrderStatus(orderId, "Voided");
@@ -1726,6 +1828,52 @@ export default function PosPage() {
         console.error("Network error updating customer:", e);
         triggerToast("Saved locally, offline mode active", "warning");
       });
+  };
+
+  const handleConfirmDeleteCustomer = async (phone: string) => {
+    const customerToDelete = customers.find(c => c.phone === phone);
+    const customerName = customerToDelete ? customerToDelete.name : phone;
+
+    // 1. Update local state & localStorage
+    const updatedCustomers = customers.filter(c => c.phone !== phone);
+    setCustomers(updatedCustomers);
+    localStorage.setItem("t-cloud-eats-cms", JSON.stringify(updatedCustomers));
+    if (editingCustomer && editingCustomer.phone === phone) {
+      setEditingCustomer(null);
+    }
+
+    // 2. Delete from Supabase in background
+    try {
+      const { error } = await supabase
+        .from("customers")
+        .delete()
+        .eq("phone", phone);
+
+      if (error) {
+        console.error("Supabase customer delete error:", error);
+        triggerToast("Deleted locally, database sync failed", "warning");
+      } else {
+        triggerToast(`Profile for ${customerName} deleted successfully`, "success");
+      }
+    } catch (err) {
+      console.error("Network error deleting customer:", err);
+      triggerToast("Deleted locally (offline mode active)", "warning");
+    }
+  };
+
+  const handleDeleteCustomerClick = (phone: string) => {
+    if (isAdminUnlocked) {
+      if (confirm("Are you sure you want to permanently delete this customer profile?")) {
+        handleConfirmDeleteCustomer(phone);
+      }
+    } else {
+      setPendingDeleteCustomerPhone(phone);
+      setPinPurpose("delete_customer");
+      setShowPinModal(true);
+      setPinInput("");
+      setPinError("");
+      triggerToast("Admin PIN required to delete customer profile", "warning");
+    }
   };
 
   const handlePhoneChange = (val: string, cc: string = customerCountryCode) => {
@@ -1852,6 +2000,11 @@ export default function PosPage() {
       triggerToast("Ticket is empty", "warning");
       return;
     }
+    if (unclosedPastShiftInfo) {
+      triggerToast(`Previous shift (${unclosedPastShiftInfo.formattedDate}) tally is unsettled!`, "error");
+      setShowUnsettledTallyModal(true);
+      return;
+    }
     setShowOrderTypeModal(true);
   };
 
@@ -1878,6 +2031,12 @@ export default function PosPage() {
   };
 
   const handleConfirmPlaceOrder = async () => {
+    if (unclosedPastShiftInfo) {
+      triggerToast(`Previous shift (${unclosedPastShiftInfo.formattedDate}) tally is unsettled!`, "error");
+      setShowUnsettledTallyModal(true);
+      return;
+    }
+
     if (!customerPhone || !customerName) {
       triggerToast("Please enter name and phone number", "warning");
       return;
@@ -1892,97 +2051,93 @@ export default function PosPage() {
     
     const newCustomer = { phone: formattedPhone, name: customerName, address: customerAddress };
 
-    // 1. Update local CMS state and localStorage
-    const updatedCms = [newCustomer, ...customers.filter(c => c.phone !== formattedPhone)];
-    setCustomers(updatedCms);
-    localStorage.setItem("t-cloud-eats-cms", JSON.stringify(updatedCms));
+    setIsPlacingOrder(true);
 
-    // 2. Upsert customer in Supabase (in background)
-    Promise.resolve(
-      supabase
-        .from("customers")
-        .upsert(newCustomer, { onConflict: "phone" })
-    )
-      .then(({ error: custErr }) => {
-        if (custErr) console.error("Supabase customer upsert error:", custErr);
-      })
-      .catch((e: any) => {
-        console.error("Network error saving customer:", e);
-      });
+    try {
+      // 1. Update local CMS state and localStorage
+      const updatedCms = [newCustomer, ...customers.filter(c => c.phone !== formattedPhone)];
+      setCustomers(updatedCms);
+      localStorage.setItem("t-cloud-eats-cms", JSON.stringify(updatedCms));
 
-    // 3. Create new order in "Preparing" status
-    const newInvoiceId = getNextInvoiceNumber(orderHistory);
+      // 2. Create new order in "Preparing" status
+      const newInvoiceId = getNextInvoiceNumber(orderHistory);
+      const cleanHistory = orderHistory.filter(o => o.id !== newInvoiceId);
 
-    // If there is an old voided order with this exact ID, remove it locally and from DB to reuse sequence
-    const cleanHistory = orderHistory.filter(o => o.id !== newInvoiceId);
-    Promise.resolve(
-      supabase
-        .from("orders")
-        .delete()
-        .eq("id", newInvoiceId)
-    ).catch(e => console.error("Error deleting old reused invoice:", e));
+      const finalDeliveryFee = orderType === "Direct" ? (deliveryFee || 0) : 0;
+      const finalTotal = Math.max(0, subtotal - discountAmount) + finalDeliveryFee;
 
-    const finalDeliveryFee = orderType === "Direct" ? (deliveryFee || 0) : 0;
-    const finalTotal = Math.max(0, subtotal - discountAmount) + finalDeliveryFee;
-
-    const newOrder: Order = {
-      id: newInvoiceId,
-      timestamp: new Date().toISOString(),
-      items: cart,
-      subtotal,
-      tax,
-      delivery_fee: finalDeliveryFee,
-      total: finalTotal,
-      status: "Preparing",
-      type: orderType === "POS" ? "Take Away" : orderType === "Direct" ? "Delivery" : orderType,
-      customer: {
+      const customerDetails: CustomerDetails = {
         ...newCustomer,
         discount_type: discountType,
         discount_value: discountValue,
         discount_amount: discountAmount,
-        delivery_fee: finalDeliveryFee
-      }
-    };
+        delivery_fee: finalDeliveryFee,
+        payment_status: "Paid" // Default to Paid
+      };
 
-    // 4. Update local order logs state and localStorage
-    const updatedHistory = [newOrder, ...cleanHistory];
-    setOrderHistory(updatedHistory);
-    localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
+      const newOrder: Order = {
+        id: newInvoiceId,
+        timestamp: new Date().toISOString(),
+        items: cart,
+        subtotal,
+        tax,
+        delivery_fee: finalDeliveryFee,
+        total: finalTotal,
+        status: "Preparing",
+        type: orderType === "POS" ? "Take Away" : orderType === "Direct" ? "Delivery" : orderType,
+        payment_status: "Paid",
+        customer: customerDetails
+      };
 
-    // 5. Insert order into Supabase (in background)
-    Promise.resolve(
-      supabase
-        .from("orders")
-        .insert({
-          id: newInvoiceId,
-          timestamp: newOrder.timestamp,
-          items: newOrder.items,
-          subtotal: newOrder.subtotal,
-          tax: newOrder.tax,
-          total: newOrder.total,
-          status: newOrder.status,
-          type: newOrder.type,
-          customer: newOrder.customer
-        })
-    )
-      .then(({ error: orderErr }) => {
-        if (orderErr) {
-          console.error("Supabase order insertion error:", orderErr);
-          triggerToast("Saved locally, database insert failed", "warning");
+      // 3. Update local order logs state and localStorage immediately
+      const updatedHistory = [newOrder, ...cleanHistory];
+      setOrderHistory(updatedHistory);
+      localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
+
+      // 4. Immediately push customer and order to Supabase
+      try {
+        const [custRes, orderRes] = await Promise.all([
+          supabase
+            .from("customers")
+            .upsert(newCustomer, { onConflict: "phone" }),
+          supabase
+            .from("orders")
+            .upsert({
+              id: newInvoiceId,
+              timestamp: newOrder.timestamp,
+              items: newOrder.items,
+              subtotal: newOrder.subtotal,
+              tax: newOrder.tax,
+              total: newOrder.total,
+              status: newOrder.status,
+              type: newOrder.type,
+              customer: newOrder.customer
+            }, { onConflict: "id" })
+        ]);
+
+        if (orderRes.error) {
+          console.error("Supabase order upsert error:", orderRes.error);
+          triggerToast("Saved locally, cloud sync pending", "warning");
         } else {
-          triggerToast("Order placed & sent to kitchen", "success");
+          triggerToast("Order placed & synced with database!", "success");
         }
-      })
-      .catch((e: any) => {
-        console.error("Network error saving order:", e);
-        triggerToast("Saved locally, offline mode active", "warning");
-      });
+      } catch (dbErr) {
+        console.error("Network error saving order to DB:", dbErr);
+        triggerToast("Saved locally (offline mode active)", "warning");
+      }
 
-    slideCacheWindow();
-    setCart([]);
-    setDiscountType("percentage");
-    setDiscountValue(0);
-    setShowCustomerModal(false);
+      // 5. Silent in-memory background refresh (Ctrl+R effect without page reload)
+      slideCacheWindow();
+      setCart([]);
+      setDiscountType("percentage");
+      setDiscountValue(0);
+      setShowCustomerModal(false);
+      
+      // Trigger background re-validation from DB
+      loadOrdersAndCMS(true);
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   // Cart Functions
@@ -2160,7 +2315,63 @@ export default function PosPage() {
   const [newExpenseAmt, setNewExpenseAmt] = useState<string>("");
   const [tallySubmitted, setTallySubmitted] = useState<boolean>(false);
 
-  // Load shift tally when date changes
+  // Automatic Credit (Unpaid) Orders detection for selectedLogBizDateStr
+  const todaysCreditOrders = useMemo(() => {
+    return todaysOrders.filter(o => o.payment_status === "Not Paid" || o.customer?.payment_status === "Not Paid");
+  }, [todaysOrders]);
+
+  const todaysCreditAmount = useMemo(() => {
+    return todaysCreditOrders.reduce((sum, o) => sum + o.total, 0);
+  }, [todaysCreditOrders]);
+
+  // Settlement baseline date (All dates up to baseline are settled by default; rule enforces from now on)
+  const settlementBaselineDate = useMemo(() => {
+    if (typeof window === "undefined") return currentBizDate;
+    let saved = localStorage.getItem("t-cloud-eats-settlement-baseline");
+    if (!saved) {
+      saved = currentBizDate;
+      localStorage.setItem("t-cloud-eats-settlement-baseline", saved);
+    }
+    return saved;
+  }, [currentBizDate]);
+
+  // Check if the most recent past business day with orders has an unsettled tally
+  const unclosedPastShiftInfo = useMemo(() => {
+    // Only check past dates that started from the settlement baseline onwards
+    const pastBizDates = Array.from(
+      new Set(
+        orderHistory
+          .filter(o => o.status !== "Voided" && o.status !== "Ignored")
+          .map(o => getBusinessDateStr(o.timestamp))
+          .filter(d => d < currentBizDate && d >= settlementBaselineDate)
+      )
+    ).sort();
+
+    if (pastBizDates.length === 0) return null;
+
+    // Check only the most recent past business day that had orders
+    const lastPastDate = pastBizDates[pastBizDates.length - 1];
+
+    try {
+      const allTalliesStr = localStorage.getItem("t-cloud-eats-shift-tallies");
+      if (allTalliesStr) {
+        const allTallies = JSON.parse(allTalliesStr);
+        if (allTallies[lastPastDate]?.submitted === true) {
+          return null; // Past day is closed & balanced!
+        }
+      }
+    } catch (e) {
+      console.error("Error reading tallies for past date check", e);
+    }
+
+    const formattedPastDate = `20${lastPastDate.slice(0, 2)}-${lastPastDate.slice(2, 4)}-${lastPastDate.slice(4, 6)}`;
+    return {
+      bizDateStr: lastPastDate,
+      formattedDate: formattedPastDate
+    };
+  }, [orderHistory, currentBizDate, settlementBaselineDate, tallySubmitted]);
+
+  // Load shift tally when date changes (and auto-settle historical dates)
   useEffect(() => {
     try {
       const allTalliesStr = localStorage.getItem("t-cloud-eats-shift-tallies");
@@ -2172,7 +2383,7 @@ export default function PosPage() {
           setBankTransfer(dayTally.bankTransfer ?? 0);
           setActualCash(dayTally.actualCash ?? 0);
           setOperationalExpenses(dayTally.expenses ?? []);
-          setTallySubmitted(dayTally.submitted ?? false);
+          setTallySubmitted(dayTally.submitted ?? (selectedLogBizDateStr < currentBizDate));
           return;
         }
       }
@@ -2184,8 +2395,9 @@ export default function PosPage() {
     setBankTransfer(0);
     setActualCash(0);
     setOperationalExpenses([]);
-    setTallySubmitted(false);
-  }, [selectedLogBizDateStr]);
+    // Historical dates before today are considered settled by default
+    setTallySubmitted(selectedLogBizDateStr < currentBizDate);
+  }, [selectedLogBizDateStr, currentBizDate]);
 
   // Helper to save shift tally
   const saveShiftTally = (
@@ -2341,13 +2553,17 @@ export default function PosPage() {
     }
   };
 
+  const filteredReportOrders = useMemo(() => {
+    return orderHistory.filter(order => {
+      if (order.status === "Voided" || order.status === "Ignored") return false;
+      return isOrderInReportRange(order.timestamp, reportFilter);
+    });
+  }, [orderHistory, reportFilter]);
+
   const reportData = useMemo(() => {
     const groups: Record<string, { dateStr: string; orderCount: number; revenue: number }> = {};
     
-    orderHistory.forEach(order => {
-      // Exclude voided/ignored orders from metrics
-      if (order.status === "Voided" || order.status === "Ignored") return;
-      
+    filteredReportOrders.forEach(order => {
       const bizDate = getBusinessDateStr(order.timestamp);
       const formattedDate = `20${bizDate.slice(0, 2)}-${bizDate.slice(2, 4)}-${bizDate.slice(4, 6)}`;
       
@@ -2363,7 +2579,7 @@ export default function PosPage() {
     });
 
     return Object.values(groups).sort((a, b) => b.dateStr.localeCompare(a.dateStr));
-  }, [orderHistory]);
+  }, [filteredReportOrders]);
 
   const filteredInventory = useMemo(() => {
     return inventoryItems.filter(item => {
@@ -2429,6 +2645,12 @@ export default function PosPage() {
             setShowPinModal(false);
             if (pinPurpose === "menu") {
               setActiveSidebar("menu_management");
+            } else if (pinPurpose === "delete_customer") {
+              if (pendingDeleteCustomerPhone) {
+                const phoneToDelete = pendingDeleteCustomerPhone;
+                setPendingDeleteCustomerPhone(null);
+                handleConfirmDeleteCustomer(phoneToDelete);
+              }
             } else {
               // Execute pending actions
               if (voidTargetOrderId) {
@@ -2899,7 +3121,36 @@ export default function PosPage() {
           <div className="flex-1 overflow-y-auto p-6">
             
             {activeSidebar === "new_order" && (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(185px,1fr))] gap-4 pb-16">
+              <div className="space-y-4 pb-16">
+                {/* Unsettled Previous Shift Alert Banner */}
+                {unclosedPastShiftInfo && (
+                  <div className="bg-gradient-to-r from-amber-950/70 via-[#191406] to-amber-950/70 border border-amber-500/50 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+                    <div className="flex items-center gap-3 text-amber-200">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+                        <AlertTriangle size={18} className="text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-wider text-amber-300">Previous Shift Tally Unsettled</p>
+                        <p className="text-[10px] text-amber-200/80">
+                          Shift on <strong className="font-mono text-amber-300">{unclosedPastShiftInfo.formattedDate}</strong> is not locked. Please settle yesterday&apos;s tally before taking new orders.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedLogDate(unclosedPastShiftInfo.formattedDate);
+                        setActiveSidebar("reports");
+                      }}
+                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-xl uppercase tracking-wider text-[10px] cursor-pointer shrink-0 transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                    >
+                      <span>Settle Shift Tally</span>
+                      <span>→</span>
+                    </button>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(185px,1fr))] gap-4">
                 {filteredMenuItems.map(item => (
                   <MinimalMenuCard
                     key={item.id}
@@ -2968,7 +3219,8 @@ export default function PosPage() {
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
             {activeSidebar === "order_history" && (
               <div className="space-y-6">
@@ -3041,6 +3293,7 @@ export default function PosPage() {
                             <th className="px-4 py-3">Customer</th>
                             <th className="px-4 py-3">Type</th>
                             <th className="px-4 py-3">Status</th>
+                            <th className="px-4 py-3">Payment</th>
                             <th className="px-4 py-3">Items</th>
                             <th className="px-4 py-3">Total Amount</th>
                             <th className="px-4 py-3 text-right">Action</th>
@@ -3120,6 +3373,39 @@ export default function PosPage() {
                                   >
                                     {order.status}
                                   </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  {(() => {
+                                    const rawStatus = order.customer?.payment_status || (order as any).payment_status || "Paid";
+                                    const paymentStatus = rawStatus === "Not Paid" ? "Not Paid" : "Paid";
+                                    const isPaid = paymentStatus === "Paid";
+                                    const isVoidOrIgnored = order.status === "Voided" || order.status === "Ignored";
+
+                                    return (
+                                      <div className="relative inline-block">
+                                        <select
+                                          value={paymentStatus}
+                                          disabled={isVoidOrIgnored}
+                                          onChange={(e) => handlePaymentStatusChange(order.id, e.target.value as "Paid" | "Not Paid")}
+                                          className={`appearance-none text-[9px] font-black uppercase tracking-wider px-2.5 py-1 pr-6 rounded-lg border cursor-pointer transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
+                                            isPaid
+                                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.08)]"
+                                              : "bg-rose-500/15 text-rose-400 border-rose-500/40 hover:border-rose-500/70 focus:ring-1 focus:ring-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.2)]"
+                                          }`}
+                                          style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='${isPaid ? '%2334d399' : '%23fb7185'}' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                                            backgroundPosition: "right 6px center",
+                                            backgroundRepeat: "no-repeat",
+                                            backgroundSize: "9px 9px"
+                                          }}
+                                          title="Toggle Payment Status (Paid / Not Paid)"
+                                        >
+                                          <option value="Paid" className="bg-[#0E1628] text-emerald-400 font-bold py-1">● Paid</option>
+                                          <option value="Not Paid" className="bg-[#0E1628] text-rose-400 font-bold py-1">● Not Paid</option>
+                                        </select>
+                                      </div>
+                                    );
+                                  })()}
                                 </td>
                                 <td className="px-4 py-3 text-slate-400 relative">
                                   {(() => {
@@ -3732,49 +4018,83 @@ export default function PosPage() {
                   </div>
                 </div>
 
-                {/* Closing Balance Tally Section */}
-                <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-6 relative overflow-hidden">
-                  {tallySubmitted && (
-                    <div className="absolute top-0 right-0 left-0 bg-[#10B981]/15 border-b border-[#10B981]/30 py-2 px-5 flex items-center justify-between z-10">
-                      <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Tally Sheet Submitted & Locked
-                      </span>
-                      <button
-                        onClick={handleUnlockTally}
-                        className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded px-2.5 py-1 cursor-pointer transition-colors"
-                      >
-                        Unlock to Edit
-                      </button>
+                {/* Closing Balance Tally Section (Compact & Space-Efficient Redesign) */}
+                <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-4 space-y-3.5 relative overflow-hidden shadow-lg">
+                  {/* Top Bar with Status and Quick Controls */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1E2D4E] pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-[#FF6B35]/15 border border-[#FF6B35]/30 flex items-center justify-center text-[#FF6B35] shrink-0">
+                        <ShoppingBag size={15} />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-xs uppercase tracking-wider text-slate-100 flex items-center gap-2">
+                          Closing Balance Tally
+                          {tallySubmitted ? (
+                            <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider inline-flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                              Locked &amp; Settled
+                            </span>
+                          ) : (
+                            <span className="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider inline-flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                              Pending Settlement
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-[9px] text-slate-500">Daily cash reconciliation &amp; shift closure</p>
+                      </div>
                     </div>
-                  )}
 
-                  <div className={`flex items-center justify-between border-b border-[#222E4E] pb-3 ${tallySubmitted ? "pt-8" : ""}`}>
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                      <ShoppingBag size={14} className="text-[#FF6B35]" />
-                      Closing Balance Tally
-                    </h3>
                     <div className="flex items-center gap-2">
-                      <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Select Date:</span>
                       <input
                         type="date"
                         value={selectedLogDate}
                         onChange={(e) => setSelectedLogDate(e.target.value)}
-                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-[#FF6B35] cursor-pointer font-mono"
+                        className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-2.5 py-1 text-xs text-white outline-none focus:border-[#FF6B35] cursor-pointer font-mono"
                         style={{ colorScheme: "dark" }}
                       />
+                      {selectedLogDate !== new Date().toISOString().split("T")[0] && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const local = new Date();
+                            const yy = local.getFullYear();
+                            const mm = String(local.getMonth() + 1).padStart(2, "0");
+                            const dd = String(local.getDate()).padStart(2, "0");
+                            setSelectedLogDate(`${yy}-${mm}-${dd}`);
+                          }}
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1 rounded-lg text-[9px] uppercase tracking-wider border border-slate-700 cursor-pointer transition-all"
+                        >
+                          Today
+                        </button>
+                      )}
+                      {tallySubmitted && (
+                        <button
+                          type="button"
+                          onClick={handleUnlockTally}
+                          className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg px-2.5 py-1 cursor-pointer transition-colors border border-emerald-500/30"
+                        >
+                          Unlock
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Inputs Column */}
-                    <div className="space-y-4 lg:col-span-2">
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tally Inputs</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] text-slate-500 uppercase font-black tracking-wider block">Opening Balance (Float)</label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 font-mono">LKR</span>
+                  {/* Compact 3-Column Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+                    {/* Col 1: Drawer Inputs & Auto Credit Card (4 cols) */}
+                    <div className="lg:col-span-4 bg-[#090D1A] border border-[#1E2D4E] rounded-xl p-3 space-y-2.5">
+                      <div className="flex items-center justify-between border-b border-[#14203A] pb-1.5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Shift Cash &amp; Bank Inputs</span>
+                        <span className="text-[9px] text-slate-500 font-mono">{todaysOrders.length} Orders</span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {/* Opening Balance */}
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-[9px] text-slate-400 uppercase font-black tracking-wider whitespace-nowrap">Opening Float</label>
+                          <div className="relative w-36">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-500 font-mono">LKR</span>
                             <input
                               type="number"
                               disabled={tallySubmitted}
@@ -3785,34 +4105,16 @@ export default function PosPage() {
                                 saveShiftTally(val, bankTransfer, actualCash, operationalExpenses);
                               }}
                               placeholder="0.00"
-                              className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl pl-10 pr-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] font-mono disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="w-full bg-[#111625] border border-[#222E4E] rounded-lg pl-9 pr-2 py-1 text-xs text-white outline-none focus:border-[#FF6B35] font-mono text-right disabled:opacity-40 disabled:cursor-not-allowed"
                             />
                           </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] text-slate-500 uppercase font-black tracking-wider block">Bank Transfer (Actual)</label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 font-mono">LKR</span>
-                            <input
-                              type="number"
-                              disabled={tallySubmitted}
-                              value={bankTransfer || ""}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value) || 0;
-                                setBankTransfer(val);
-                                saveShiftTally(openingBalance, val, actualCash, operationalExpenses);
-                              }}
-                              placeholder="0.00"
-                              className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl pl-10 pr-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] font-mono disabled:opacity-40 disabled:cursor-not-allowed"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] text-slate-500 uppercase font-black tracking-wider block">Actual Cash Counted</label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 font-mono">LKR</span>
+                        {/* Actual Cash Counted */}
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-[9px] text-slate-400 uppercase font-black tracking-wider whitespace-nowrap">Actual Cash Counted</label>
+                          <div className="relative w-36">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-500 font-mono">LKR</span>
                             <input
                               type="number"
                               disabled={tallySubmitted}
@@ -3823,55 +4125,100 @@ export default function PosPage() {
                                 saveShiftTally(openingBalance, bankTransfer, val, operationalExpenses);
                               }}
                               placeholder="0.00"
-                              className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl pl-10 pr-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] font-mono disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="w-full bg-[#111625] border border-[#222E4E] rounded-lg pl-9 pr-2 py-1 text-xs text-white outline-none focus:border-[#FF6B35] font-mono text-right disabled:opacity-40 disabled:cursor-not-allowed font-bold"
                             />
                           </div>
                         </div>
-                      </div>
 
-                      {/* Operational Expenses Sub-Section */}
-                      <div className="bg-[#090D1A] border border-[#222E4E] rounded-xl p-4 space-y-4">
-                        <div className="flex items-center justify-between border-b border-[#14203A] pb-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operational Expenses (Shopping / Payouts)</span>
-                          <span className="text-xs font-black text-rose-400 font-mono">
+                        {/* Bank Transfer */}
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-[9px] text-slate-400 uppercase font-black tracking-wider whitespace-nowrap">Bank Transfer (Actual)</label>
+                          <div className="relative w-36">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-500 font-mono">LKR</span>
+                            <input
+                              type="number"
+                              disabled={tallySubmitted}
+                              value={bankTransfer || ""}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setBankTransfer(val);
+                                saveShiftTally(openingBalance, val, actualCash, operationalExpenses);
+                              }}
+                              placeholder="0.00"
+                              className="w-full bg-[#111625] border border-[#222E4E] rounded-lg pl-9 pr-2 py-1 text-xs text-white outline-none focus:border-[#FF6B35] font-mono text-right disabled:opacity-40 disabled:cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Automatic Credit Orders Deduction Chip */}
+                        <div className="pt-1">
+                          {todaysCreditOrders.length > 0 ? (
+                            <div className="bg-rose-950/40 border border-rose-500/30 rounded-lg p-2 flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse shrink-0"></span>
+                                <span className="text-[9px] font-bold text-rose-300 truncate">
+                                  Auto Credit ({todaysCreditOrders.length} Bills)
+                                </span>
+                              </div>
+                              <span className="font-mono font-bold text-rose-400 text-[11px] shrink-0">
+                                - LKR {todaysCreditAmount.toLocaleString()}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="bg-emerald-950/30 border border-emerald-500/20 rounded-lg p-1.5 flex items-center justify-between text-[9px] text-emerald-400">
+                              <span className="font-bold">Credit Orders:</span>
+                              <span className="font-mono font-bold">LKR 0 (No Unpaid)</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Col 2: Compact Operational Expenses (4 cols) */}
+                    <div className="lg:col-span-4 bg-[#090D1A] border border-[#1E2D4E] rounded-xl p-3 space-y-2 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between border-b border-[#14203A] pb-1.5">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Operational Expenses</span>
+                          <span className="text-[10px] font-black text-rose-400 font-mono">
                             - LKR {operationalExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
                           </span>
                         </div>
 
-                        {/* List of current expenses */}
+                        {/* Compact Expenses List */}
                         {operationalExpenses.length === 0 ? (
-                          <p className="text-[10px] text-slate-600 italic">No operational expenses logged for this shift.</p>
+                          <p className="text-[9px] text-slate-600 italic py-1">No operational expenses logged for this shift.</p>
                         ) : (
-                          <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                          <div className="space-y-1.5 max-h-[85px] overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
                             {operationalExpenses.map(exp => (
-                              <div key={exp.id} className="flex items-center justify-between bg-[#111625] border border-[#1E2D4E] rounded-lg px-3 py-2 text-xs">
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="text-[10px] text-[#FF6B35] font-black uppercase tracking-wider">{exp.category}</span>
-                                  {exp.description && <span className="text-slate-300 font-medium">{exp.description}</span>}
+                              <div key={exp.id} className="flex items-center justify-between bg-[#111625] border border-[#1E2D4E] rounded-lg px-2 py-1 text-xs">
+                                <div className="min-w-0 flex-1 pr-2">
+                                  <p className="text-[9px] text-[#FF6B35] font-black truncate">{exp.category}</p>
+                                  {exp.description && <p className="text-[8px] text-slate-400 truncate">{exp.description}</p>}
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  <span className="font-mono text-rose-400 font-bold">LKR {exp.amount.toLocaleString()}</span>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="font-mono text-rose-400 font-bold text-[10px]">LKR {exp.amount.toLocaleString()}</span>
                                   <button
                                     disabled={tallySubmitted}
                                     onClick={() => handleRemoveExpense(exp.id)}
-                                    className="text-slate-500 hover:text-rose-400 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors p-1 cursor-pointer disabled:cursor-not-allowed animate-none"
+                                    className="text-slate-500 hover:text-rose-400 disabled:opacity-30 p-0.5 cursor-pointer disabled:cursor-not-allowed"
                                   >
-                                    <Trash2 size={13} />
+                                    <Trash2 size={11} />
                                   </button>
                                 </div>
                               </div>
                             ))}
                           </div>
                         )}
+                      </div>
 
-                        {/* Add Expense Form */}
-                        <form onSubmit={handleAddExpense} className="flex flex-col sm:flex-row gap-2">
-                          {/* Category select dropdown */}
+                      {/* Add Expense 1-Line Compact Form */}
+                      <form onSubmit={handleAddExpense} className="pt-1.5 border-t border-[#14203A] flex flex-col gap-1.5">
+                        <div className="flex gap-1.5">
                           <select
                             disabled={tallySubmitted}
                             value={newExpenseCategory}
                             onChange={(e) => setNewExpenseCategory(e.target.value)}
-                            className="bg-[#111625] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-sans font-bold"
+                            className="w-1/2 bg-[#111625] border border-[#222E4E] rounded-lg px-2 py-1 text-[9px] text-white outline-none focus:border-[#FF6B35] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-sans font-bold truncate"
                           >
                             {EXPENSE_CATEGORIES.map(cat => (
                               <option key={cat} value={cat} className="bg-[#111625]">
@@ -3879,119 +4226,169 @@ export default function PosPage() {
                               </option>
                             ))}
                           </select>
-
-                          {/* Custom Description (Optional) */}
                           <input
                             type="text"
                             disabled={tallySubmitted}
-                            placeholder="Optional Details (e.g. Shop name, bill #)"
+                            placeholder="Detail (e.g. Bill #)"
                             value={newExpenseDesc}
                             onChange={(e) => setNewExpenseDesc(e.target.value)}
-                            className="flex-1 bg-[#111625] border border-[#222E4E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="w-1/2 bg-[#111625] border border-[#222E4E] rounded-lg px-2 py-1 text-[9px] text-white outline-none focus:border-[#FF6B35] disabled:opacity-40 disabled:cursor-not-allowed"
                           />
-
-                          {/* Amount */}
-                          <div className="relative w-full sm:w-32">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-600 font-mono">LKR</span>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <div className="relative flex-1">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-bold text-slate-500 font-mono">LKR</span>
                             <input
                               type="number"
                               disabled={tallySubmitted}
                               placeholder="Amount"
                               value={newExpenseAmt}
                               onChange={(e) => setNewExpenseAmt(e.target.value)}
-                              className="w-full bg-[#111625] border border-[#222E4E] rounded-xl pl-10 pr-3 py-2 text-xs text-white outline-none focus:border-[#FF6B35] font-mono disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="w-full bg-[#111625] border border-[#222E4E] rounded-lg pl-7 pr-2 py-1 text-xs text-white outline-none focus:border-[#FF6B35] font-mono disabled:opacity-40 disabled:cursor-not-allowed text-right"
                             />
                           </div>
-
                           <button
                             type="submit"
                             disabled={tallySubmitted}
-                            className="bg-[#FF6B35] hover:bg-[#F26F21] disabled:bg-[#1E2D4E] disabled:text-[#4B5E82] text-white p-2 rounded-xl transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center shrink-0"
+                            className="bg-[#FF6B35] hover:bg-[#F26F21] disabled:bg-[#1E2D4E] disabled:text-[#4B5E82] text-white px-3 py-1 rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center shrink-0 text-xs font-bold"
                           >
-                            <Plus size={16} />
+                            <Plus size={13} />
                           </button>
-                        </form>
-                      </div>
+                        </div>
+                      </form>
                     </div>
 
-                    {/* Formula & Tally Summary Column */}
-                    <div className="bg-[#090D1A] border border-[#222E4E] rounded-xl p-4 flex flex-col justify-between space-y-4">
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-[#14203A] pb-2">Tally Calculations</h4>
-                        
-                        {(() => {
-                          const shiftRevenue = todaysOrders.reduce((sum, o) => sum + o.total, 0);
-                          const totalExp = operationalExpenses.reduce((sum, e) => sum + e.amount, 0);
-                          // Expected closing cash = Opening Balance + (Shift Revenue - Bank Transfer) - Operational Costs
-                          const expectedCashRevenue = Math.max(0, shiftRevenue - bankTransfer);
-                          const expectedClosingCash = openingBalance + expectedCashRevenue - totalExp;
-                          const discrepancy = actualCash - expectedClosingCash;
-                          const totalClosingBalance = actualCash + bankTransfer;
+                    {/* Col 3: Formula & Tally Summary (4 cols) */}
+                    <div className="lg:col-span-4 bg-[#090D1A] border border-[#1E2D4E] rounded-xl p-3 space-y-2 flex flex-col justify-between">
+                      {(() => {
+                        const shiftRevenue = todaysOrders.reduce((sum, o) => sum + o.total, 0);
+                        const totalExp = operationalExpenses.reduce((sum, e) => sum + e.amount, 0);
+                        // Cash revenue expected in drawer excludes Bank Transfer & Credit Orders
+                        const expectedCashRevenue = Math.max(0, shiftRevenue - bankTransfer - todaysCreditAmount);
+                        const expectedClosingCash = openingBalance + expectedCashRevenue - totalExp;
+                        const discrepancy = actualCash - expectedClosingCash;
+                        const totalClosingBalance = actualCash + bankTransfer;
 
-                          return (
-                            <div className="space-y-2 text-[11px] text-slate-400 font-mono">
+                        return (
+                          <>
+                            <div className="space-y-1 text-[10px] text-slate-400 font-mono">
+                              <div className="flex justify-between border-b border-[#14203A] pb-1 font-sans">
+                                <span className="font-bold uppercase tracking-wider text-slate-400 text-[9px]">Tally Calculation</span>
+                                <span className="text-slate-300 font-mono text-[9px]">Total Shift: LKR {shiftRevenue.toLocaleString()}</span>
+                              </div>
+
                               <div className="flex justify-between">
-                                <span>Opening Balance:</span>
+                                <span>Opening Float:</span>
                                 <span className="text-slate-300">+ LKR {openingBalance.toLocaleString()}</span>
                               </div>
-                              <div className="flex justify-between" title="Calculated as (Shift Revenue - Bank Transfer)">
-                                <span className="flex items-center gap-1">
-                                  Expected Cash Rev:
-                                </span>
+                              <div className="flex justify-between" title="Gross shift revenue minus Bank Transfer and Credit orders">
+                                <span>Expected Cash Rev:</span>
                                 <span className="text-slate-300">+ LKR {expectedCashRevenue.toLocaleString()}</span>
                               </div>
+                              {todaysCreditAmount > 0 && (
+                                <div className="flex justify-between text-rose-300">
+                                  <span>Credit (Unpaid):</span>
+                                  <span>- LKR {todaysCreditAmount.toLocaleString()}</span>
+                                </div>
+                              )}
                               <div className="flex justify-between">
                                 <span>Operational Costs:</span>
                                 <span className="text-rose-400">- LKR {totalExp.toLocaleString()}</span>
                               </div>
-                              
-                              <div className="border-t border-dashed border-[#222E4E] pt-2 flex justify-between font-bold text-slate-200">
-                                <span>Expected Closing Cash:</span>
-                                <span>LKR {expectedClosingCash.toLocaleString()}</span>
+                              <div className="border-t border-dashed border-[#1E2D4E] pt-1 flex justify-between font-bold text-slate-200">
+                                <span>Expected Closing:</span>
+                                <span className="text-amber-400">LKR {expectedClosingCash.toLocaleString()}</span>
                               </div>
-
-                              <div className="flex justify-between">
-                                <span>Actual Cash Counted:</span>
+                              <div className="flex justify-between font-bold">
+                                <span>Actual Counted:</span>
                                 <span className="text-slate-200">LKR {actualCash.toLocaleString()}</span>
                               </div>
 
-                              <div className="border-t border-[#222E4E] pt-2 space-y-1.5 font-sans">
-                                <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black block">Tally Status</span>
+                              {/* Tally Discrepancy Pill */}
+                              <div className="pt-1 font-sans">
                                 {discrepancy === 0 ? (
-                                  <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg p-2 text-center text-xs font-bold">
-                                    Perfect Tally (Balanced)
+                                  <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-lg py-1 px-2 text-center text-[10px] font-bold">
+                                    ✓ Perfect Tally (Balanced)
                                   </div>
                                 ) : discrepancy > 0 ? (
-                                  <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg p-2 text-center text-xs font-bold">
+                                  <div className="bg-amber-500/15 border border-amber-500/30 text-amber-400 rounded-lg py-1 px-2 text-center text-[10px] font-bold">
                                     Overage: +LKR {discrepancy.toLocaleString()}
                                   </div>
                                 ) : (
-                                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-2 text-center text-xs font-bold">
+                                  <div className="bg-rose-500/15 border border-rose-500/30 text-rose-400 rounded-lg py-1 px-2 text-center text-[10px] font-bold">
                                     Shortage: -LKR {Math.abs(discrepancy).toLocaleString()}
                                   </div>
                                 )}
                               </div>
+                            </div>
 
-                              <div className="bg-[#111625] border border-[#1E2D4E] rounded-lg p-3 space-y-1 font-sans mt-2">
-                                <span className="text-[8px] uppercase tracking-wider text-slate-500 font-black block">Total Shift Assets (Cash + Bank)</span>
-                                <span className="text-sm font-black text-slate-100 font-mono">
-                                  LKR {totalClosingBalance.toLocaleString()}
-                                </span>
+                            {/* Action Button / Shift Assets */}
+                            <div className="pt-1.5 border-t border-[#14203A] space-y-1.5 font-sans">
+                              <div className="flex justify-between text-[10px] font-bold">
+                                <span className="text-slate-400 uppercase text-[8px] tracking-wider">Total Shift Assets:</span>
+                                <span className="text-slate-100 font-mono">LKR {totalClosingBalance.toLocaleString()}</span>
                               </div>
 
-                              {!tallySubmitted && (
+                              {!tallySubmitted ? (
                                 <button
+                                  type="button"
                                   onClick={handleSubmitTally}
-                                  className="w-full font-black py-2.5 px-4 mt-2 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-[10px] cursor-pointer bg-[#10B981] hover:bg-[#059669] text-white uppercase tracking-widest active:scale-95 font-sans shadow-lg shadow-emerald-500/10"
+                                  className="w-full font-black py-2 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 text-[10px] cursor-pointer bg-[#10B981] hover:bg-[#059669] text-white uppercase tracking-wider active:scale-95 shadow-md shadow-emerald-500/10"
                                 >
-                                  Submit & Lock Tally
+                                  Submit &amp; Lock Tally
                                 </button>
+                              ) : (
+                                <div className="w-full py-1.5 text-center text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                  ✓ Tally Locked &amp; Saved
+                                </div>
                               )}
                             </div>
-                          );
-                        })()}
-                      </div>
+                          </>
+                        );
+                      })()}
                     </div>
+                  </div>
+                </div>
+
+                {/* Date Range Selector Pills Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#111625] border border-[#222E4E] p-3 rounded-2xl">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#FF6B35]">Date Filter:</span>
+                    <span className="text-xs font-bold text-slate-200">
+                      {reportFilter === "7_days" && "Last 7 Days"}
+                      {reportFilter === "14_days" && "Last 14 Days"}
+                      {reportFilter === "30_days" && "Last 30 Days"}
+                      {reportFilter === "this_month" && "This Month (from 1st)"}
+                      {reportFilter === "last_month" && "Last Month"}
+                      {reportFilter === "all_time" && "Maximum (All Time)"}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-1.5 bg-[#090D1A] p-1 rounded-xl border border-[#222E4E]">
+                    {[
+                      { id: "7_days", label: "7 Days" },
+                      { id: "14_days", label: "14 Days" },
+                      { id: "30_days", label: "30 Days" },
+                      { id: "this_month", label: "This Month" },
+                      { id: "last_month", label: "Last Month" },
+                      { id: "all_time", label: "Maximum" }
+                    ].map(pill => {
+                      const isSelected = reportFilter === pill.id;
+                      return (
+                        <button
+                          key={pill.id}
+                          type="button"
+                          onClick={() => setReportFilter(pill.id as ReportDateFilter)}
+                          className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-[#FF6B35] text-white shadow-md shadow-[#FF6B35]/20 scale-100"
+                              : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                          }`}
+                        >
+                          {pill.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -4001,7 +4398,7 @@ export default function PosPage() {
                     <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Total Sales Revenue</p>
                     <div className="mt-1">
                       {renderAdminMetric(
-                        `LKR ${orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored").reduce((sum, o) => sum + o.total, 0).toLocaleString()}`,
+                        `LKR ${filteredReportOrders.reduce((sum, o) => sum + o.total, 0).toLocaleString()}`,
                         "text-lg font-black text-emerald-400 font-mono"
                       )}
                     </div>
@@ -4009,7 +4406,7 @@ export default function PosPage() {
                   <div className="bg-[#111625] border border-[#222E4E] p-4 rounded-xl">
                     <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Settled Orders</p>
                     <p className="text-lg font-black mt-1 text-slate-200">
-                      {orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored").length}
+                      {filteredReportOrders.length}
                     </p>
                   </div>
                   <button
@@ -4032,10 +4429,9 @@ export default function PosPage() {
                     <div className="mt-1">
                       {renderAdminMetric(
                         `LKR ${(() => {
-                          const settled = orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored");
-                          if (settled.length === 0) return "0";
-                          const totalRev = settled.reduce((sum, o) => sum + o.total, 0);
-                          return Math.round(totalRev / settled.length).toLocaleString();
+                          if (filteredReportOrders.length === 0) return "0";
+                          const totalRev = filteredReportOrders.reduce((sum, o) => sum + o.total, 0);
+                          return Math.round(totalRev / filteredReportOrders.length).toLocaleString();
                         })()}`,
                         "text-lg font-black text-slate-200 font-mono"
                       )}
@@ -4046,12 +4442,17 @@ export default function PosPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Left Column: Everyday Sales Table */}
                   <div className="lg:col-span-2 bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-4">
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">
-                      Everyday Sales &amp; Shift Logs
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">
+                        Everyday Sales &amp; Shift Logs
+                      </h3>
+                      <span className="text-[9px] text-slate-400 font-mono">
+                        {reportData.length} active {reportData.length === 1 ? "day" : "days"} in period
+                      </span>
+                    </div>
                     {reportData.length === 0 ? (
                       <div className="text-center py-12 text-xs text-slate-500">
-                        No transaction data available yet.
+                        No transaction data available for the selected period.
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
@@ -4095,12 +4496,11 @@ export default function PosPage() {
                     <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-4">
                       <h4 className="font-bold text-xs uppercase tracking-wider text-slate-300">Logistics Breakdown</h4>
                       {(() => {
-                        const settled = orderHistory.filter(o => o.status !== "Voided" && o.status !== "Ignored");
-                        const totalO = settled.length || 1;
-                        const posOrders = settled.filter(o => o.type === "Take Away" || o.type === "POS").length;
-                        const thirdParty = settled.filter(o => o.type === "Pick Up" || o.type === "3rd Party").length;
-                        const directOrders = settled.filter(o => o.type === "Delivery" || o.type === "Direct").length;
-                        const dineInOrders = settled.filter(o => o.type === "Dine In").length;
+                        const totalO = filteredReportOrders.length || 1;
+                        const posOrders = filteredReportOrders.filter(o => o.type === "Take Away" || o.type === "POS").length;
+                        const thirdParty = filteredReportOrders.filter(o => o.type === "Pick Up" || o.type === "3rd Party").length;
+                        const directOrders = filteredReportOrders.filter(o => o.type === "Delivery" || o.type === "Direct").length;
+                        const dineInOrders = filteredReportOrders.filter(o => o.type === "Dine In").length;
 
                         const pctPOS = Math.round((posOrders / totalO) * 100);
                         const pct3P = Math.round((thirdParty / totalO) * 100);
@@ -4173,8 +4573,7 @@ export default function PosPage() {
                           counts[item.title] = 0;
                         });
 
-                        orderHistory
-                          .filter(o => o.status !== "Voided" && o.status !== "Ignored")
+                        filteredReportOrders
                           .forEach(order => {
                             order.items.forEach(item => {
                               const title = item.menuItem ? item.menuItem.title : (item as any).title;
@@ -4187,8 +4586,8 @@ export default function PosPage() {
 
                         const maxQty = allSorted[0]?.[1] || 1;
 
-                        if (sorted.length === 0) {
-                          return <div className="text-[10px] text-slate-500 py-3 text-center">No sales items logged yet.</div>;
+                        if (sorted.length === 0 || sorted.every(s => s[1] === 0)) {
+                          return <div className="text-[10px] text-slate-500 py-3 text-center">No sales items logged in period.</div>;
                         }
 
                         return (
@@ -4216,9 +4615,10 @@ export default function PosPage() {
                     <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-5 space-y-3">
                       <h4 className="font-bold text-xs uppercase tracking-wider text-slate-300">Loss &amp; Integrity Audit</h4>
                       {(() => {
-                        const totalOrders = orderHistory.length || 1;
-                        const voided = orderHistory.filter(o => o.status === "Voided").length;
-                        const ignored = orderHistory.filter(o => o.status === "Ignored").length;
+                        const relevantOrders = orderHistory.filter(o => isOrderInReportRange(o.timestamp, reportFilter));
+                        const totalOrders = relevantOrders.length || 1;
+                        const voided = relevantOrders.filter(o => o.status === "Voided").length;
+                        const ignored = relevantOrders.filter(o => o.status === "Ignored").length;
                         const voidRate = Math.round((voided / totalOrders) * 100);
 
                         return (
@@ -4653,11 +5053,77 @@ export default function PosPage() {
         </aside>
       </div>
 
+      {/* Unsettled Shift Tally Blocker Modal */}
+      {showUnsettledTallyModal && unclosedPastShiftInfo && (
+        <div className="fixed inset-0 bg-[#050814]/85 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-[#111625] border border-amber-500/50 rounded-3xl p-6 max-w-md w-full text-center space-y-5 shadow-2xl relative">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mx-auto text-amber-400">
+              <AlertTriangle size={28} />
+            </div>
+            
+            <div className="space-y-1.5">
+              <h3 className="text-base font-black text-white uppercase tracking-wider">
+                Previous Shift Tally Unsettled
+              </h3>
+              <p className="text-xs text-slate-300">
+                You cannot place new orders today until the shift on <strong className="text-amber-400 font-mono">{unclosedPastShiftInfo.formattedDate}</strong> is balanced, submitted, and locked.
+              </p>
+            </div>
+
+            <div className="bg-[#090D1A] border border-[#1E2D4E] rounded-xl p-3.5 text-left text-xs space-y-1.5 text-slate-400">
+              <div className="flex justify-between">
+                <span>Unsettled Shift Date:</span>
+                <span className="font-mono font-bold text-amber-400">{unclosedPastShiftInfo.formattedDate}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Status:</span>
+                <span className="font-bold text-rose-400 uppercase text-[10px]">Tally Not Submitted</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedLogDate(unclosedPastShiftInfo.formattedDate);
+                  setActiveSidebar("reports");
+                  setShowUnsettledTallyModal(false);
+                  setShowCustomerModal(false);
+                  setShowOrderTypeModal(false);
+                }}
+                className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl uppercase tracking-wider text-xs cursor-pointer transition-all shadow-lg active:scale-95 flex items-center justify-center gap-1.5"
+              >
+                <span>Settle Previous Shift Now</span>
+                <span>→</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowUnsettledTallyModal(false)}
+                className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase tracking-wider text-xs cursor-pointer border border-slate-700 transition-all"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* PIN Modal */}
       {showPinModal && (
         <div className="fixed inset-0 bg-[#050814]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-6 max-w-sm w-full text-center space-y-6">
-            <h3 className="text-xs font-bold uppercase tracking-wider">Enter PIN</h3>
+          <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <div className="space-y-1">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100">
+                {pinPurpose === "delete_customer" ? "Admin Authorization" : "Enter PIN"}
+              </h3>
+              <p className="text-[10px] text-slate-400">
+                {pinPurpose === "delete_customer"
+                  ? "Enter manager passcode (1234) to delete customer profile"
+                  : pinPurpose === "menu"
+                    ? "Enter passcode (1234) to unlock menu management"
+                    : "Enter passcode (1234) to unlock sensitive data"}
+              </p>
+            </div>
             <div className="flex justify-center gap-2">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className={`w-8 h-8 rounded border flex items-center justify-center font-mono ${pinInput.length > i ? "border-[#FF6B35] bg-[#FF6B35]/10 text-white" : "border-[#222E4E]"}`}>
@@ -4665,7 +5131,7 @@ export default function PosPage() {
                 </div>
               ))}
             </div>
-            {pinError && <p className="text-red-400 text-xs">{pinError}</p>}
+            {pinError && <p className="text-red-400 text-xs font-bold">{pinError}</p>}
             <div className="grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
               {["1", "2", "3", "4", "5", "6", "7", "8", "9", "Clear", "0", "Close"].map(val => (
                 <button
@@ -4673,10 +5139,13 @@ export default function PosPage() {
                   type="button"
                   onClick={() => {
                     if (val === "Clear") setPinInput("");
-                    else if (val === "Close") setShowPinModal(false);
+                    else if (val === "Close") {
+                      setShowPinModal(false);
+                      setPendingDeleteCustomerPhone(null);
+                    }
                     else handlePinKeyPress(val);
                   }}
-                  className="bg-[#090D1A] border border-[#222E4E] text-white py-2 rounded font-bold text-xs cursor-pointer"
+                  className="bg-[#090D1A] border border-[#222E4E] text-white py-2 rounded font-bold text-xs cursor-pointer hover:bg-[#FF6B35]/20 hover:border-[#FF6B35]/50 transition-all"
                 >
                   {val}
                 </button>
@@ -5259,13 +5728,22 @@ export default function PosPage() {
             <div className="pt-2 flex gap-2">
               <button
                 onClick={handleConfirmPlaceOrder}
-                className="flex-1 bg-[#FF6B35] hover:bg-[#F26F21] text-white font-bold py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider"
+                disabled={isPlacingOrder}
+                className="flex-1 bg-[#FF6B35] hover:bg-[#F26F21] disabled:opacity-50 text-white font-bold py-3 rounded-xl cursor-pointer disabled:cursor-not-allowed text-xs uppercase tracking-wider flex items-center justify-center gap-2"
               >
-                Confirm &amp; Place Order
+                {isPlacingOrder ? (
+                  <>
+                    <RotateCw size={13} className="animate-spin text-white" />
+                    <span>Placing Order...</span>
+                  </>
+                ) : (
+                  <span>Confirm &amp; Place Order</span>
+                )}
               </button>
               <button
                 onClick={() => setShowCustomerModal(false)}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-700"
+                disabled={isPlacingOrder}
+                className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-700"
               >
                 Cancel
               </button>
@@ -5485,117 +5963,176 @@ export default function PosPage() {
                 </div>
 
                 {/* Customer List in Compact Row Layout */}
-                <div className="flex-1 overflow-y-auto pr-1 space-y-1.5" style={{ scrollbarWidth: "thin" }}>
+                <div className="flex-1 overflow-y-auto pr-1 space-y-2" style={{ scrollbarWidth: "thin" }}>
                   {customers
                     .filter(c => 
                       c.name.toLowerCase().includes(cmsSearchQuery.toLowerCase()) ||
                       c.phone.includes(cmsSearchQuery) ||
                       c.address.toLowerCase().includes(cmsSearchQuery.toLowerCase())
                     )
-                    .map(c => (
-                      <div key={c.phone} className="bg-[#0D1527] border border-[#1E2D4E] rounded-xl p-2.5 flex items-center justify-between gap-4 hover:border-purple-500/40 transition-all">
-                        <div className="flex-1 min-w-0 flex items-center gap-4">
-                          {/* Name & Phone */}
-                          <div className="w-[180px] shrink-0 min-w-0">
-                            <p className="font-extrabold text-[12px] text-white truncate" title={c.name}>{c.name}</p>
-                            <p className="text-[9px] font-mono font-bold text-[#FF9F1C] mt-0.5">{c.phone}</p>
-                          </div>
-                          
-                          {/* Birthday & Last Order */}
-                          <div className="w-[170px] shrink-0 flex flex-col gap-1.5 justify-center">
-                            {/* Birthday Row */}
-                            <div>
-                              {c.birthday ? (
-                                <span className="text-[8px] font-black text-purple-200 bg-purple-900/50 border border-purple-500/30 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                                  🎂 {new Date(c.birthday).toLocaleString("en-US", {
-                                    month: "short",
-                                    day: "numeric"
-                                  })}
-                                </span>
+                    .map(c => {
+                      const cleanPhone = c.phone.replace(/\D/g, "");
+                      const custOrders = orderHistory.filter(o => {
+                        if (o.status === "Voided" || o.status === "Ignored") return false;
+                        if (!o.customer) return false;
+                        const oPhone = (o.customer.phone || "").replace(/\D/g, "");
+                        return oPhone === cleanPhone || o.customer.phone === c.phone;
+                      });
+
+                      const unpaidOrders = custOrders.filter(o => 
+                        o.payment_status === "Not Paid" || o.customer?.payment_status === "Not Paid"
+                      );
+                      const totalUnpaidCredit = unpaidOrders.reduce((sum, o) => sum + o.total, 0);
+
+                      const lastOrder = custOrders.length > 0
+                        ? [...custOrders].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]
+                        : null;
+
+                      return (
+                        <div key={c.phone} className="bg-[#0D1527] border border-[#1E2D4E] rounded-xl p-3 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-purple-500/40 transition-all">
+                          <div className="flex-1 min-w-0 flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4">
+                            {/* Name & Phone */}
+                            <div className="w-full sm:w-[160px] shrink-0 min-w-0">
+                              <p className="font-extrabold text-xs text-white truncate" title={c.name}>{c.name}</p>
+                              <p className="text-[10px] font-mono font-bold text-[#FF9F1C] mt-0.5">{c.phone}</p>
+                            </div>
+
+                            {/* Credit / Balance Status */}
+                            <div className="w-full sm:w-[155px] shrink-0">
+                              {unpaidOrders.length > 0 ? (
+                                <div className="relative group inline-block">
+                                  <span className="text-[9px] font-black text-rose-300 bg-rose-950/80 border border-rose-500/40 px-2.5 py-1 rounded-lg inline-flex items-center gap-1 shadow-sm cursor-pointer animate-pulse">
+                                    🔴 Rs {totalUnpaidCredit.toLocaleString()} Due ({unpaidOrders.length})
+                                  </span>
+                                  {/* Tooltip for Unpaid Invoices */}
+                                  <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:flex flex-col z-50 bg-[#0E1628] border border-rose-500/40 rounded-xl p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-w-[200px] pointer-events-none transition-all text-left">
+                                    <p className="text-[8px] font-black uppercase text-rose-400 mb-1 border-b border-[#1E2D4E] pb-1 tracking-wider">Unpaid Credit Invoices</p>
+                                    <div className="space-y-1 max-h-[120px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                                      {unpaidOrders.map((uo, uidx) => (
+                                        <div key={uidx} className="flex justify-between text-[9px] text-slate-300 font-mono">
+                                          <span className="text-orange-400 font-bold">{uo.id}</span>
+                                          <span className="text-rose-400 font-bold">Rs {uo.total.toLocaleString()}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
                               ) : (
-                                <span className="text-[9px] text-slate-400 font-semibold italic">No birthday set</span>
+                                <span className="text-[9px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
+                                  🟢 Rs 0 (All Settled)
+                                </span>
                               )}
                             </div>
                             
-                            {/* Last Order Row with Hover Tooltip */}
-                            {(() => {
-                              const lastOrder = orderHistory.find(o => o.customer && o.customer.phone === c.phone && o.status !== "Ignored");
-                              return (
-                                <div className="relative group inline-block">
-                                  {lastOrder ? (
-                                    <>
-                                      <span className="text-[8px] font-black text-orange-200 bg-[#342211] border border-orange-500/30 px-2 py-0.5 rounded inline-flex items-center gap-1 cursor-pointer">
-                                        🛒 {new Date(lastOrder.timestamp).toLocaleDateString("en-US", {
-                                          month: "short",
-                                          day: "numeric",
-                                          year: "numeric"
-                                        })}
-                                      </span>
-                                      
-                                      {/* Hover Tooltip (Shown on Hover) */}
-                                      <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:flex flex-col z-50 bg-[#0E1628] border border-[#1E2D4E] rounded-xl p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-w-[200px] pointer-events-none transition-all text-left">
-                                        <p className="text-[8px] font-black uppercase text-[#FF6B35] mb-1.5 border-b border-[#1E2D4E] pb-1 tracking-wider">Last Order Items</p>
-                                        <div className="space-y-1 max-h-[140px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
-                                          {lastOrder.items.map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-start gap-2 text-[10px] text-slate-300">
-                                              <span className="font-bold flex-1 leading-tight">{item.menuItem ? item.menuItem.title : (item as any).title}</span>
-                                              <span className="font-mono text-[#F26F21] whitespace-nowrap">x{item.quantity}</span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                        <div className="mt-1.5 pt-1 border-t border-[#1E2D4E] flex justify-between text-[8px] text-slate-400 font-mono">
-                                          <span>Total:</span>
-                                          <span className="font-bold text-orange-400">Rs {lastOrder.total.toLocaleString()}</span>
-                                        </div>
+                            {/* Birthday & Last Order Details */}
+                            <div className="w-full sm:w-[180px] shrink-0 flex flex-col gap-1 justify-center">
+                              {/* Birthday Row */}
+                              <div>
+                                {c.birthday ? (
+                                  <span className="text-[8px] font-black text-purple-200 bg-purple-900/50 border border-purple-500/30 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                    🎂 {new Date(c.birthday).toLocaleString("en-US", {
+                                      month: "short",
+                                      day: "numeric"
+                                    })}
+                                  </span>
+                                ) : (
+                                  <span className="text-[8px] text-slate-500 font-semibold italic">No birthday set</span>
+                                )}
+                              </div>
+                              
+                              {/* Last Order Row with Comprehensive Hover Tooltip */}
+                              <div className="relative group inline-block">
+                                {lastOrder ? (
+                                  <>
+                                    <span className="text-[8px] font-black text-orange-200 bg-[#342211] border border-orange-500/30 px-2 py-0.5 rounded inline-flex items-center gap-1 cursor-pointer">
+                                      🛒 {new Date(lastOrder.timestamp).toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric"
+                                      })} • {lastOrder.id}
+                                    </span>
+                                    
+                                    {/* Hover Tooltip */}
+                                    <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:flex flex-col z-50 bg-[#0E1628] border border-[#1E2D4E] rounded-xl p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-w-[220px] pointer-events-none transition-all text-left">
+                                      <div className="flex justify-between items-center border-b border-[#1E2D4E] pb-1 mb-1.5">
+                                        <p className="text-[8px] font-black uppercase text-[#FF6B35] tracking-wider">Last Order: {lastOrder.id}</p>
+                                        <span className={`text-[8px] font-black px-1.5 py-0.2 rounded border ${
+                                          (lastOrder.customer?.payment_status === "Not Paid" || lastOrder.payment_status === "Not Paid")
+                                            ? "bg-rose-500/20 text-rose-400 border-rose-500/30"
+                                            : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                        }`}>
+                                          {(lastOrder.customer?.payment_status === "Not Paid" || lastOrder.payment_status === "Not Paid") ? "Not Paid" : "Paid"}
+                                        </span>
                                       </div>
-                                    </>
-                                  ) : (
-                                    <span className="text-[9px] text-slate-500 font-semibold italic">Never ordered</span>
-                                  )}
-                                </div>
-                              );
-                            })()}
+                                      <div className="space-y-1 max-h-[140px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                                        {lastOrder.items.map((item, idx) => (
+                                          <div key={idx} className="flex justify-between items-start gap-2 text-[10px] text-slate-300">
+                                            <span className="font-bold flex-1 leading-tight">{item.menuItem ? item.menuItem.title : (item as any).title}</span>
+                                            <span className="font-mono text-[#F26F21] whitespace-nowrap">x{item.quantity}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <div className="mt-1.5 pt-1 border-t border-[#1E2D4E] flex justify-between text-[8px] text-slate-400 font-mono">
+                                        <span>Total Amount:</span>
+                                        <span className="font-bold text-orange-400">Rs {lastOrder.total.toLocaleString()}</span>
+                                      </div>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <span className="text-[8px] text-slate-500 font-semibold italic">Never ordered</span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Address */}
+                            <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                              {c.address_label && (
+                                <span className="text-[8px] font-black text-amber-200 bg-[#342211] border border-amber-500/30 px-2 py-0.5 rounded uppercase tracking-wider shrink-0">
+                                  🏠 {c.address_label}
+                                </span>
+                              )}
+                              <p className="text-[11px] text-slate-300 font-medium truncate flex-1 pr-2" title={c.address}>
+                                {c.address || "No address provided"}
+                              </p>
+                            </div>
                           </div>
 
-                          {/* Address */}
-                          <div className="flex-1 min-w-0 flex items-center gap-2">
-                            {c.address_label && (
-                              <span className="text-[8px] font-black text-amber-200 bg-[#342211] border border-amber-500/30 px-2 py-0.5 rounded uppercase tracking-wider shrink-0">
-                                🏠 {c.address_label}
-                              </span>
-                            )}
-                            <p className="text-[11px] text-slate-200 font-medium truncate flex-1 pr-4" title={c.address}>
-                              {c.address || "No address provided"}
-                            </p>
+                          {/* Action Buttons: Edit and Delete */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={() => {
+                                setEditingCustomer(c);
+                                setEditCustName(c.name);
+                                setEditCustAddress(c.address);
+                                const parsed = parseAddress(c.address);
+                                setEditAddrHomeNo(parsed.homeNo);
+                                setEditAddrStreet(parsed.street);
+                                setEditAddrPostalArea(parsed.postalArea);
+                                setEditAddrPostalCode(parsed.postalCode);
+                                if (c.birthday) {
+                                  const bDate = new Date(c.birthday);
+                                  setEditCustBirthMonth(String(bDate.getMonth() + 1).padStart(2, "0"));
+                                  setEditCustBirthDay(String(bDate.getDate()).padStart(2, "0"));
+                                } else {
+                                  setEditCustBirthMonth("");
+                                  setEditCustBirthDay("");
+                                }
+                                setEditCustAddressLabel(c.address_label || "");
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black active:scale-95 transition-all text-[9px] uppercase tracking-wider cursor-pointer shadow-md"
+                            >
+                              Edit Profile
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCustomerClick(c.phone)}
+                              className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/60 active:scale-95 transition-all cursor-pointer"
+                              title="Delete Customer Profile (Requires Admin PIN)"
+                            >
+                              <Trash2 size={13} />
+                            </button>
                           </div>
                         </div>
-
-                        <button
-                          onClick={() => {
-                            setEditingCustomer(c);
-                            setEditCustName(c.name);
-                            setEditCustAddress(c.address);
-                            const parsed = parseAddress(c.address);
-                            setEditAddrHomeNo(parsed.homeNo);
-                            setEditAddrStreet(parsed.street);
-                            setEditAddrPostalArea(parsed.postalArea);
-                            setEditAddrPostalCode(parsed.postalCode);
-                            if (c.birthday) {
-                              const bDate = new Date(c.birthday);
-                              setEditCustBirthMonth(String(bDate.getMonth() + 1).padStart(2, "0"));
-                              setEditCustBirthDay(String(bDate.getDate()).padStart(2, "0"));
-                            } else {
-                              setEditCustBirthMonth("");
-                              setEditCustBirthDay("");
-                            }
-                            setEditCustAddressLabel(c.address_label || "");
-                          }}
-                          className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black active:scale-95 transition-all text-[9px] uppercase tracking-wider cursor-pointer shrink-0 shadow-md"
-                        >
-                          Edit Profile
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
 
                 <div className="pt-2 shrink-0">
@@ -5616,7 +6153,46 @@ export default function PosPage() {
                     <p className="text-[10px] text-slate-500">Updating details for {editingCustomer.phone}</p>
                   </div>
 
-                  <div className="space-y-4">
+                  {/* Customer Credit & Order Summary Banner */}
+                  {(() => {
+                    const cleanPhone = editingCustomer.phone.replace(/\D/g, "");
+                    const custOrders = orderHistory.filter(o => {
+                      if (o.status === "Voided" || o.status === "Ignored") return false;
+                      if (!o.customer) return false;
+                      const oPhone = (o.customer.phone || "").replace(/\D/g, "");
+                      return oPhone === cleanPhone || o.customer.phone === editingCustomer.phone;
+                    });
+                    const unpaidOrders = custOrders.filter(o => 
+                      o.payment_status === "Not Paid" || o.customer?.payment_status === "Not Paid"
+                    );
+                    const totalUnpaidCredit = unpaidOrders.reduce((sum, o) => sum + o.total, 0);
+                    const lastOrder = custOrders.length > 0
+                      ? [...custOrders].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]
+                      : null;
+
+                    return (
+                      <div className="bg-[#090D1A] border border-[#1E2D4E] rounded-2xl p-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block">Total Settled Orders</span>
+                          <span className="font-mono font-bold text-slate-200">{custOrders.length} Orders</span>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block">Outstanding Credit</span>
+                          <span className={`font-mono font-bold ${totalUnpaidCredit > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                            {totalUnpaidCredit > 0 ? `Rs ${totalUnpaidCredit.toLocaleString()} (${unpaidOrders.length} unpaid)` : "Rs 0 (Settled)"}
+                          </span>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block">Last Order</span>
+                          <span className="font-mono text-slate-300 truncate block">
+                            {lastOrder ? `${lastOrder.id} (Rs ${lastOrder.total.toLocaleString()})` : "None"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="space-y-3.5">
                     {/* Name */}
                     <div className="space-y-1.5">
                       <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">Full Name</label>
@@ -5747,9 +6323,18 @@ export default function PosPage() {
                   <button
                     disabled={isUpdatingCust}
                     onClick={handleSaveCustomer}
-                    className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95 transition-all"
                   >
                     {isUpdatingCust ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCustomerClick(editingCustomer.phone)}
+                    className="bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 font-bold px-4 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider flex items-center gap-1.5 active:scale-95 transition-all"
+                    title="Delete this customer profile (Requires Admin PIN)"
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete Profile</span>
                   </button>
                   <button
                     onClick={() => setEditingCustomer(null)}
