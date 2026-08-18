@@ -12,4 +12,11 @@ export const STORE_CONFIG = {
   currency: "Rs",
   currencyCode: "LKR",
   acceptedPayments: ["Cash on Delivery", "HelaPOS Card Payment", "PickMe Pay"],
+  openingHours: {
+    openHour: 11,
+    closeHour: 24,
+    display: "11:00 AM – 12:00 AM Daily",
+    formattedOpen: "11:00 AM",
+    formattedClose: "12:00 AM (Midnight)",
+  },
 };

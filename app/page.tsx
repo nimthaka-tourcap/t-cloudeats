@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
+import { getStoreStatus, StoreStatus } from "@/lib/utils/business-hours";
 
 /* ── Intersection observer for reveal animations ──────────────── */
 function useReveal(deps: any[] = []) {
@@ -117,6 +118,7 @@ const REVIEWS = [
 ];
 
 const FAQS = [
+  { q: "What are your operating hours?", a: "We are open daily from 11:00 AM to 12:00 AM (Midnight). Orders placed after 12:00 AM will be fulfilled once the kitchen opens at 11:00 AM." },
   { q: "How fast is delivery?", a: "Orders are prepped fresh in 15–20 min and delivered hot within 25–35 minutes." },
   { q: "Which areas do you deliver to?", a: "We cover Mulleriyawa, Angoda, Kotikawatta, Kelanimulla, IDH & surrounding suburbs within 3 km." },
   { q: "How do I place an order?", a: 'Use our Digital Menu to build a cart and checkout, or tap "Contact via WhatsApp" for 1-click ordering.' },
@@ -214,7 +216,17 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [heroSlide, setHeroSlide] = useState(0);
+  const [storeStatus, setStoreStatus] = useState<StoreStatus>(getStoreStatus());
   useReveal([items]);
+
+  /* ── Live store open/close tracker (Asia/Colombo time) ────── */
+  useEffect(() => {
+    setStoreStatus(getStoreStatus());
+    const interval = setInterval(() => {
+      setStoreStatus(getStoreStatus());
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     fetch("/api/menu")
@@ -351,6 +363,12 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-2">
+            {/* Live store status badge */}
+            <div className={`hidden sm:flex items-center gap-1.5 border px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors ${storeStatus.badgeColorClass}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${storeStatus.dotColorClass} ${storeStatus.isOpen ? "animate-ping" : ""}`} />
+              <span>{storeStatus.statusText} · {storeStatus.helperText}</span>
+            </div>
+
             <a href="tel:+94706288109" className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-[#F26F21] transition-colors">
               {Icon.phone()} 070 628 8109
             </a>
@@ -804,6 +822,9 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col gap-2 pt-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl w-max">
+                  <span>⏰ Daily Hours: 11:00 AM – 12:00 AM Midnight</span>
+                </div>
                 <a href="tel:+94706288109" className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-[#F26F21] transition-colors">
                   {Icon.phone("w-4 h-4")} 070 628 8109
                 </a>

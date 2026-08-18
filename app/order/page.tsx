@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { getStoreStatus, StoreStatus } from "@/lib/utils/business-hours";
 
 /* ── Types ─────────────────────────────────────────────────────── */
 interface MenuItem {
@@ -16,7 +17,11 @@ interface MenuItem {
   image?: string;
   sku?: string;
 }
-interface CartItem { item: MenuItem; quantity: number; }
+interface CartItem {
+  item: MenuItem;
+  quantity: number;
+  isFreePromo?: boolean;
+}
 
 /* ── Constants ─────────────────────────────────────────────────── */
 const CATEGORIES = ["All", "Fried Rice", "Chopsuey", "Kottu", "Ultimate Bites", "Pasta", "Beverages"];
@@ -106,7 +111,17 @@ export default function OrderPage() {
   const [toast, setToast] = useState<{ msg: string; type: "add" | "remove" } | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [storeStatus, setStoreStatus] = useState<StoreStatus>(getStoreStatus());
   const searchRef = useRef<HTMLInputElement>(null);
+
+  /* ── Live store open/close tracker (Asia/Colombo time) ────── */
+  useEffect(() => {
+    setStoreStatus(getStoreStatus());
+    const interval = setInterval(() => {
+      setStoreStatus(getStoreStatus());
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   /* ── Data Loading + Realtime ─────────────────────────────────── */
   useEffect(() => {
@@ -147,29 +162,80 @@ export default function OrderPage() {
 
   const addToCart = (item: MenuItem) => {
     setCart((prev) => {
-      const idx = prev.findIndex((ci) => ci.item.id === item.id);
+      const idx = prev.findIndex((ci) => ci.item.id === item.id && !ci.isFreePromo);
       if (idx > -1) { const u = [...prev]; u[idx].quantity += 1; return u; }
-      return [...prev, { item, quantity: 1 }];
+      return [...prev, { item, quantity: 1, isFreePromo: false }];
     });
     showToast(`"${item.title}" added to cart`, "add");
   };
 
-  const updateQuantity = (itemId: number, delta: number) => {
+  // Claim exactly 1 free beverage promo (replaces any previously selected promo beverage)
+  const claimFreeDrink = (beverage: MenuItem) => {
+    if (subtotal < 3000) {
+      showToast("Spend Rs 3,000+ to unlock FREE drink!", "remove");
+      return;
+    }
+    setCart((prev) => {
+      const withoutFree = prev.filter((ci) => !ci.isFreePromo);
+      return [
+        ...withoutFree,
+        {
+          item: { ...beverage, price: 0 },
+          quantity: 1,
+          isFreePromo: true,
+        },
+      ];
+    });
+    showToast(`🎁 Claimed FREE ${beverage.title}!`, "add");
+  };
+
+  const removeFreeDrink = () => {
+    setCart((prev) => prev.filter((ci) => !ci.isFreePromo));
+    showToast("Free beverage removed", "remove");
+  };
+
+  const updateQuantity = (itemId: number, delta: number, isFreePromo?: boolean) => {
+    if (isFreePromo) {
+      if (delta > 0) {
+        showToast("Promo limited to 1 free drink per order", "remove");
+        return;
+      }
+      removeFreeDrink();
+      return;
+    }
     setCart((prev) =>
-      prev.map((ci) => ci.item.id === itemId ? { ...ci, quantity: ci.quantity + delta } : ci)
+      prev.map((ci) => (ci.item.id === itemId && !ci.isFreePromo) ? { ...ci, quantity: ci.quantity + delta } : ci)
           .filter((ci) => ci.quantity > 0)
     );
   };
 
-  const removeFromCart = (itemId: number) => {
-    setCart((prev) => prev.filter((ci) => ci.item.id !== itemId));
+  const removeFromCart = (itemId: number, isFreePromo?: boolean) => {
+    if (isFreePromo) {
+      removeFreeDrink();
+      return;
+    }
+    setCart((prev) => prev.filter((ci) => ci.isFreePromo || ci.item.id !== itemId));
     showToast("Item removed", "remove");
   };
 
   const clearCart = () => setCart([]);
 
   const totalItems = cart.reduce((s, ci) => s + ci.quantity, 0);
-  const subtotal = cart.reduce((s, ci) => s + Number(ci.item.price) * ci.quantity, 0);
+  // Free promo item price is 0 so it doesn't count towards the required 3000 threshold
+  const subtotal = cart.reduce((s, ci) => s + (ci.isFreePromo ? 0 : Number(ci.item.price) * ci.quantity), 0);
+
+  // Auto-remove free promo drink if subtotal drops below 3000
+  useEffect(() => {
+    if (subtotal < 3000) {
+      setCart((prev) => {
+        if (prev.some((ci) => ci.isFreePromo)) {
+          showToast("Free drink removed (Subtotal under Rs 3,000)", "remove");
+          return prev.filter((ci) => !ci.isFreePromo);
+        }
+        return prev;
+      });
+    }
+  }, [subtotal]);
 
   const filteredItems = useMemo(() => {
     const CATEGORY_ORDER = ["Fried Rice", "Chopsuey", "Kottu", "Pasta", "Ultimate Bites", "Beverages"];
@@ -192,10 +258,18 @@ export default function OrderPage() {
 
   const handleCheckout = () => {
     if (!cart.length) return;
-    const lines = cart.map((ci) =>
-      `• ${ci.quantity}× ${ci.item.title} (${ci.item.portion}) — Rs ${(Number(ci.item.price) * ci.quantity).toLocaleString()}`
-    ).join("\n");
-    const msg = `Hi t-cloud eats! I'd like to place an order:\n\n${lines}\n\n*Total: Rs ${subtotal.toLocaleString()}*\n\nPlease confirm and arrange delivery. Thank you!`;
+    const lines = cart.map((ci) => {
+      if (ci.isFreePromo) {
+        return `• 1× ${ci.item.title} (${ci.item.portion || "Beverage"}) — 🎁 FREE PROMO ITEM (Rs 0)`;
+      }
+      return `• ${ci.quantity}× ${ci.item.title} (${ci.item.portion}) — Rs ${(Number(ci.item.price) * ci.quantity).toLocaleString()}`;
+    }).join("\n");
+
+    const closedNotice = !storeStatus.isOpen
+      ? "\n\n⚠️ *Note:* Order placed during non-business hours (Closed after 12 AM). Please confirm delivery time upon kitchen opening at 11:00 AM."
+      : "";
+
+    const msg = `Hi t-cloud eats! I'd like to place an order:\n\n${lines}\n\n*Total: Rs ${subtotal.toLocaleString()}*${closedNotice}\n\nPlease confirm and arrange delivery. Thank you!`;
     window.open(`https://wa.me/94706288109?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -249,10 +323,10 @@ export default function OrderPage() {
               </div>
             </Link>
 
-            {/* Live badge */}
-            <div className="hidden sm:flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
-              Kitchen Open · ~20 Min Prep
+            {/* Live store status badge */}
+            <div className={`flex items-center gap-1.5 border px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors ${storeStatus.badgeColorClass}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${storeStatus.dotColorClass} ${storeStatus.isOpen ? "animate-ping" : ""}`} />
+              <span>{storeStatus.statusText} · {storeStatus.helperText}</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -275,6 +349,14 @@ export default function OrderPage() {
             </div>
           </div>
         </header>
+
+        {/* ── CLOSED WARNING BANNER ── */}
+        {!storeStatus.isOpen && (
+          <div className="bg-gradient-to-r from-rose-500/15 via-amber-500/10 to-rose-500/15 border-b border-rose-200/80 px-4 py-2.5 text-center text-xs font-bold text-rose-900 flex items-center justify-center gap-2 shadow-inner">
+            <span className="text-sm">🌙</span>
+            <span>Kitchen is currently <strong>Closed (Operating hours: 11:00 AM – 12:00 AM Midnight)</strong>. You can still pre-order or browse our menu!</span>
+          </div>
+        )}
 
         {/* ── HERO BANNER ──────────────────────────────────────────── */}
         <section style={{ background: "linear-gradient(135deg,#F26F21 0%,#FF9248 50%,#e05c0d 100%)" }}
@@ -559,8 +641,11 @@ export default function OrderPage() {
               ) : (
                 <>
                   {/* Cart items */}
-                  {cart.map(({ item, quantity }) => (
-                    <div key={item.id} className="flex items-center gap-3 bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                  {cart.map(({ item, quantity, isFreePromo }) => (
+                    <div key={isFreePromo ? `free-promo-${item.id}` : `cart-item-${item.id}`}
+                      className={`flex items-center gap-3 rounded-2xl p-3 border transition-all ${
+                        isFreePromo ? "bg-emerald-50/70 border-emerald-200 shadow-sm" : "bg-gray-50 border-gray-100"
+                      }`}>
                       {/* Thumbnail */}
                       {item.image
                         ? <img src={item.image} alt={item.title} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-gray-200" />
@@ -589,29 +674,43 @@ export default function OrderPage() {
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-extrabold text-sm text-gray-900 truncate">{item.title}</h4>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-extrabold text-sm text-gray-900 truncate">{item.title}</h4>
+                          {isFreePromo && (
+                            <span className="bg-emerald-600 text-white font-black text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                              FREE 🎁
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] text-gray-400 font-medium">{item.portion}</p>
-                        <p className="font-black text-sm mt-0.5" style={{ color: "#F26F21" }}>
-                          Rs {(Number(item.price) * quantity).toLocaleString()}
+                        <p className="font-black text-sm mt-0.5" style={{ color: isFreePromo ? "#059669" : "#F26F21" }}>
+                          {isFreePromo ? "Rs 0 (FREE)" : `Rs ${(Number(item.price) * quantity).toLocaleString()}`}
                         </p>
                       </div>
 
                       {/* Qty + remove */}
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 p-1">
-                          <button onClick={() => updateQuantity(item.id, -1)}
-                            className="qty-btn bg-gray-100 hover:bg-gray-200 text-gray-700">
-                            {Icons.minus("w-3.5 h-3.5")}
-                          </button>
-                          <span className="text-sm font-black text-gray-900 w-5 text-center">{quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, 1)}
-                            className="qty-btn text-white"
-                            style={{ background: "#F26F21" }}>
-                            {Icons.plus("w-3.5 h-3.5")}
-                          </button>
-                        </div>
-                        <button onClick={() => removeFromCart(item.id)}
-                          className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-400 flex items-center justify-center transition-colors">
+                        {isFreePromo ? (
+                          <div className="flex items-center bg-emerald-100 border border-emerald-300 rounded-xl px-2 py-1">
+                            <span className="text-[11px] font-black text-emerald-800">1 Free Item</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 p-1">
+                            <button onClick={() => updateQuantity(item.id, -1, false)}
+                              className="qty-btn bg-gray-100 hover:bg-gray-200 text-gray-700">
+                              {Icons.minus("w-3.5 h-3.5")}
+                            </button>
+                            <span className="text-sm font-black text-gray-900 w-5 text-center">{quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, 1, false)}
+                              className="qty-btn text-white"
+                              style={{ background: "#F26F21" }}>
+                              {Icons.plus("w-3.5 h-3.5")}
+                            </button>
+                          </div>
+                        )}
+                        <button onClick={() => removeFromCart(item.id, isFreePromo)}
+                          className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-400 flex items-center justify-center transition-colors"
+                          title={isFreePromo ? "Remove free promo drink" : "Remove item"}>
                           {Icons.trash("w-3.5 h-3.5")}
                         </button>
                       </div>
@@ -662,10 +761,12 @@ export default function OrderPage() {
                     const remaining = Math.max(0, TARGET - subtotal);
                     const pct = Math.min(100, Math.round((subtotal / TARGET) * 100));
 
-                    const cartIds = cart.map(ci => ci.item.id);
-                    // Filter out milkshakes!
+                    const claimedPromoItem = cart.find(ci => ci.isFreePromo);
+                    const claimedPromoId = claimedPromoItem?.item.id;
+
+                    // Filter out milkshakes
                     let beverages = menuItems
-                      .filter(m => m.category === "Beverages" && !m.title.toLowerCase().includes("shake") && !cartIds.includes(m.id));
+                      .filter(m => m.category === "Beverages" && !m.title.toLowerCase().includes("shake"));
 
                     // Guarantee Elephant House Orange Crush is included in free beverages list
                     if (!beverages.some(b => b.title.toLowerCase().includes("orange crush"))) {
@@ -691,7 +792,9 @@ export default function OrderPage() {
                           }}>
                           <div className="flex items-center justify-between text-xs font-black mb-1.5">
                             <span className="flex items-center gap-1.5" style={{ color: isUnlocked ? "#047857" : "#C2410C" }}>
-                              {isUnlocked ? "🎉 Free Drink Unlocked!" : `🍹 Add Rs ${remaining.toLocaleString()} more for FREE Drink`}
+                              {isUnlocked
+                                ? (claimedPromoItem ? `🎉 Free Drink Added (${claimedPromoItem.item.title})` : "🎉 Free Drink Unlocked! Choose 1 below")
+                                : `🍹 Add Rs ${remaining.toLocaleString()} more for FREE Drink`}
                             </span>
                             <span className="font-bold text-[10px]" style={{ color: isUnlocked ? "#059669" : "#EA580C" }}>
                               Rs {subtotal.toLocaleString()} / Rs 3,000
@@ -715,52 +818,69 @@ export default function OrderPage() {
                               <div className="flex items-center gap-1.5">
                                 <span className="text-base">{isUnlocked ? "🎁" : "🔒"}</span>
                                 <p className="text-[11px] font-black text-gray-800 uppercase tracking-wider">
-                                  {isUnlocked ? "Choose Your FREE Drink" : "Add a Drink (Locked)"}
+                                  {isUnlocked
+                                    ? (claimedPromoItem ? "Your 1 FREE Drink (Tap to swap):" : "Choose 1 FREE Drink:")
+                                    : "Add a Drink (Locked)"}
                                 </p>
                               </div>
-                              <span className="text-[9px] font-bold text-gray-400">Excludes milkshakes</span>
+                              <span className="text-[9px] font-bold text-gray-400">1 Free Drink per order</span>
                             </div>
 
                             <div className="flex gap-2 overflow-x-auto scrollbar-none px-3.5 pb-3">
-                              {beverages.map(bev => (
-                                <button key={bev.id}
-                                  disabled={!isUnlocked}
-                                  onClick={() => {
-                                    if (isUnlocked) {
-                                      addToCart({ ...bev, price: 0 });
+                              {beverages.map(bev => {
+                                const isThisSelected = claimedPromoId === bev.id;
+
+                                return (
+                                  <button key={bev.id}
+                                    disabled={!isUnlocked}
+                                    onClick={() => {
+                                      if (isUnlocked) {
+                                        if (isThisSelected) {
+                                          removeFreeDrink();
+                                        } else {
+                                          claimFreeDrink(bev);
+                                        }
+                                      }
+                                    }}
+                                    className={`flex-shrink-0 flex items-center gap-2 rounded-xl px-2.5 py-2 shadow-sm border transition-all ${
+                                      isUnlocked
+                                        ? isThisSelected
+                                          ? "bg-emerald-100/90 border-emerald-500 ring-2 ring-emerald-500/30 cursor-pointer active:scale-95"
+                                          : "bg-white border-emerald-200 hover:border-emerald-500 cursor-pointer active:scale-95"
+                                        : "bg-white/60 border-gray-200 opacity-60 cursor-not-allowed"
+                                    }`}>
+                                    {bev.image
+                                      ? <img src={bev.image} alt={bev.title} className="w-9 h-9 rounded-lg object-cover" />
+                                      : (
+                                        <div className="w-9 h-9 rounded-lg flex flex-col items-center justify-center bg-gray-200">
+                                          <svg viewBox="0 0 40 52" className="w-5 h-6 opacity-40" fill="none">
+                                            <rect x="10" y="2" width="20" height="4" rx="2" fill="#999"/>
+                                            <path d="M8 6 L6 46 Q6 48 8 48 L32 48 Q34 48 34 46 L32 6 Z" fill="#bbb" stroke="#aaa" strokeWidth="0.5"/>
+                                          </svg>
+                                        </div>
+                                      )
                                     }
-                                  }}
-                                  className={`flex-shrink-0 flex items-center gap-2 rounded-xl px-2.5 py-2 shadow-sm border transition-all ${
-                                    isUnlocked
-                                      ? "bg-white border-emerald-300 hover:border-emerald-500 cursor-pointer active:scale-95"
-                                      : "bg-white/60 border-gray-200 opacity-60 cursor-not-allowed"
-                                  }`}>
-                                  {bev.image
-                                    ? <img src={bev.image} alt={bev.title} className="w-9 h-9 rounded-lg object-cover" />
-                                    : (
-                                      <div className="w-9 h-9 rounded-lg flex flex-col items-center justify-center bg-gray-200">
-                                        <svg viewBox="0 0 40 52" className="w-5 h-6 opacity-40" fill="none">
-                                          <rect x="10" y="2" width="20" height="4" rx="2" fill="#999"/>
-                                          <path d="M8 6 L6 46 Q6 48 8 48 L32 48 Q34 48 34 46 L32 6 Z" fill="#bbb" stroke="#aaa" strokeWidth="0.5"/>
-                                        </svg>
-                                      </div>
-                                    )
-                                  }
-                                  <div className="text-left">
-                                    <p className="text-[10px] font-extrabold text-gray-800 leading-tight" style={{ maxWidth: 80, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bev.title}</p>
-                                    {isUnlocked ? (
-                                      <span className="inline-block bg-emerald-100 text-emerald-700 font-extrabold px-1.5 py-0.5 rounded-full text-[9px]">FREE ✔</span>
-                                    ) : (
-                                      <p className="text-[10px] font-bold text-gray-400">Rs {Number(bev.price).toLocaleString()}</p>
-                                    )}
-                                  </div>
-                                  {isUnlocked && (
-                                    <div className="w-6 h-6 rounded-full text-white flex items-center justify-center flex-shrink-0 ml-1 bg-emerald-500">
-                                      {Icons.plus("w-3 h-3")}
+                                    <div className="text-left">
+                                      <p className="text-[10px] font-extrabold text-gray-800 leading-tight" style={{ maxWidth: 80, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bev.title}</p>
+                                      {isUnlocked ? (
+                                        isThisSelected ? (
+                                          <span className="inline-block bg-emerald-600 text-white font-extrabold px-1.5 py-0.5 rounded-full text-[9px]">✓ Claimed</span>
+                                        ) : (
+                                          <span className="inline-block bg-emerald-100 text-emerald-700 font-extrabold px-1.5 py-0.5 rounded-full text-[9px]">FREE ✔</span>
+                                        )
+                                      ) : (
+                                        <p className="text-[10px] font-bold text-gray-400">Rs {Number(bev.price).toLocaleString()}</p>
+                                      )}
                                     </div>
-                                  )}
-                                </button>
-                              ))}
+                                    {isUnlocked && (
+                                      <div className={`w-6 h-6 rounded-full text-white flex items-center justify-center flex-shrink-0 ml-1 ${isThisSelected ? "bg-red-500" : "bg-emerald-500"}`}
+                                        title={isThisSelected ? "Remove" : "Select this free drink"}>
+                                        {isThisSelected ? Icons.trash("w-3 h-3") : Icons.plus("w-3 h-3")}
+                                      </div>
+                                    )}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
