@@ -43,9 +43,9 @@ async function main() {
   await client.connect();
   console.log("Connected to Supabase PostgreSQL database.");
 
-  // Create table zb_inventory
+  // Create table tce_inventory
   const createTableQuery = `
-    CREATE TABLE IF NOT EXISTS zb_inventory (
+    CREATE TABLE IF NOT EXISTS tce_inventory (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       category TEXT NOT NULL,
@@ -61,10 +61,10 @@ async function main() {
     );
   `;
   await client.query(createTableQuery);
-  console.log("Table 'zb_inventory' created successfully or already exists.");
+  console.log("Table 'tce_inventory' created successfully or already exists.");
 
   // Check if there are any records
-  const checkItems = await client.query("SELECT COUNT(*) FROM zb_inventory");
+  const checkItems = await client.query("SELECT COUNT(*) FROM tce_inventory");
   const count = parseInt(checkItems.rows[0].count, 10);
 
   if (count === 0) {
@@ -139,14 +139,14 @@ async function main() {
 
     for (const item of sampleInventory) {
       await client.query(
-        `INSERT INTO zb_inventory (id, name, category, sku, unit, par_level, quantity, unit_cost, supplier, expiration_date, storage_location)
+        `INSERT INTO tce_inventory (id, name, category, sku, unit, par_level, quantity, unit_cost, supplier, expiration_date, storage_location)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [item.id, item.name, item.category, item.sku, item.unit, item.par_level, item.quantity, item.unit_cost, item.supplier, item.expiration_date, item.storage_location]
       );
     }
     console.log("Seeding complete!");
   } else {
-    console.log("Table 'zb_inventory' already has data. Skipping seed.");
+    console.log("Table 'tce_inventory' already has data. Skipping seed.");
   }
 
   await client.end();
