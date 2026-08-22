@@ -671,7 +671,8 @@ function getBusinessDateStr(dateInput: Date | string = new Date()): string {
   const d = new Date(dateInput);
   const hours = d.getHours();
   const dateCopy = new Date(d);
-  if (hours < 14) {
+  // Shift rolls over to new calendar day at 1:00 AM (00:00-00:59 counts as previous night shift)
+  if (hours < 1) {
     dateCopy.setDate(dateCopy.getDate() - 1);
   }
   const yy = String(dateCopy.getFullYear()).slice(-2);
@@ -3149,7 +3150,7 @@ export default function PosPage() {
                 style={{ background: "#0E1628", border: "1px solid #1E2D4E", color: "#4B5E82" }}
                 title="Force Sync with Cloud Database"
               >
-                <RotateCw size={14} className={isDatabaseSyncing || loadingOrders ? "animate-spin text-amber-500" : "hover:text-slate-200 transition-colors"} />
+                <RotateCw size={14} className={isDatabaseSyncing ? "animate-spin text-amber-500" : "hover:text-slate-200 transition-colors"} />
               </button>
 
               {/* Notification Button */}
