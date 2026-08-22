@@ -830,6 +830,8 @@ export default function PosPage() {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const isLoadingRef = useRef(false);
+  const isSyncingOfflineRef = useRef(false);
+  const hasShownInitialSyncToastRef = useRef(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1099,38 +1101,46 @@ export default function PosPage() {
   });
 
   const syncOfflineOrders = useCallback(async (offlineOrders: Order[]) => {
+    if (isSyncingOfflineRef.current || !offlineOrders || offlineOrders.length === 0) return;
+    isSyncingOfflineRef.current = true;
     console.log("[Sync] Triggering sync for offline orders:", offlineOrders);
     let successfullySynced = 0;
     
-    for (const order of offlineOrders) {
-      try {
-        const { error } = await supabase
-          .from("tce_orders")
-          .insert({
-            id: order.id,
-            timestamp: order.timestamp,
-            items: order.items,
-            subtotal: order.subtotal,
-            tax: order.tax,
-            total: order.total,
-            status: order.status,
-            type: order.type,
-            customer: order.customer
-          });
-        
-        if (error) {
-          console.error(`[Sync] Failed to sync order ${order.id}:`, error);
-        } else {
-          console.log(`[Sync] Successfully synced order ${order.id} to database.`);
-          successfullySynced++;
+    try {
+      for (const order of offlineOrders) {
+        try {
+          const { error } = await supabase
+            .from("tce_orders")
+            .upsert({
+              id: order.id,
+              timestamp: order.timestamp,
+              items: order.items,
+              subtotal: order.subtotal,
+              tax: order.tax,
+              total: order.total,
+              status: order.status,
+              type: order.type,
+              customer: order.customer
+            }, { onConflict: "id" });
+          
+          if (error) {
+            console.error(`[Sync] Failed to sync order ${order.id}:`, error);
+          } else {
+            console.log(`[Sync] Successfully synced order ${order.id} to database.`);
+            successfullySynced++;
+          }
+        } catch (e) {
+          console.error(`[Sync] Network error syncing order ${order.id}:`, e);
         }
-      } catch (e) {
-        console.error(`[Sync] Network error syncing order ${order.id}:`, e);
       }
-    }
-    
-    if (successfullySynced > 0) {
-      triggerToast(`Synced ${successfullySynced} offline orders with database`, "success");
+      
+      if (successfullySynced > 0) {
+        triggerToast(`Synced ${successfullySynced} offline orders with database`, "success");
+      }
+    } finally {
+      setTimeout(() => {
+        isSyncingOfflineRef.current = false;
+      }, 3000);
     }
   }, []);
 
@@ -1231,8 +1241,10 @@ export default function PosPage() {
                 merged = [...merged, ...offlineUnsynced].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
                 console.log("Preserved offline unsynced orders:", offlineUnsynced);
                 
-                // Trigger sync in the background
-                syncOfflineOrders(offlineUnsynced);
+                // Trigger sync in the background only if not already syncing
+                if (!isSyncingOfflineRef.current) {
+                  syncOfflineOrders(offlineUnsynced);
+                }
               }
             } catch (err) {
               console.error("Failed to parse local orders during merge", err);
@@ -1241,6 +1253,19 @@ export default function PosPage() {
           
           setOrderHistory(merged);
           localStorage.setItem("t-cloud-eats-orders", JSON.stringify(merged));
+
+          // On initial load / login, notify the cashier about today's sync count
+          if (!hasShownInitialSyncToastRef.current) {
+            hasShownInitialSyncToastRef.current = true;
+            const todayBizDate = getBusinessDateStr(new Date());
+            const todayOrdersCount = merged.filter((o: any) => getBusinessDateStr(o.timestamp) === todayBizDate && o.status !== "Ignored" && o.status !== "Voided").length;
+            
+            if (todayOrdersCount > 0) {
+              triggerToast(`Synced with database: ${todayOrdersCount} order${todayOrdersCount > 1 ? 's' : ''} for today`, "success");
+            } else {
+              triggerToast("Synced with database", "success");
+            }
+          }
 
           // Clean up payment receipts older than 7 days in the database to clear storage
           const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -1351,26 +1376,35 @@ export default function PosPage() {
 
     loadOrdersAndCMS();
 
-    // Subscribe to realtime changes on orders & customers!
+    // Subscribe to realtime changes on orders & customers with debouncing!
+    let realtimeDebounceTimer: NodeJS.Timeout | null = null;
+    const triggerDebouncedReload = () => {
+      if (realtimeDebounceTimer) clearTimeout(realtimeDebounceTimer);
+      realtimeDebounceTimer = setTimeout(() => {
+        loadOrdersAndCMS(true);
+      }, 1000);
+    };
+
     const ordersChannel = supabase
       .channel("realtime-orders-cms")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tce_orders" },
         () => {
-          loadOrdersAndCMS();
+          triggerDebouncedReload();
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tce_customers" },
         () => {
-          loadOrdersAndCMS();
+          triggerDebouncedReload();
         }
       )
       .subscribe();
 
     return () => {
+      if (realtimeDebounceTimer) clearTimeout(realtimeDebounceTimer);
       supabase.removeChannel(ordersChannel);
     };
   }, [loadOrdersAndCMS]);
@@ -2119,13 +2153,13 @@ export default function PosPage() {
 
         if (orderRes.error) {
           console.error("Supabase order upsert error:", orderRes.error);
-          triggerToast("Saved locally, cloud sync pending", "warning");
+          triggerToast("Poor connection! Order saved locally and will auto-sync when online.", "error");
         } else {
-          triggerToast("Order placed & synced with database!", "success");
+          triggerToast(`Order ${newInvoiceId} placed & synced in real-time!`, "success");
         }
       } catch (dbErr) {
         console.error("Network error saving order to DB:", dbErr);
-        triggerToast("Saved locally (offline mode active)", "warning");
+        triggerToast("Poor connection! Order saved locally (offline mode active).", "error");
       }
 
       // 5. Silent in-memory background refresh (Ctrl+R effect without page reload)
