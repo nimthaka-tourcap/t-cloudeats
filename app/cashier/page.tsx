@@ -1407,6 +1407,13 @@ export default function PosPage() {
           triggerDebouncedReload();
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tce_tallies" },
+        () => {
+          triggerDebouncedReload();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -2370,14 +2377,9 @@ export default function PosPage() {
   }, [todaysCreditOrders]);
 
   // Settlement baseline date (All dates up to baseline are settled by default; rule enforces from now on)
+  // Settlement baseline date (All dates prior to today are considered settled; rule enforces starting today)
   const settlementBaselineDate = useMemo(() => {
-    if (typeof window === "undefined") return currentBizDate;
-    let saved = localStorage.getItem("t-cloud-eats-settlement-baseline");
-    if (!saved) {
-      saved = currentBizDate;
-      localStorage.setItem("t-cloud-eats-settlement-baseline", saved);
-    }
-    return saved;
+    return currentBizDate;
   }, [currentBizDate]);
 
   // Check if the most recent past business day with orders has an unsettled tally
@@ -2416,35 +2418,82 @@ export default function PosPage() {
     };
   }, [orderHistory, currentBizDate, settlementBaselineDate, tallySubmitted]);
 
-  // Load shift tally when date changes (and auto-settle historical dates)
+  // Load shift tally from Supabase (tce_tallies), fallback to localStorage
   useEffect(() => {
-    try {
-      const allTalliesStr = localStorage.getItem("t-cloud-eats-shift-tallies");
-      if (allTalliesStr) {
-        const allTallies = JSON.parse(allTalliesStr);
-        const dayTally = allTallies[selectedLogBizDateStr];
-        if (dayTally) {
-          setOpeningBalance(dayTally.openingBalance ?? 0);
-          setBankTransfer(dayTally.bankTransfer ?? 0);
-          setActualCash(dayTally.actualCash ?? 0);
-          setOperationalExpenses(dayTally.expenses ?? []);
-          setTallySubmitted(dayTally.submitted ?? (selectedLogBizDateStr < currentBizDate));
+    let isMounted = true;
+
+    const loadTallyData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("tce_tallies")
+          .select("*")
+          .eq("id", selectedLogBizDateStr)
+          .maybeSingle();
+
+        if (!error && data && isMounted) {
+          setOpeningBalance(Number(data.opening_balance) || 0);
+          setBankTransfer(Number(data.bank_transfer) || 0);
+          setActualCash(Number(data.actual_cash) || 0);
+          const parsedExps = typeof data.expenses === "string" ? JSON.parse(data.expenses) : (data.expenses || []);
+          setOperationalExpenses(parsedExps);
+          setTallySubmitted(data.submitted ?? (selectedLogBizDateStr < currentBizDate));
+
+          // Cache in localStorage
+          try {
+            const allTalliesStr = localStorage.getItem("t-cloud-eats-shift-tallies") || "{}";
+            const allTallies = JSON.parse(allTalliesStr);
+            allTallies[selectedLogBizDateStr] = {
+              openingBalance: Number(data.opening_balance) || 0,
+              bankTransfer: Number(data.bank_transfer) || 0,
+              actualCash: Number(data.actual_cash) || 0,
+              expenses: parsedExps,
+              submitted: data.submitted ?? (selectedLogBizDateStr < currentBizDate),
+            };
+            localStorage.setItem("t-cloud-eats-shift-tallies", JSON.stringify(allTallies));
+          } catch (storageErr) {
+            console.error("Failed to cache tally locally:", storageErr);
+          }
           return;
         }
+      } catch (err) {
+        console.warn("Supabase tally fetch failed, trying localStorage:", err);
       }
-    } catch (e) {
-      console.error("Error loading shift tallies", e);
-    }
-    // Reset to defaults if no record exists
-    setOpeningBalance(0);
-    setBankTransfer(0);
-    setActualCash(0);
-    setOperationalExpenses([]);
-    // Historical dates before today are considered settled by default
-    setTallySubmitted(selectedLogBizDateStr < currentBizDate);
+
+      // LocalStorage fallback
+      try {
+        const allTalliesStr = localStorage.getItem("t-cloud-eats-shift-tallies");
+        if (allTalliesStr) {
+          const allTallies = JSON.parse(allTalliesStr);
+          const dayTally = allTallies[selectedLogBizDateStr];
+          if (dayTally && isMounted) {
+            setOpeningBalance(dayTally.openingBalance ?? 0);
+            setBankTransfer(dayTally.bankTransfer ?? 0);
+            setActualCash(dayTally.actualCash ?? 0);
+            setOperationalExpenses(dayTally.expenses ?? []);
+            setTallySubmitted(dayTally.submitted ?? (selectedLogBizDateStr < currentBizDate));
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Error loading shift tallies from localStorage", e);
+      }
+
+      // Reset to defaults if no record exists
+      if (isMounted) {
+        setOpeningBalance(0);
+        setBankTransfer(0);
+        setActualCash(0);
+        setOperationalExpenses([]);
+        // Historical dates before today are considered settled by default
+        setTallySubmitted(selectedLogBizDateStr < currentBizDate);
+      }
+    };
+
+    loadTallyData();
+    return () => { isMounted = false; };
   }, [selectedLogBizDateStr, currentBizDate]);
 
-  // Helper to save shift tally
+  // Helper to save shift tally to Supabase (tce_tallies) and localStorage
   const saveShiftTally = (
     op: number,
     bt: number,
@@ -2452,10 +2501,12 @@ export default function PosPage() {
     expList: { id: string; category: string; description: string; amount: number }[],
     sub?: boolean
   ) => {
+    const isSub = sub !== undefined ? sub : tallySubmitted;
+
+    // 1. Update local storage
     try {
       const allTalliesStr = localStorage.getItem("t-cloud-eats-shift-tallies") || "{}";
       const allTallies = JSON.parse(allTalliesStr);
-      const isSub = sub !== undefined ? sub : tallySubmitted;
       allTallies[selectedLogBizDateStr] = {
         openingBalance: op,
         bankTransfer: bt,
@@ -2465,8 +2516,41 @@ export default function PosPage() {
       };
       localStorage.setItem("t-cloud-eats-shift-tallies", JSON.stringify(allTallies));
     } catch (e) {
-      console.error("Error saving shift tally", e);
+      console.error("Error saving shift tally locally:", e);
     }
+
+    // 2. Persist to Supabase in background
+    let currentUser = "cashier@t-cloudeats.com";
+    if (typeof window !== "undefined") {
+      currentUser = localStorage.getItem("t-cloud-eats-user") || currentUser;
+    }
+
+    Promise.resolve(
+      supabase
+        .from("tce_tallies")
+        .upsert({
+          id: selectedLogBizDateStr,
+          biz_date: selectedLogBizDateStr,
+          opening_balance: op,
+          bank_transfer: bt,
+          actual_cash: ac,
+          expenses: expList,
+          submitted: isSub,
+          submitted_at: isSub ? new Date().toISOString() : null,
+          submitted_by: currentUser,
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" })
+    )
+      .then(({ error }) => {
+        if (error) {
+          console.error("Supabase tally upsert error:", error);
+        } else {
+          console.log(`[Tally Sync] Successfully synced tally for ${selectedLogBizDateStr} to database.`);
+        }
+      })
+      .catch((err) => {
+        console.error("Network error saving tally to Supabase:", err);
+      });
   };
 
   const handleAddExpense = (e: React.FormEvent) => {
@@ -2498,7 +2582,7 @@ export default function PosPage() {
   const handleSubmitTally = () => {
     setTallySubmitted(true);
     saveShiftTally(openingBalance, bankTransfer, actualCash, operationalExpenses, true);
-    triggerToast("Closing balance tally submitted & locked!", "success");
+    triggerToast("Closing balance tally submitted & saved to database!", "success");
   };
 
   const handleUnlockTally = () => {
@@ -3319,7 +3403,7 @@ export default function PosPage() {
                     Shift Orders List
                   </h3>
                   
-                  {loadingOrders ? (
+                  {loadingOrders && orderHistory.length === 0 ? (
                     <div className="text-center py-10 text-xs text-slate-500 flex flex-col items-center justify-center gap-3">
                       <RotateCw className="animate-spin text-amber-500" size={24} />
                       <span>Loading shift orders...</span>
