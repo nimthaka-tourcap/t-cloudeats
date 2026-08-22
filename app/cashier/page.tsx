@@ -111,6 +111,7 @@ interface Order {
   type: "POS" | "Direct" | "3rd Party" | "Take Away" | "Pick Up" | "Delivery" | "Dine In";
   customer?: CustomerDetails;
   payment_status?: "Paid" | "Not Paid" | string;
+  syncedToDb?: boolean;
 }
 
 type ToastType = "success" | "error" | "info" | "warning";
@@ -1128,6 +1129,7 @@ export default function PosPage() {
           } else {
             console.log(`[Sync] Successfully synced order ${order.id} to database.`);
             successfullySynced++;
+            setOrderHistory(prev => prev.map(o => o.id === order.id ? { ...o, syncedToDb: true } : o));
           }
         } catch (e) {
           console.error(`[Sync] Network error syncing order ${order.id}:`, e);
@@ -1204,7 +1206,8 @@ export default function PosPage() {
               return true;
             }).map((o: any) => ({
               ...o,
-              payment_status: o.payment_status || (o.customer && o.customer.payment_status) || "Paid"
+              payment_status: o.payment_status || (o.customer && o.customer.payment_status) || "Paid",
+              syncedToDb: false
             }));
             setOrderHistory(filtered);
           }
@@ -1218,7 +1221,8 @@ export default function PosPage() {
               subtotal: Number(o.subtotal),
               tax: Number(o.tax),
               total: Number(o.total),
-              payment_status: o.payment_status || (parsedCust && parsedCust.payment_status) || "Paid"
+              payment_status: o.payment_status || (parsedCust && parsedCust.payment_status) || "Paid",
+              syncedToDb: true
             };
           });
           const filtered = formatted.filter((o: any) => {
@@ -1236,7 +1240,9 @@ export default function PosPage() {
             try {
               const localOrders = JSON.parse(localSavedStr) as Order[];
               const dbIds = new Set(filtered.map((o: any) => o.id));
-              const offlineUnsynced = localOrders.filter(lo => lo && lo.id && !dbIds.has(lo.id));
+              const offlineUnsynced = localOrders
+                .filter(lo => lo && lo.id && !dbIds.has(lo.id))
+                .map(lo => ({ ...lo, syncedToDb: false }));
               if (offlineUnsynced.length > 0) {
                 merged = [...merged, ...offlineUnsynced].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
                 console.log("Preserved offline unsynced orders:", offlineUnsynced);
@@ -2122,7 +2128,8 @@ export default function PosPage() {
         status: "Preparing",
         type: orderType === "POS" ? "Take Away" : orderType === "Direct" ? "Delivery" : orderType,
         payment_status: "Paid",
-        customer: customerDetails
+        customer: customerDetails,
+        syncedToDb: false
       };
 
       // 3. Update local order logs state and localStorage immediately
@@ -2155,6 +2162,8 @@ export default function PosPage() {
           console.error("Supabase order upsert error:", orderRes.error);
           triggerToast("Poor connection! Order saved locally and will auto-sync when online.", "error");
         } else {
+          newOrder.syncedToDb = true;
+          setOrderHistory(prev => prev.map(o => o.id === newInvoiceId ? { ...o, syncedToDb: true } : o));
           triggerToast(`Order ${newInvoiceId} placed & synced in real-time!`, "success");
         }
       } catch (dbErr) {
@@ -3341,11 +3350,18 @@ export default function PosPage() {
                             return (
                               <tr key={order.id} className="hover:bg-white/[0.01] transition-colors">
                                 <td className="px-4 py-3 font-mono font-black text-orange-400">
-                                  {order.status === "Ignored" || order.id.startsWith("IGNORED-") ? (
-                                    <span className="text-slate-500 font-semibold italic">-</span>
-                                  ) : (
-                                    order.id
-                                  )}
+                                  <div className="flex flex-col items-start gap-1">
+                                    {order.status === "Ignored" || order.id.startsWith("IGNORED-") ? (
+                                      <span className="text-slate-500 font-semibold italic">-</span>
+                                    ) : (
+                                      <span>{order.id}</span>
+                                    )}
+                                    {order.syncedToDb === false && (
+                                      <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30" title="Saved locally - Cloud sync pending">
+                                        <WifiOff size={8} /> Local Only
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-4 py-3 text-slate-300">
                                   {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -5328,50 +5344,82 @@ export default function PosPage() {
             </div>
 
             {/* E-Bill URL Block */}
-            <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-2 text-left">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Customer Digital E-Bill Link:</span>
-              <div className="flex items-center gap-2">
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={getBillUrl(latestOrder.id)}
-                  className="bg-white border border-slate-200 text-[9px] px-2 py-1.5 rounded-lg flex-1 font-mono text-slate-600 truncate focus:outline-none"
-                />
+             <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-2 text-left">
+               <div className="flex items-center justify-between">
+                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Customer Digital E-Bill Link:</span>
+                 {latestOrder.syncedToDb === false && (
+                   <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-wider text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
+                     <WifiOff size={9} /> Saved Locally (Sync Pending)
+                   </span>
+                 )}
+               </div>
+               <div className="flex items-center gap-2">
+                 <input 
+                   type="text" 
+                   readOnly 
+                   value={getBillUrl(latestOrder.id)}
+                   className="bg-white border border-slate-200 text-[9px] px-2 py-1.5 rounded-lg flex-1 font-mono text-slate-600 truncate focus:outline-none"
+                 />
                  <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(getBillUrl(latestOrder.id));
-                    triggerToast("E-Bill URL copied!", "success");
-                  }}
-                  className="bg-[#FF6B35]/10 text-[#FF6B35] font-bold px-2 py-1.5 rounded-lg text-[9px] hover:bg-[#FF6B35]/20 transition-all cursor-pointer whitespace-nowrap active:scale-95"
-                >
-                  Copy
-                </button>
-                <button
-                  onClick={() => {
-                    router.push(`/bills/${latestOrder.id}${getBillHash(latestOrder.id)}`);
-                  }}
-                  className="bg-slate-200 text-slate-700 font-bold px-2 py-1.5 rounded-lg text-[9px] hover:bg-slate-300 transition-all text-center cursor-pointer active:scale-95"
-                >
-                  Open
-                </button>
-                {(() => {
-                  const currentCustomer = customers.find(x => x.phone === latestOrder.customer?.phone);
-                  const customerName = currentCustomer ? currentCustomer.name : latestOrder.customer?.name || "Customer";
-                  const messageText = `Hi ${customerName},\n\nThank you for your order! We are preparing it now and hope you enjoy your meal.\n\nYou can view your bill and track your order status here:\n${getBillUrl(latestOrder.id)}\n\nHave a great day!\n\nBest regards,\nthe t-cloud eats Team`;
-                  return (
-                    <a
-                      href={`https://wa.me/${latestOrder.customer?.phone?.replace(/\D/g, "")}?text=${encodeURIComponent(messageText)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-bold px-2 py-1.5 rounded-lg text-[9px] hover:text-emerald-400 transition-all text-center cursor-pointer active:scale-95 whitespace-nowrap"
-                      title="Send via WhatsApp"
-                    >
-                      WhatsApp
-                    </a>
-                  );
-                })()}
-              </div>
-            </div>
+                   onClick={() => {
+                     if (latestOrder.syncedToDb === false) {
+                       triggerToast("Order is only saved locally. Link will work once synced with database.", "warning");
+                     }
+                     navigator.clipboard.writeText(getBillUrl(latestOrder.id));
+                     triggerToast("E-Bill URL copied!", "success");
+                   }}
+                   className="bg-[#FF6B35]/10 text-[#FF6B35] font-bold px-2 py-1.5 rounded-lg text-[9px] hover:bg-[#FF6B35]/20 transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                 >
+                   Copy
+                 </button>
+                 <button
+                   onClick={() => {
+                     if (latestOrder.syncedToDb === false) {
+                       triggerToast("Order is only saved locally. Cloud bill unlocks once synced.", "warning");
+                       return;
+                     }
+                     router.push(`/bills/${latestOrder.id}${getBillHash(latestOrder.id)}`);
+                   }}
+                   className={`font-bold px-2 py-1.5 rounded-lg text-[9px] transition-all text-center active:scale-95 ${
+                     latestOrder.syncedToDb === false
+                       ? "bg-slate-100 text-slate-400 opacity-60 cursor-not-allowed"
+                       : "bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer"
+                   }`}
+                 >
+                   Open
+                 </button>
+                 {(() => {
+                   const isLocalOnly = latestOrder.syncedToDb === false;
+                   if (isLocalOnly) {
+                     return (
+                       <button
+                         type="button"
+                         onClick={() => triggerToast("WhatsApp sharing is disabled while order is only saved locally. It will activate once synced with the cloud database.", "warning")}
+                         className="bg-slate-200 text-slate-400 border border-slate-300 font-bold px-2 py-1.5 rounded-lg text-[9px] cursor-not-allowed opacity-70 flex items-center gap-1 whitespace-nowrap"
+                         title="WhatsApp sharing disabled (order saved locally only)"
+                       >
+                         <WifiOff size={9} className="text-amber-500" />
+                         WhatsApp
+                       </button>
+                     );
+                   }
+                   const currentCustomer = customers.find(x => x.phone === latestOrder.customer?.phone);
+                   const customerName = currentCustomer ? currentCustomer.name : latestOrder.customer?.name || "Customer";
+                   const messageText = `Hi ${customerName},\n\nThank you for your order! We are preparing it now and hope you enjoy your meal.\n\nYou can view your bill and track your order status here:\n${getBillUrl(latestOrder.id)}\n\nHave a great day!\n\nBest regards,\nthe t-cloud eats Team`;
+                   return (
+                     <a
+                       href={`https://wa.me/${latestOrder.customer?.phone?.replace(/\D/g, "")}?text=${encodeURIComponent(messageText)}`}
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-bold px-2 py-1.5 rounded-lg text-[9px] hover:text-emerald-400 transition-all text-center cursor-pointer active:scale-95 whitespace-nowrap"
+                       title="Send via WhatsApp"
+                     >
+                       WhatsApp
+                     </a>
+                   );
+                 })()}
+               </div>
+             </div>
 
             <div className="pt-2 flex flex-col gap-2">
               <button onClick={confirmAndPrintInvoice} className="w-full bg-[#00A86B] text-white font-bold py-3 rounded-xl cursor-pointer flex items-center justify-center gap-2 uppercase tracking-widest text-[10px]">
