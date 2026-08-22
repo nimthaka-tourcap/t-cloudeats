@@ -833,6 +833,7 @@ export default function PosPage() {
   const isLoadingRef = useRef(false);
   const isSyncingOfflineRef = useRef(false);
   const hasShownInitialSyncToastRef = useRef(false);
+  const hasShownOfflineSyncToastRef = useRef(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1137,7 +1138,25 @@ export default function PosPage() {
       }
       
       if (successfullySynced > 0) {
-        triggerToast(`Synced ${successfullySynced} offline orders with database`, "success");
+        // Update localStorage so these orders are permanently marked synced locally
+        const localSavedStr = localStorage.getItem("t-cloud-eats-orders");
+        if (localSavedStr) {
+          try {
+            const list = JSON.parse(localSavedStr) as Order[];
+            const updatedList = list.map(o => {
+              const wasSynced = offlineOrders.some(so => so.id === o.id);
+              return wasSynced ? { ...o, syncedToDb: true } : o;
+            });
+            localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedList));
+          } catch (storageErr) {
+            console.error(storageErr);
+          }
+        }
+
+        if (!hasShownOfflineSyncToastRef.current) {
+          hasShownOfflineSyncToastRef.current = true;
+          triggerToast(`Synced ${successfullySynced} offline orders with database`, "success");
+        }
       }
     } finally {
       setTimeout(() => {
