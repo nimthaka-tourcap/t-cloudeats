@@ -229,7 +229,7 @@ export async function GET() {
         if (title) updateData.title = title;
 
         const { data, error } = await supabase
-          .from("menu_items")
+          .from("tce_menu_items")
           .update(updateData)
           .eq("id", dbId)
           .select();

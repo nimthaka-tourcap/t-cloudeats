@@ -5,7 +5,7 @@ import { syncMenuAcrossPlatforms } from "@/lib/sync";
 export async function GET() {
   try {
     const { data, error } = await supabase
-      .from("menu_items")
+      .from("tce_menu_items")
       .select("*")
       .order("id", { ascending: true });
 
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await supabase
-      .from("menu_items")
+      .from("tce_menu_items")
       .insert([{ title, price: Number(price), category, portion, image, sku }])
       .select();
 
@@ -56,7 +56,7 @@ export async function PUT(request: Request) {
     }
 
     const { data, error } = await supabase
-      .from("menu_items")
+      .from("tce_menu_items")
       .update({ title, price: Number(price), category, portion, image, sku })
       .eq("id", id)
       .select();
@@ -88,7 +88,7 @@ export async function DELETE(request: Request) {
     }
 
     const { data, error } = await supabase
-      .from("menu_items")
+      .from("tce_menu_items")
       .delete()
       .eq("id", Number(id))
       .select();

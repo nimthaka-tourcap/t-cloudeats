@@ -83,6 +83,11 @@ const Icon = {
       <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   ),
+  minus: (cls = "w-4 h-4") => (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  ),
   ig: () => (
     <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
       <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
@@ -217,7 +222,71 @@ export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [heroSlide, setHeroSlide] = useState(0);
   const [storeStatus, setStoreStatus] = useState<StoreStatus>(getStoreStatus());
+  const [cart, setCart] = useState<{ item: any; quantity: number }[]>([]);
   useReveal([items]);
+
+  /* ── Load & Sync Cart with LocalStorage ─────────────────────── */
+  useEffect(() => {
+    const syncCart = () => {
+      try {
+        const saved = localStorage.getItem("tcloud_cart");
+        if (saved) setCart(JSON.parse(saved));
+        else setCart([]);
+      } catch {}
+    };
+    syncCart();
+    window.addEventListener("storage", syncCart);
+    window.addEventListener("cart_updated", syncCart);
+    return () => {
+      window.removeEventListener("storage", syncCart);
+      window.removeEventListener("cart_updated", syncCart);
+    };
+  }, []);
+
+  const addToCart = (item: any) => {
+    const numericPrice = typeof item.price === "string" ? Number(item.price.replace(/[^0-9]/g, "")) : Number(item.price);
+    const standardItem = {
+      ...item,
+      price: numericPrice,
+      portion: item.portion || (item.category === "Beverages" ? "Bottle" : "Large Portion")
+    };
+
+    setCart((prev) => {
+      const idx = prev.findIndex((ci) => 
+        ci.item.id === item.id || 
+        (ci.item.title && item.title && ci.item.title.toLowerCase().trim() === item.title.toLowerCase().trim())
+      );
+      let updated;
+      if (idx > -1) {
+        updated = [...prev];
+        updated[idx] = { ...updated[idx], quantity: updated[idx].quantity + 1 };
+      } else {
+        updated = [...prev, { item: standardItem, quantity: 1, isFreePromo: false }];
+      }
+      try {
+        localStorage.setItem("tcloud_cart", JSON.stringify(updated));
+        window.dispatchEvent(new Event("cart_updated"));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const updateQuantity = (itemId: any, delta: number, itemTitle?: string) => {
+    setCart((prev) => {
+      const updated = prev.map((ci) => {
+        const isMatch = ci.item.id === itemId || (itemTitle && ci.item.title && ci.item.title.toLowerCase().trim() === itemTitle.toLowerCase().trim());
+        if (isMatch) {
+          return { ...ci, quantity: ci.quantity + delta };
+        }
+        return ci;
+      }).filter((ci) => ci.quantity > 0);
+      try {
+        localStorage.setItem("tcloud_cart", JSON.stringify(updated));
+        window.dispatchEvent(new Event("cart_updated"));
+      } catch {}
+      return updated;
+    });
+  };
 
   /* ── Live store open/close tracker (Asia/Colombo time) ────── */
   useEffect(() => {
@@ -663,40 +732,77 @@ export default function Home() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             {[...popularDishes, ...secondRowDishes.map(d => ({ ...d, _desktopOnly: true }))].map((item: any, idx) => {
               const isDesktopOnly = item._desktopOnly;
+              const inCart = cart.find(ci => 
+                ci.item.id === item.id || 
+                (ci.item.title && item.title && ci.item.title.toLowerCase().trim() === item.title.toLowerCase().trim())
+              );
+              const qty = inCart?.quantity ?? 0;
+
               return (
                 <div key={item.id}
-                  onClick={() => setSelectedProduct(item)}
-                  className={`product-card cursor-pointer group${isDesktopOnly ? " hidden lg:block" : ""}`}
+                  className={`bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl border border-gray-100/90 flex flex-col justify-between transition-all duration-300 group${isDesktopOnly ? " hidden lg:flex" : ""}`}
                   style={{ animationDelay: `${idx * 60}ms`, animation: "cardFadeIn .4s ease both" }}>
+                  
+                  {/* Dish Image */}
                   <div className="relative h-36 sm:h-44 bg-gray-100 overflow-hidden">
                     {item.image
                       ? <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       : <FoodPlaceholder />
                     }
-                    {item.label && (
-                      <span className="absolute top-2.5 left-2.5 tag-chip bg-[#F26F21] text-white text-[9px]">{item.label}</span>
-                    )}
+                    <span className="absolute top-2.5 left-2.5 tag-chip bg-[#0D0D0D] text-white text-[9px] font-black uppercase tracking-wider">
+                      {item.category || "Main Dish"}
+                    </span>
                   </div>
-                  <div className="p-3 sm:p-4">
-                    <h3 className="font-extrabold text-sm text-gray-900 truncate mb-0.5 group-hover:text-[#F26F21] transition-colors">{item.title}</h3>
-                    <p className="text-[10px] text-gray-500 font-bold flex items-center gap-1 mb-2">
-                      {item.category === "Beverages" ? (item.portion || "Bottle") : (
-                        <>
-                          Serves 2
-                          <svg className="w-3 h-3 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                            <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
-                          </svg>
-                        </>
-                      )}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="font-black text-[#F26F21] text-sm">{typeof item.price === 'string' ? item.price : `Rs ${Number(item.price).toLocaleString()}`}</span>
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white transition-all active:scale-95 shadow-md"
-                        style={{ background: "#F26F21" }}>
-                        {Icon.plus("w-4 h-4")}
-                      </div>
+
+                  {/* Dish Content */}
+                  <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between gap-3">
+                    <div>
+                      <h3 className="font-extrabold text-sm text-gray-900 leading-snug mb-1">
+                        {item.title}
+                      </h3>
+                      <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2">
+                        {item.description || (
+                          item.category === "Fried Rice"
+                            ? "Basmati rice with egg, carrots & leeks. Served with a sunny-side-up egg, pickled onions & chili paste."
+                            : item.category === "Kottu"
+                              ? "Fresh shredded roti tossed with spices, veggies, egg & rich curry sauce."
+                              : item.category === "Chopsuey"
+                                ? "Crisp mixed vegetables and wok-seared proteins in savory garlic gravy."
+                                : `Freshly prepared ${item.title} cooked to perfection.`
+                        )}
+                      </p>
                     </div>
+
+                    <div>
+                      <p className="font-black text-[#F26F21] text-base mb-2.5">
+                        {typeof item.price === "string" ? item.price : `Rs ${Number(item.price).toLocaleString()}`}
+                      </p>
+
+                      {/* Cart controls */}
+                      {qty > 0 ? (
+                        <div className="flex items-center justify-between bg-white rounded-2xl p-1.5 border border-gray-200/80 shadow-xs">
+                          <button onClick={() => updateQuantity(item.id, -1, item.title)}
+                            className="w-9 h-9 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 hover:border-[#F26F21] hover:text-[#F26F21] flex items-center justify-center transition-all active:scale-90 shadow-xs"
+                            aria-label="Decrease quantity">
+                            {Icon.minus("w-3.5 h-3.5")}
+                          </button>
+                          <span className="text-sm font-black text-gray-900 px-2">{qty}</span>
+                          <button onClick={() => updateQuantity(item.id, 1, item.title)}
+                            className="w-9 h-9 rounded-xl text-white flex items-center justify-center transition-all active:scale-90 shadow-xs"
+                            style={{ background: "#F26F21" }}
+                            aria-label="Increase quantity">
+                            {Icon.plus("w-3.5 h-3.5")}
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => addToCart(item)}
+                          className="w-full text-white text-xs font-black py-3 rounded-2xl flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm hover:brightness-105"
+                          style={{ background: "#F26F21" }}>
+                          {Icon.plus("w-3.5 h-3.5")} Add to Cart
+                        </button>
+                      )}
+                    </div>
+
                   </div>
                 </div>
               );
@@ -913,65 +1019,31 @@ export default function Home() {
           </div>
         </div>
       </footer>
-      {/* ─────────── PRODUCT DETAIL MODAL (INDIVIDUAL ENTITY) ─────── */}
-      {selectedProduct && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md anim-fade"
-          onClick={() => setSelectedProduct(null)}>
-          <div className="relative w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl anim-slide-up"
-            onClick={(e) => e.stopPropagation()} style={{ boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)" }}>
-            
-            {/* Image header */}
-            <div className="relative h-56 sm:h-64 bg-gray-100 overflow-hidden">
-              {selectedProduct.image
-                ? <img src={selectedProduct.image} alt={selectedProduct.title} className="w-full h-full object-cover" />
-                : <FoodPlaceholder />
-              }
-              <button onClick={() => setSelectedProduct(null)}
-                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-lg transition-all z-10 backdrop-blur-sm">
-                ×
-              </button>
-              {selectedProduct.category && (
-                <span className="absolute top-3 left-3 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#F26F21] text-white shadow-md">
-                  {selectedProduct.category}
-                </span>
-              )}
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <div className="flex items-start justify-between gap-4 mb-2">
-                <div>
-                  <h2 className="text-xl font-black text-gray-900 leading-tight">{selectedProduct.title}</h2>
-                  <p className="text-xs font-bold text-[#F26F21] mt-0.5 flex items-center gap-1">
-                    {selectedProduct.category === "Beverages" ? (selectedProduct.portion || "Bottle") : (
-                      <>
-                        Large Portion · Serves 2
-                        <svg className="w-3.5 h-3.5 text-black inline-block" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                          <path d="M18 12c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.37 0-.72.08-1.05.21 1.28 1.15 1.28 3.43 0 4.58.33.13.68.21 1.05.21zm0 2c-.67 0-1.42.08-2.22.23 1.45.96 2.22 2.25 2.22 3.77v2h4v-2c0-2.21-3.58-4-4-4z" opacity="0.75"/>
-                        </svg>
-                      </>
-                    )}
-                  </p>
-                </div>
-                <span className="text-xl font-black text-[#F26F21] flex-shrink-0">
-                  {typeof selectedProduct.price === "string" ? selectedProduct.price : `Rs ${Number(selectedProduct.price).toLocaleString()}`}
+      {/* Floating Bottom Cart on Home Page */}
+      {cart.reduce((s, ci) => s + ci.quantity, 0) > 0 && (
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-40 anim-slide-up">
+          <Link href="/order"
+            className="rounded-2xl flex items-center justify-between px-4 py-3.5 gap-3 transition-all hover:scale-[1.02] active:scale-98 shadow-2xl bg-[#0D0D0D] border border-white/10 block text-white"
+            style={{ boxShadow: "0 16px 48px rgba(0,0,0,0.4)" }}>
+            <div className="flex items-center gap-3">
+              <div className="relative w-10 h-10 rounded-xl flex items-center justify-center text-white bg-[#F26F21]">
+                {Icon.bag("w-5 h-5")}
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white text-[#F26F21] text-[10px] font-black rounded-full flex items-center justify-center shadow">
+                  {cart.reduce((s, ci) => s + ci.quantity, 0)}
                 </span>
               </div>
-
-              <p className="text-xs text-gray-500 leading-relaxed mb-6">
-                {selectedProduct.description || `Freshly prepared ${selectedProduct.title} cooked with authentic Sri Lankan spices and high-heat wok searing.`}
-              </p>
-
-              <div className="flex items-center gap-3">
-                <Link href="/order" onClick={() => setSelectedProduct(null)}
-                  className="w-full flex items-center justify-center gap-2 text-white text-xs font-black py-4 rounded-2xl transition-all active:scale-95 shadow-lg"
-                  style={{ background: "#F26F21", boxShadow: "0 8px 24px rgba(242,111,33,0.35)" }}>
-                  {Icon.bag("w-4 h-4")} Order in Menu
-                </Link>
+              <div>
+                <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Cart Subtotal</p>
+                <p className="font-black text-white text-sm">
+                  Rs {cart.reduce((s, ci) => s + (Number(typeof ci.item.price === 'string' ? ci.item.price.replace(/[^0-9]/g, '') : ci.item.price) * ci.quantity), 0).toLocaleString()}
+                </p>
               </div>
             </div>
-          </div>
+
+            <div className="flex items-center gap-1.5 text-white text-xs font-black px-4 py-2 rounded-xl bg-[#F26F21]">
+              View Menu & Checkout {Icon.arrow("w-3.5 h-3.5")}
+            </div>
+          </Link>
         </div>
       )}
     </>

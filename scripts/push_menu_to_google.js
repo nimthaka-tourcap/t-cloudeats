@@ -159,7 +159,7 @@ async function getGoogleAccountId(accessToken) {
 async function run() {
   console.log("Fetching menu items from Supabase...");
   const { data: dbItems, error } = await supabase
-    .from("menu_items")
+    .from("tce_menu_items")
     .select("*")
     .order("id", { ascending: true });
 

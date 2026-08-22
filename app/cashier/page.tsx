@@ -38,6 +38,7 @@ import {
   Boxes
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import FoodCostingModule from "@/components/cashier/FoodCostingModule";
 
 // ============================================================================
 // --- TYPES & DATA ---
@@ -820,6 +821,7 @@ export default function PosPage() {
   const [invSearchQuery, setInvSearchQuery] = useState("");
   const [invFilterLocation, setInvFilterLocation] = useState<"All" | "Cooler" | "Freezer" | "Dry Shelf">("All");
   const [invFilterStockStatus, setInvFilterStockStatus] = useState<"All" | "Low Stock" | "Out of Stock" | "Normal">("All");
+  const [stockSectionTab, setStockSectionTab] = useState<"inventory" | "costing">("costing");
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [commentEditingItemId, setCommentEditingItemId] = useState<number | null>(null);
   const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
@@ -843,12 +845,12 @@ export default function PosPage() {
     }
   }, []);
 
-  // Load inventory from Supabase (zb_inventory), fallback to localStorage
+  // Load inventory from Supabase (tce_inventory), fallback to localStorage
   useEffect(() => {
     const loadInventory = async () => {
       try {
         const { data, error } = await supabase
-          .from("zb_inventory")
+          .from("tce_inventory")
           .select("*")
           .order("created_at", { ascending: true });
 
@@ -899,7 +901,7 @@ export default function PosPage() {
     // Persist to Supabase in background
     if (upsertItem) {
       supabase
-        .from("zb_inventory")
+        .from("tce_inventory")
         .upsert({
           id: upsertItem.id,
           name: upsertItem.name,
@@ -1103,7 +1105,7 @@ export default function PosPage() {
     for (const order of offlineOrders) {
       try {
         const { error } = await supabase
-          .from("orders")
+          .from("tce_orders")
           .insert({
             id: order.id,
             timestamp: order.timestamp,
@@ -1144,7 +1146,7 @@ export default function PosPage() {
         await withTimeout(
           Promise.resolve(
             supabase
-              .from("orders")
+              .from("tce_orders")
               .delete()
               .eq("status", "Ignored")
               .lt("timestamp", twoDaysAgo)
@@ -1160,7 +1162,7 @@ export default function PosPage() {
         withTimeout(
           Promise.resolve(
             supabase
-              .from("orders")
+              .from("tce_orders")
               .select("*")
               .order("timestamp", { ascending: false })
           ),
@@ -1169,7 +1171,7 @@ export default function PosPage() {
         withTimeout(
           Promise.resolve(
             supabase
-              .from("customers")
+              .from("tce_customers")
               .select("*")
           ),
           5000
@@ -1255,7 +1257,7 @@ export default function PosPage() {
               delete cleanedCustomer.payment_receipt_filename;
 
               supabase
-                .from("orders")
+                .from("tce_orders")
                 .update({ customer: cleanedCustomer })
                 .eq("id", o.id)
                 .then(({ error }) => {
@@ -1354,14 +1356,14 @@ export default function PosPage() {
       .channel("realtime-orders-cms")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
+        { event: "*", schema: "public", table: "tce_orders" },
         () => {
           loadOrdersAndCMS();
         }
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "customers" },
+        { event: "*", schema: "public", table: "tce_customers" },
         () => {
           loadOrdersAndCMS();
         }
@@ -1395,7 +1397,7 @@ export default function PosPage() {
       .channel("pos-menu-sync")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "menu_items" },
+        { event: "*", schema: "public", table: "tce_menu_items" },
         (payload) => {
           console.log("[Realtime] Menu change detected:", payload);
           loadMenu();
@@ -1642,7 +1644,7 @@ export default function PosPage() {
 
     Promise.resolve(
       supabase
-        .from("orders")
+        .from("tce_orders")
         .update(updatePayload)
         .eq("id", orderId)
     )
@@ -1688,7 +1690,7 @@ export default function PosPage() {
     // 2. Immediately push update to database (Supabase)
     try {
       const { error } = await supabase
-        .from("orders")
+        .from("tce_orders")
         .update({
           customer: updatedCustomer
         })
@@ -1784,7 +1786,7 @@ export default function PosPage() {
     // Save to Supabase in background
     Promise.resolve(
       supabase
-        .from("customers")
+        .from("tce_customers")
         .update({
           name: editCustName,
           address: editCustAddress,
@@ -1810,7 +1812,7 @@ export default function PosPage() {
           
           Promise.resolve(
             supabase
-              .from("orders")
+              .from("tce_orders")
               .update({ customer: updatedCustObj })
               .eq("customer->>phone", editingCustomer.phone)
           )
@@ -1845,7 +1847,7 @@ export default function PosPage() {
     // 2. Delete from Supabase in background
     try {
       const { error } = await supabase
-        .from("customers")
+        .from("tce_customers")
         .delete()
         .eq("phone", phone);
 
@@ -1965,7 +1967,7 @@ export default function PosPage() {
     // 2. Update Supabase in background
     Promise.resolve(
       supabase
-        .from("orders")
+        .from("tce_orders")
         .update({
           items: cleanCart,
           subtotal: newSubtotal,
@@ -2098,10 +2100,10 @@ export default function PosPage() {
       try {
         const [custRes, orderRes] = await Promise.all([
           supabase
-            .from("customers")
+            .from("tce_customers")
             .upsert(newCustomer, { onConflict: "phone" }),
           supabase
-            .from("orders")
+            .from("tce_orders")
             .upsert({
               id: newInvoiceId,
               timestamp: newOrder.timestamp,
@@ -2543,7 +2545,7 @@ export default function PosPage() {
       saveInventory(updated);
       // Delete from Supabase in background
       supabase
-        .from("zb_inventory")
+        .from("tce_inventory")
         .delete()
         .eq("id", id)
         .then(({ error }) => {
@@ -3731,7 +3733,49 @@ export default function PosPage() {
             {activeSidebar === "inventory" && (
               <div className="space-y-6 overflow-y-auto pb-12 pr-1 max-h-full" style={{ scrollbarWidth: "thin" }}>
                 
-                {/* Stats row */}
+                {/* Stock Module Top Mode Switcher */}
+                <div className="flex items-center justify-between bg-[#111625] border border-[#222E4E] p-2 rounded-2xl shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setStockSectionTab("costing")}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                        stockSectionTab === "costing"
+                          ? "bg-[#F26F21] text-white shadow-lg shadow-[#F26F21]/30"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      <Utensils size={14} />
+                      Food Costing & Recipes
+                    </button>
+                    <button
+                      onClick={() => setStockSectionTab("inventory")}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                        stockSectionTab === "inventory"
+                          ? "bg-[#F26F21] text-white shadow-lg shadow-[#F26F21]/30"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      <Boxes size={14} />
+                      Stock Levels & Items ({inventoryItems.length})
+                    </button>
+                  </div>
+
+                  {stockSectionTab === "inventory" && (
+                    <button
+                      onClick={handleOpenAddInventory}
+                      className="bg-[#FF6B35] hover:bg-[#FF6B35]/90 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-md shadow-[#FF6B35]/20"
+                    >
+                      <Plus size={14} />
+                      Add Stock Item
+                    </button>
+                  )}
+                </div>
+
+                {stockSectionTab === "costing" ? (
+                  <FoodCostingModule onAddStockClick={handleOpenAddInventory} />
+                ) : (
+                  <>
+                    {/* Stats row */}
                 {(() => {
                   const totalValuation = inventoryItems.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
                   const lowStockCount = inventoryItems.filter(item => item.quantity <= item.parLevel && item.quantity > 0).length;
@@ -3908,8 +3952,10 @@ export default function PosPage() {
                     </table>
                   </div>
                 </div>
-              </div>
+              </>
             )}
+          </div>
+        )}
 
             {activeSidebar === "settings" && (
               <div className="space-y-6 max-w-4xl">

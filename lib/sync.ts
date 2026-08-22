@@ -174,7 +174,7 @@ export async function syncMenuAcrossPlatforms() {
   try {
     // 1. Fetch the latest menu items from the Supabase database
     const { data: dbItems, error } = await supabase
-      .from("menu_items")
+      .from("tce_menu_items")
       .select("*")
       .order("id", { ascending: true });
 

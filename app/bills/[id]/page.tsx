@@ -104,7 +104,7 @@ export default function BillPage() {
 
     try {
       const { error } = await supabase
-        .from("orders")
+        .from("tce_orders")
         .update({ customer: updatedCustomer })
         .eq("id", order?.id);
 
@@ -227,7 +227,7 @@ export default function BillPage() {
 
       try {
         const { data, error } = await supabase
-          .from("orders")
+          .from("tce_orders")
           .select("*")
           .eq("id", invoiceId)
           .single();
@@ -243,7 +243,7 @@ export default function BillPage() {
           if (parsedCustomer && parsedCustomer.phone) {
             try {
               const { data: customerDb } = await supabase
-                .from("customers")
+                .from("tce_customers")
                 .select("*")
                 .eq("phone", parsedCustomer.phone)
                 .maybeSingle();
@@ -290,7 +290,7 @@ export default function BillPage() {
         const invoiceId = id.slice(0, -3);
         
         const { data, error } = await supabase
-          .from("orders")
+          .from("tce_orders")
           .select("status, customer")
           .eq("id", invoiceId)
           .single();

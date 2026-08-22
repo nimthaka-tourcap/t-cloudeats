@@ -112,7 +112,34 @@ export default function OrderPage() {
   const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [storeStatus, setStoreStatus] = useState<StoreStatus>(getStoreStatus());
+  const [showPromoReminderModal, setShowPromoReminderModal] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  /* ── Load & Sync Cart with LocalStorage ─────────────────────── */
+  useEffect(() => {
+    const syncCart = () => {
+      try {
+        const saved = localStorage.getItem("tcloud_cart");
+        if (saved) setCart(JSON.parse(saved));
+        else setCart([]);
+      } catch {}
+    };
+    syncCart();
+    window.addEventListener("storage", syncCart);
+    window.addEventListener("cart_updated", syncCart);
+    return () => {
+      window.removeEventListener("storage", syncCart);
+      window.removeEventListener("cart_updated", syncCart);
+    };
+  }, []);
+
+  // Save Cart to LocalStorage whenever cart changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("tcloud_cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("cart_updated"));
+    } catch {}
+  }, [cart]);
 
   /* ── Live store open/close tracker (Asia/Colombo time) ────── */
   useEffect(() => {
@@ -256,8 +283,18 @@ export default function OrderPage() {
       });
   }, [menuItems, searchQuery, selectedCategory]);
 
-  const handleCheckout = () => {
+  const handleCheckout = (skipPromoCheck?: boolean) => {
     if (!cart.length) return;
+
+    // If order qualifies for free drink promo (Rs 3,000+) but none is selected yet, prompt user with reminder modal
+    const hasClaimedPromo = cart.some(ci => ci.isFreePromo);
+    if (subtotal >= 3000 && !hasClaimedPromo && !skipPromoCheck) {
+      setShowPromoReminderModal(true);
+      return;
+    }
+
+    setShowPromoReminderModal(false);
+
     const lines = cart.map((ci) => {
       if (ci.isFreePromo) {
         return `• 1× ${ci.item.title} (${ci.item.portion || "Beverage"}) — 🎁 FREE PROMO ITEM (Rs 0)`;
@@ -296,8 +333,8 @@ export default function OrderPage() {
         .anim-fade { animation:fadeIn .25s ease forwards; }
         .anim-toast { animation:toastIn .35s cubic-bezier(.16,1,.3,1) forwards; }
         .shimmer { background:linear-gradient(110deg,#f0f0f0 30%,#e8e8e8 50%,#f0f0f0 70%); background-size:200% 100%; animation:shimmer 1.4s linear infinite; }
-        .qty-btn { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:all .15s ease; cursor:pointer; font-size:0; }
-        .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(4px); z-index:49; }
+        .qty-btn { width:30px; height:30px; border-radius:10px; display:flex; align-items:center; justify-content:center; transition:all .15s ease; cursor:pointer; font-size:0; }
+        .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(6px); z-index:100; }
       `}</style>
 
       <div className="min-h-screen bg-[#F7F5F2]" style={{ paddingBottom: totalItems > 0 ? "96px" : "32px" }}>
@@ -485,15 +522,6 @@ export default function OrderPage() {
                         style={{ background: "rgba(13,13,13,0.75)", color: "#fff", backdropFilter: "blur(4px)" }}>
                         {item.category}
                       </span>
-
-                      {/* Quick add button (top-right) */}
-                      {qty === 0 && (
-                        <button onClick={(e) => { e.stopPropagation(); addToCart(item); }}
-                          className="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center text-white shadow-lg transition-all active:scale-90"
-                          style={{ background: "#F26F21" }}>
-                          {Icons.plus("w-4 h-4")}
-                        </button>
-                      )}
                     </div>
 
                     {/* Info */}
@@ -595,332 +623,286 @@ export default function OrderPage() {
         </button>
       )}
 
-      {/* ── CART DRAWER ──────────────────────────────────────────────── */}
+      {/* ── MODERN MINIMALIST CART DRAWER (MOBILE BOTTOM SHEET & DESKTOP SIDE PANEL) ── */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-50 flex sm:justify-end">
+        <div className="fixed inset-0 z-[100] flex sm:justify-end">
           {/* Backdrop */}
           <div className="drawer-backdrop anim-fade" onClick={() => setIsCartOpen(false)} />
 
           {/* Panel */}
-          <aside className="relative w-full sm:w-[420px] mt-auto sm:mt-0 h-[90svh] sm:h-full bg-white flex flex-col z-50 anim-slide-up sm:anim-slide-right"
-            style={{ borderRadius: "24px 24px 0 0", boxShadow: "-8px 0 48px rgba(0,0,0,0.18)" }}>
+          <aside className="relative w-full sm:w-[420px] h-[88dvh] sm:h-full max-h-[88dvh] sm:max-h-full mt-auto sm:mt-0 bg-white flex flex-col z-[101] rounded-t-3xl sm:rounded-none sm:border-l sm:border-neutral-200 shadow-2xl overflow-hidden anim-slide-up sm:anim-slide-right">
+            
+            {/* Mobile Sheet Drag Handle */}
+            <div className="pt-3 pb-1 flex justify-center sm:hidden bg-white flex-shrink-0">
+              <div className="w-10 h-1 rounded-full bg-neutral-200" />
+            </div>
 
-            {/* Drawer Header */}
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl text-white flex items-center justify-center"
-                  style={{ background: "#F26F21" }}>
-                  {Icons.bag("w-5 h-5")}
-                </div>
-                <div>
-                  <h2 className="font-black text-base text-gray-900">Your Cart</h2>
-                  <p className="text-xs text-gray-400 font-semibold">{totalItems} {totalItems === 1 ? "item" : "items"} selected</p>
-                </div>
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between bg-white flex-shrink-0">
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-lg font-bold text-neutral-900 tracking-tight">Your Cart</h2>
+                <span className="text-xs text-neutral-400 font-medium">({totalItems} {totalItems === 1 ? "item" : "items"})</span>
               </div>
               <button onClick={() => setIsCartOpen(false)}
-                className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-all">
+                className="w-8 h-8 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-900 flex items-center justify-center transition-colors"
+                aria-label="Close Cart">
                 {Icons.x("w-4 h-4")}
               </button>
             </div>
 
-            {/* Items List */}
-            <div className="flex-1 overflow-y-auto scrollbar-none px-4 py-3 space-y-2.5">
+            {/* ── MINIMAL PROMO BAR ── */}
+            {(() => {
+              const TARGET = 3000;
+              const isUnlocked = subtotal >= TARGET;
+              const remaining = Math.max(0, TARGET - subtotal);
+              const pct = Math.min(100, Math.round((subtotal / TARGET) * 100));
+
+              const claimedPromoItem = cart.find(ci => ci.isFreePromo);
+              const claimedPromoId = claimedPromoItem?.item.id;
+
+              const getBevImage = (title: string, currentImage?: string) => {
+                if (currentImage) return currentImage;
+                const t = title.toLowerCase();
+                if (t.includes("coca") || t.includes("coke")) return "/Product Images/BV-03.avif";
+                if (t.includes("sprite")) return "/Product Images/BV-04.avif";
+                if (t.includes("fanta")) return "/Product Images/BV-05.avif";
+                if (t.includes("ginger") || t.includes("egb")) return "/Product Images/BV-06.avif";
+                if (t.includes("orange")) return "/Product Images/BV-07.avif";
+                return null;
+              };
+
+              let beverages = menuItems
+                .filter(m => m.category === "Beverages" && !m.title.toLowerCase().includes("shake"))
+                .map(m => {
+                  if (m.title.toLowerCase().includes("water")) {
+                    return {
+                      ...m,
+                      title: "2x Mineral Water Bottles",
+                      portion: "2 Bottles (1000 ml each)",
+                      description: "2x Chilled Mineral Water Bottles (1000 ml each)."
+                    };
+                  }
+                  return m;
+                });
+
+              if (!beverages.some(b => b.title.toLowerCase().includes("orange crush"))) {
+                beverages.unshift({
+                  id: 9991,
+                  title: "Elephant House Orange Crush",
+                  price: 300,
+                  category: "Beverages",
+                  portion: "1.05L Bottle",
+                  description: "Chilled Elephant House Orange Crush.",
+                  image: "/Product Images/BV-07.avif"
+                });
+              }
+
+              if (!beverages.some(b => b.title.toLowerCase().includes("water"))) {
+                beverages.push({
+                  id: 9992,
+                  title: "2x Mineral Water Bottles",
+                  price: 200,
+                  category: "Beverages",
+                  portion: "2 Bottles (1000 ml each)",
+                  description: "2x Chilled Mineral Water Bottles (1000 ml each).",
+                  image: ""
+                });
+              }
+              beverages = beverages.slice(0, 6);
+
+              if (!isUnlocked) {
+                return (
+                  <div className="px-5 py-3.5 border-b border-orange-100 bg-orange-50/70 flex-shrink-0">
+                    <div className="flex items-center justify-between text-xs font-bold text-gray-800 mb-1.5">
+                      <span className="text-[#F26F21]">Special Offer: Free Beverage on orders Rs 3,000+</span>
+                      <span className="text-gray-500 font-semibold text-[11px]">Rs {subtotal.toLocaleString()} / 3,000</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 mb-2">
+                      Add Rs <span className="font-bold text-gray-900">{remaining.toLocaleString()}</span> more to unlock your free drink
+                    </p>
+                    <div className="w-full h-2 bg-orange-200/60 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#F26F21] rounded-full transition-all duration-300"
+                        style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="px-5 py-3.5 border-b border-emerald-200 bg-emerald-50/70 flex-shrink-0">
+                  {claimedPromoItem ? (
+                    <div className="flex items-center justify-between bg-white border border-emerald-300 rounded-2xl p-3 shadow-sm">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {getBevImage(claimedPromoItem.item.title, claimedPromoItem.item.image) ? (
+                          <img src={getBevImage(claimedPromoItem.item.title, claimedPromoItem.item.image)!}
+                            alt={claimedPromoItem.item.title} className="w-10 h-10 rounded-xl object-cover bg-gray-100 flex-shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                            💧 2x
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Special Offer Claimed</p>
+                          <p className="text-xs font-bold text-gray-900 truncate">{claimedPromoItem.item.title}</p>
+                          <p className="text-[10px] font-bold text-emerald-600">Rs 0 (100% Free)</p>
+                        </div>
+                      </div>
+                      <button onClick={removeFreeDrink}
+                        className="text-xs text-gray-500 hover:text-red-500 font-bold ml-2 px-2.5 py-1 bg-gray-100 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
+                        Change
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-xs font-black text-emerald-900 uppercase tracking-wide">Special Offer Unlocked!</p>
+                          <p className="text-[11px] text-emerald-700 font-medium">Select 1 complimentary beverage (100% Free):</p>
+                        </div>
+                        <span className="text-[10px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                          FREE
+                        </span>
+                      </div>
+
+                      {/* Spacious horizontal list with clear images and full names */}
+                      <div className="flex gap-2.5 overflow-x-auto scrollbar-none pb-1 pt-0.5">
+                        {beverages.map(bev => {
+                          const img = getBevImage(bev.title, bev.image);
+                          return (
+                            <button key={bev.id}
+                              onClick={() => claimFreeDrink(bev)}
+                              className="flex-shrink-0 flex items-center gap-2.5 bg-white border border-emerald-300 hover:border-emerald-600 rounded-2xl p-2.5 text-left shadow-sm transition-all active:scale-95 hover:shadow-md">
+                              {img ? (
+                                <img src={img} alt={bev.title} className="w-10 h-10 rounded-xl object-cover bg-gray-100 flex-shrink-0" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex flex-col items-center justify-center font-bold text-[10px] flex-shrink-0">
+                                  <span>💧</span>
+                                  <span className="text-[8px] leading-none">2x</span>
+                                </div>
+                              )}
+                              <div className="min-w-0 pr-1">
+                                <p className="text-xs font-bold text-gray-900 whitespace-nowrap leading-tight">{bev.title}</p>
+                                <p className="text-[10px] text-gray-500 font-medium mt-0.5">{bev.portion || "Bottle"}</p>
+                                <span className="inline-block mt-1 text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                                  + Claim Free
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ── ITEMS LIST ── */}
+            <div className="flex-1 overflow-y-auto scrollbar-none px-5 py-2 min-h-0 divide-y divide-neutral-100">
               {cart.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-12">
-                  <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center text-4xl">🛒</div>
+                <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-16">
+                  <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center text-2xl text-neutral-400">
+                    🛍️
+                  </div>
                   <div>
-                    <h3 className="font-extrabold text-gray-800 mb-1">Your cart is empty</h3>
-                    <p className="text-sm text-gray-500">Add some dishes to get started!</p>
+                    <h3 className="text-sm font-semibold text-neutral-900 mb-0.5">Your cart is empty</h3>
+                    <p className="text-xs text-neutral-400">Add dishes from the menu to start</p>
                   </div>
                   <button onClick={() => setIsCartOpen(false)}
-                    className="text-white text-sm font-black px-6 py-3 rounded-2xl transition-all active:scale-95"
-                    style={{ background: "#F26F21", boxShadow: "0 6px 20px rgba(242,111,33,0.35)" }}>
-                    Explore Menu
+                    className="mt-2 text-xs font-semibold text-neutral-900 bg-neutral-100 hover:bg-neutral-200 px-4 py-2 rounded-full transition-colors">
+                    Browse Menu
                   </button>
                 </div>
               ) : (
-                <>
-                  {/* Cart items */}
-                  {cart.map(({ item, quantity, isFreePromo }) => (
-                    <div key={isFreePromo ? `free-promo-${item.id}` : `cart-item-${item.id}`}
-                      className={`flex items-center gap-3 rounded-2xl p-3 border transition-all ${
-                        isFreePromo ? "bg-emerald-50/70 border-emerald-200 shadow-sm" : "bg-gray-50 border-gray-100"
-                      }`}>
-                      {/* Thumbnail */}
-                      {item.image
-                        ? <img src={item.image} alt={item.title} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-gray-200" />
-                        : item.category === "Beverages"
-                          ? (
-                            <div className="w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#e8e8e8,#d0d0d0)" }}>
-                              <svg viewBox="0 0 40 52" className="w-6 h-8 opacity-50" fill="none">
-                                <rect x="10" y="2" width="20" height="4" rx="2" fill="#999"/>
-                                <path d="M8 6 L6 46 Q6 48 8 48 L32 48 Q34 48 34 46 L32 6 Z" fill="#bbb" stroke="#aaa" strokeWidth="0.5"/>
-                                <ellipse cx="20" cy="24" rx="8" ry="3" fill="#aaa" opacity="0.4"/>
-                                <path d="M32 14 Q38 14 38 18 Q38 22 32 21" stroke="#aaa" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-                              </svg>
-                            </div>
-                          )
-                          : <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#e8e8e8,#d0d0d0)" }}>
-                              <svg viewBox="0 0 40 40" className="w-8 h-8 opacity-40" fill="none">
-                                <circle cx="20" cy="18" r="12" fill="none" stroke="#999" strokeWidth="1.5"/>
-                                <path d="M12 18 Q20 10 28 18" fill="#bbb"/>
-                                <circle cx="16" cy="16" r="2" fill="#aaa"/>
-                                <circle cx="24" cy="15" r="1.5" fill="#aaa"/>
-                                <rect x="8" y="30" width="24" height="2" rx="1" fill="#bbb"/>
-                                <rect x="11" y="28" width="18" height="4" rx="2" fill="#aaa"/>
-                              </svg>
-                            </div>
-                      }
+                cart.map(({ item, quantity, isFreePromo }) => (
+                  <div key={isFreePromo ? `free-promo-${item.id}` : `cart-item-${item.id}`}
+                    className="flex items-center gap-3.5 py-4">
+                    
+                    {/* Thumbnail */}
+                    <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-100">
+                      {item.image ? (
+                        <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-neutral-300 text-base">🍽️</div>
+                      )}
+                    </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h4 className="font-extrabold text-sm text-gray-900 truncate">{item.title}</h4>
-                          {isFreePromo && (
-                            <span className="bg-emerald-600 text-white font-black text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-                              FREE 🎁
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-gray-400 font-medium">{item.portion}</p>
-                        <p className="font-black text-sm mt-0.5" style={{ color: isFreePromo ? "#059669" : "#F26F21" }}>
-                          {isFreePromo ? "Rs 0 (FREE)" : `Rs ${(Number(item.price) * quantity).toLocaleString()}`}
-                        </p>
-                      </div>
-
-                      {/* Qty + remove */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-semibold text-neutral-900 leading-snug truncate">
+                        {item.title}
+                      </h4>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        {item.portion || "Standard Portion"}
+                      </p>
+                      <p className="text-xs font-semibold mt-1">
                         {isFreePromo ? (
-                          <div className="flex items-center bg-emerald-100 border border-emerald-300 rounded-xl px-2 py-1">
-                            <span className="text-[11px] font-black text-emerald-800">1 Free Item</span>
-                          </div>
+                          <span className="text-emerald-600 font-semibold">Free Promo (Rs 0)</span>
                         ) : (
-                          <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 p-1">
-                            <button onClick={() => updateQuantity(item.id, -1, false)}
-                              className="qty-btn bg-gray-100 hover:bg-gray-200 text-gray-700">
-                              {Icons.minus("w-3.5 h-3.5")}
-                            </button>
-                            <span className="text-sm font-black text-gray-900 w-5 text-center">{quantity}</span>
-                            <button onClick={() => updateQuantity(item.id, 1, false)}
-                              className="qty-btn text-white"
-                              style={{ background: "#F26F21" }}>
-                              {Icons.plus("w-3.5 h-3.5")}
-                            </button>
-                          </div>
+                          <span className="text-neutral-900">Rs {(Number(item.price) * quantity).toLocaleString()}</span>
                         )}
-                        <button onClick={() => removeFromCart(item.id, isFreePromo)}
-                          className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-400 flex items-center justify-center transition-colors"
-                          title={isFreePromo ? "Remove free promo drink" : "Remove item"}>
-                          {Icons.trash("w-3.5 h-3.5")}
+                      </p>
+                    </div>
+
+                    {/* Quantity Stepper or Delete */}
+                    {isFreePromo ? (
+                      <button onClick={removeFreeDrink}
+                        className="w-8 h-8 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-red-500 flex items-center justify-center transition-colors"
+                        title="Remove free drink">
+                        {Icons.trash("w-4 h-4")}
+                      </button>
+                    ) : (
+                      <div className="flex items-center bg-neutral-100 rounded-full p-1 gap-1 flex-shrink-0">
+                        <button onClick={() => updateQuantity(item.id, -1, false)}
+                          className="w-6 h-6 rounded-full hover:bg-white text-neutral-600 hover:text-neutral-900 flex items-center justify-center transition-all active:scale-90"
+                          aria-label="Decrease">
+                          {quantity === 1 ? Icons.trash("w-3 h-3 text-red-500") : Icons.minus("w-3 h-3")}
+                        </button>
+                        <span className="text-xs font-semibold text-neutral-900 w-5 text-center">{quantity}</span>
+                        <button onClick={() => updateQuantity(item.id, 1, false)}
+                          className="w-6 h-6 rounded-full hover:bg-white text-neutral-900 flex items-center justify-center transition-all active:scale-90"
+                          aria-label="Increase">
+                          {Icons.plus("w-3 h-3")}
                         </button>
                       </div>
-                    </div>
-                  ))}
-
-                  {/* ── UPSELL: Suggest food add-ons ── */}
-                  {(() => {
-                    const cartIds = cart.map(ci => ci.item.id);
-                    const foodSuggestions = menuItems
-                      .filter(m => m.category !== "Beverages" && !cartIds.includes(m.id))
-                      .slice(0, 3);
-                    if (foodSuggestions.length === 0) return null;
-                    return (
-                      <div className="mt-1 rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg,#FFF7F0,#FFF3E8)", border: "1px solid rgba(242,111,33,0.15)" }}>
-                        <div className="flex items-center gap-2 px-3.5 pt-3 pb-2">
-                          <span className="text-base">🔥</span>
-                          <p className="text-[11px] font-black text-gray-700 uppercase tracking-wider">People also add</p>
-                        </div>
-                        <div className="flex gap-2 overflow-x-auto scrollbar-none px-3.5 pb-3">
-                          {foodSuggestions.map(s => (
-                            <button key={s.id} onClick={() => addToCart(s)}
-                              className="flex-shrink-0 flex items-center gap-2 bg-white rounded-xl px-2.5 py-2 shadow-sm border border-orange-100 hover:border-[#F26F21] transition-all active:scale-95">
-                              {s.image
-                                ? <img src={s.image} alt={s.title} className="w-9 h-9 rounded-lg object-cover" />
-                                : <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#e8e8e8,#d0d0d0)" }}>
-                                    <svg viewBox="0 0 24 24" className="w-5 h-5 opacity-40" fill="none"><circle cx="12" cy="11" r="7" fill="none" stroke="#999" strokeWidth="1.5"/><path d="M7 11 Q12 6 17 11" fill="#bbb"/><rect x="5" y="18" width="14" height="1.5" rx="0.75" fill="#bbb"/></svg>
-                                  </div>
-                              }
-                              <div className="text-left">
-                                <p className="text-[10px] font-extrabold text-gray-800 leading-tight" style={{ maxWidth: 90, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.title}</p>
-                                <p className="text-[10px] font-black" style={{ color: "#F26F21" }}>Rs {Number(s.price).toLocaleString()}</p>
-                              </div>
-                              <div className="w-6 h-6 rounded-full text-white flex items-center justify-center flex-shrink-0 ml-1" style={{ background: "#F26F21" }}>
-                                {Icons.plus("w-3 h-3")}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* ── UPSELL: Free Beverage Goal Progress Bar & Beverage Selection ── */}
-                  {(() => {
-                    const TARGET = 3000;
-                    const isUnlocked = subtotal >= TARGET;
-                    const remaining = Math.max(0, TARGET - subtotal);
-                    const pct = Math.min(100, Math.round((subtotal / TARGET) * 100));
-
-                    const claimedPromoItem = cart.find(ci => ci.isFreePromo);
-                    const claimedPromoId = claimedPromoItem?.item.id;
-
-                    // Filter out milkshakes
-                    let beverages = menuItems
-                      .filter(m => m.category === "Beverages" && !m.title.toLowerCase().includes("shake"));
-
-                    // Guarantee Elephant House Orange Crush is included in free beverages list
-                    if (!beverages.some(b => b.title.toLowerCase().includes("orange crush"))) {
-                      beverages.unshift({
-                        id: 9991,
-                        title: "Elephant House Orange Crush",
-                        price: 300,
-                        category: "Beverages",
-                        portion: "1.05L Bottle",
-                        description: "Chilled Elephant House Orange Crush.",
-                        image: "/Product Images/BV-07.avif"
-                      });
-                    }
-                    beverages = beverages.slice(0, 6);
-
-                    return (
-                      <div className="mt-2 space-y-2">
-                        {/* Progress Bar Card */}
-                        <div className="rounded-2xl p-3 border transition-all"
-                          style={{
-                            background: isUnlocked ? "linear-gradient(135deg,#ECFDF5 0%,#D1FAE5 100%)" : "linear-gradient(135deg,#FFF7F0 0%,#FFF0E5 100%)",
-                            borderColor: isUnlocked ? "#10B981" : "#F26F21"
-                          }}>
-                          <div className="flex items-center justify-between text-xs font-black mb-1.5">
-                            <span className="flex items-center gap-1.5" style={{ color: isUnlocked ? "#047857" : "#C2410C" }}>
-                              {isUnlocked
-                                ? (claimedPromoItem ? `🎉 Free Drink Added (${claimedPromoItem.item.title})` : "🎉 Free Drink Unlocked! Choose 1 below")
-                                : `🍹 Add Rs ${remaining.toLocaleString()} more for FREE Drink`}
-                            </span>
-                            <span className="font-bold text-[10px]" style={{ color: isUnlocked ? "#059669" : "#EA580C" }}>
-                              Rs {subtotal.toLocaleString()} / Rs 3,000
-                            </span>
-                          </div>
-                          
-                          {/* Progress Bar Track */}
-                          <div className="w-full h-2.5 bg-black/10 rounded-full overflow-hidden p-0.5">
-                            <div className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${pct}%`,
-                                background: isUnlocked ? "linear-gradient(90deg,#10B981,#059669)" : "linear-gradient(90deg,#F26F21,#FF8C3F)"
-                              }} />
-                          </div>
-                        </div>
-
-                        {/* Drink Selection Section */}
-                        {beverages.length > 0 && (
-                          <div className={`rounded-2xl overflow-hidden border transition-all ${isUnlocked ? "bg-emerald-50/60 border-emerald-200" : "bg-gray-100/90 border-gray-200"}`}>
-                            <div className="flex items-center justify-between px-3.5 pt-3 pb-2">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-base">{isUnlocked ? "🎁" : "🔒"}</span>
-                                <p className="text-[11px] font-black text-gray-800 uppercase tracking-wider">
-                                  {isUnlocked
-                                    ? (claimedPromoItem ? "Your 1 FREE Drink (Tap to swap):" : "Choose 1 FREE Drink:")
-                                    : "Add a Drink (Locked)"}
-                                </p>
-                              </div>
-                              <span className="text-[9px] font-bold text-gray-400">1 Free Drink per order</span>
-                            </div>
-
-                            <div className="flex gap-2 overflow-x-auto scrollbar-none px-3.5 pb-3">
-                              {beverages.map(bev => {
-                                const isThisSelected = claimedPromoId === bev.id;
-
-                                return (
-                                  <button key={bev.id}
-                                    disabled={!isUnlocked}
-                                    onClick={() => {
-                                      if (isUnlocked) {
-                                        if (isThisSelected) {
-                                          removeFreeDrink();
-                                        } else {
-                                          claimFreeDrink(bev);
-                                        }
-                                      }
-                                    }}
-                                    className={`flex-shrink-0 flex items-center gap-2 rounded-xl px-2.5 py-2 shadow-sm border transition-all ${
-                                      isUnlocked
-                                        ? isThisSelected
-                                          ? "bg-emerald-100/90 border-emerald-500 ring-2 ring-emerald-500/30 cursor-pointer active:scale-95"
-                                          : "bg-white border-emerald-200 hover:border-emerald-500 cursor-pointer active:scale-95"
-                                        : "bg-white/60 border-gray-200 opacity-60 cursor-not-allowed"
-                                    }`}>
-                                    {bev.image
-                                      ? <img src={bev.image} alt={bev.title} className="w-9 h-9 rounded-lg object-cover" />
-                                      : (
-                                        <div className="w-9 h-9 rounded-lg flex flex-col items-center justify-center bg-gray-200">
-                                          <svg viewBox="0 0 40 52" className="w-5 h-6 opacity-40" fill="none">
-                                            <rect x="10" y="2" width="20" height="4" rx="2" fill="#999"/>
-                                            <path d="M8 6 L6 46 Q6 48 8 48 L32 48 Q34 48 34 46 L32 6 Z" fill="#bbb" stroke="#aaa" strokeWidth="0.5"/>
-                                          </svg>
-                                        </div>
-                                      )
-                                    }
-                                    <div className="text-left">
-                                      <p className="text-[10px] font-extrabold text-gray-800 leading-tight" style={{ maxWidth: 80, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bev.title}</p>
-                                      {isUnlocked ? (
-                                        isThisSelected ? (
-                                          <span className="inline-block bg-emerald-600 text-white font-extrabold px-1.5 py-0.5 rounded-full text-[9px]">✓ Claimed</span>
-                                        ) : (
-                                          <span className="inline-block bg-emerald-100 text-emerald-700 font-extrabold px-1.5 py-0.5 rounded-full text-[9px]">FREE ✔</span>
-                                        )
-                                      ) : (
-                                        <p className="text-[10px] font-bold text-gray-400">Rs {Number(bev.price).toLocaleString()}</p>
-                                      )}
-                                    </div>
-                                    {isUnlocked && (
-                                      <div className={`w-6 h-6 rounded-full text-white flex items-center justify-center flex-shrink-0 ml-1 ${isThisSelected ? "bg-red-500" : "bg-emerald-500"}`}
-                                        title={isThisSelected ? "Remove" : "Select this free drink"}>
-                                        {isThisSelected ? Icons.trash("w-3 h-3") : Icons.plus("w-3 h-3")}
-                                      </div>
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </>
+                    )}
+                  </div>
+                ))
               )}
             </div>
 
-            {/* Checkout Footer */}
+            {/* ── MINIMALIST CHECKOUT FOOTER ── */}
             {cart.length > 0 && (
-              <div className="px-4 py-4 border-t border-gray-100 space-y-3">
-                {/* Order Summary */}
-                <div className="bg-gray-50 rounded-2xl p-3.5 space-y-2 text-sm">
-                  <div className="flex justify-between text-gray-600">
-                    <span className="font-semibold">Subtotal ({totalItems} items)</span>
-                    <span className="font-bold text-gray-900">Rs {subtotal.toLocaleString()}</span>
+              <div className="p-5 border-t border-neutral-100 bg-white flex-shrink-0 space-y-3.5">
+                {/* Summary */}
+                <div className="space-y-1.5 text-xs text-neutral-500">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span className="text-neutral-900 font-medium">Rs {subtotal.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-gray-500 text-xs">
-                    <span>Delivery fee</span>
-                    <span className="text-green-600 font-bold">Discussed on WhatsApp</span>
+                  <div className="flex justify-between">
+                    <span>Delivery</span>
+                    <span className="text-neutral-400">Via WhatsApp</span>
                   </div>
-                  <div className="border-t border-gray-200 pt-2 flex justify-between font-black">
-                    <span className="text-gray-900">Order Total</span>
-                    <span style={{ color: "#F26F21" }} className="text-base">Rs {subtotal.toLocaleString()}</span>
+                  <div className="flex justify-between text-sm font-bold text-neutral-900 pt-2 border-t border-neutral-100">
+                    <span>Total</span>
+                    <span className="text-base font-bold text-neutral-900">Rs {subtotal.toLocaleString()}</span>
                   </div>
                 </div>
 
-                {/* Checkout CTA */}
-                <button onClick={handleCheckout}
-                  className="w-full flex items-center justify-center gap-2.5 text-white font-black text-sm py-4 rounded-2xl transition-all active:scale-[0.98]"
-                  style={{ background: "#25D366", boxShadow: "0 8px 24px rgba(37,211,102,0.4)" }}>
-                  {Icons.wa()} Proceed to WhatsApp Checkout
+                {/* WhatsApp Button */}
+                <button onClick={() => handleCheckout()}
+                  className="w-full h-12 rounded-2xl bg-[#0D0D0D] hover:bg-[#262626] text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-sm">
+                  {Icons.wa("w-4 h-4 text-emerald-400")}
+                  <span>Order via WhatsApp</span>
+                  <span className="text-neutral-400 ml-1">• Rs {subtotal.toLocaleString()}</span>
                 </button>
 
-                <div className="flex items-center justify-between text-xs text-gray-400 font-semibold">
-                  <span>⚡ Kitchen prep ~20 minutes</span>
-                  <button onClick={clearCart} className="text-red-400 hover:text-red-600 hover:underline transition-colors">
-                    Clear Cart
+                {/* Subtext */}
+                <div className="flex items-center justify-between text-[11px] text-neutral-400 pt-0.5">
+                  <span>⚡ Kitchen prep ~20 mins</span>
+                  <button onClick={clearCart} className="hover:text-red-500 transition-colors">
+                    Clear cart
                   </button>
                 </div>
               </div>
@@ -1030,6 +1012,84 @@ export default function OrderPage() {
                 );
               })()}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PROMO REMINDER POPUP (WHEN BILLING WITHOUT PROMO) ── */}
+      {showPromoReminderModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md anim-fade"
+          onClick={() => setShowPromoReminderModal(false)}>
+          <div className="relative w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-7 anim-slide-up"
+            onClick={(e) => e.stopPropagation()}>
+            
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-2xl font-bold shadow-sm">
+                🎁
+              </div>
+              <button onClick={() => setShowPromoReminderModal(false)}
+                className="w-8 h-8 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-900 flex items-center justify-center transition-colors"
+                aria-label="Close">
+                {Icons.x("w-4 h-4")}
+              </button>
+            </div>
+
+            <h3 className="text-xl font-black text-gray-900 leading-tight mb-1.5">
+              Claim Your Free Beverage!
+            </h3>
+            <p className="text-xs text-gray-500 leading-relaxed mb-4">
+              Your order is <strong>Rs {subtotal.toLocaleString()}</strong>, which qualifies for a 100% complimentary beverage. Choose your drink below:
+            </p>
+
+            {/* Quick selection drink list */}
+            <div className="space-y-2 mb-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-52 overflow-y-auto scrollbar-none pr-1">
+                {[
+                  { id: 9992, title: "2x Mineral Water Bottles", portion: "2 Bottles (1000 ml)" },
+                  { id: 9991, title: "Elephant House Orange Crush", portion: "1.05L Bottle" },
+                  { id: 25, title: "Coca Cola (1050 ml)", portion: "1050 ml" },
+                  { id: 27, title: "Sprite (1050 ml)", portion: "1050 ml" },
+                  { id: 28, title: "Fanta (1050 ml)", portion: "1050 ml" },
+                  { id: 29, title: "Elephant House Ginger Beer", portion: "1050 ml" },
+                ].map((bev) => (
+                  <button key={bev.id}
+                    onClick={() => {
+                      claimFreeDrink(bev as any);
+                      setShowPromoReminderModal(false);
+                      setIsCartOpen(true);
+                    }}
+                    className="flex items-center justify-between p-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100 hover:border-emerald-500 transition-all text-left group active:scale-95 shadow-xs">
+                    <div className="min-w-0 pr-1">
+                      <p className="text-xs font-bold text-gray-900 truncate">{bev.title}</p>
+                      <p className="text-[10px] text-gray-500">{bev.portion}</p>
+                    </div>
+                    <span className="text-[10px] font-black text-emerald-700 bg-white px-2 py-0.5 rounded-lg border border-emerald-200 flex-shrink-0">
+                      + Free
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  setShowPromoReminderModal(false);
+                  setIsCartOpen(true);
+                }}
+                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-2xl transition-all shadow-md active:scale-98 flex items-center justify-center gap-2">
+                Select in Cart Drawer
+              </button>
+
+              <button
+                onClick={() => handleCheckout(true)}
+                className="w-full py-2.5 text-gray-400 hover:text-gray-700 font-bold text-xs transition-colors text-center">
+                Proceed to WhatsApp without free drink →
+              </button>
+            </div>
+
           </div>
         </div>
       )}
