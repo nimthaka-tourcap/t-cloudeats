@@ -2164,38 +2164,41 @@ export default function PosPage() {
       setOrderHistory(updatedHistory);
       localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
 
-      // 4. Immediately push customer and order to Supabase
+      // 4. Immediately push customer and order to Supabase with 5-second timeout limit
       try {
-        const [custRes, orderRes] = await Promise.all([
-          supabase
-            .from("tce_customers")
-            .upsert(newCustomer, { onConflict: "phone" }),
-          supabase
-            .from("tce_orders")
-            .upsert({
-              id: newInvoiceId,
-              timestamp: newOrder.timestamp,
-              items: newOrder.items,
-              subtotal: newOrder.subtotal,
-              tax: newOrder.tax,
-              total: newOrder.total,
-              status: newOrder.status,
-              type: newOrder.type,
-              customer: newOrder.customer
-            }, { onConflict: "id" })
-        ]);
+        const [custRes, orderRes] = await withTimeout(
+          Promise.all([
+            supabase
+              .from("tce_customers")
+              .upsert(newCustomer, { onConflict: "phone" }),
+            supabase
+              .from("tce_orders")
+              .upsert({
+                id: newInvoiceId,
+                timestamp: newOrder.timestamp,
+                items: newOrder.items,
+                subtotal: newOrder.subtotal,
+                tax: newOrder.tax,
+                total: newOrder.total,
+                status: newOrder.status,
+                type: newOrder.type,
+                customer: newOrder.customer
+              }, { onConflict: "id" })
+          ]),
+          5000 // Strict 5-second max timeout
+        );
 
         if (orderRes.error) {
           console.error("Supabase order upsert error:", orderRes.error);
-          triggerToast("Poor connection! Order saved locally and will auto-sync when online.", "error");
+          triggerToast("Poor connection! Order saved locally and will auto-sync when online.", "warning");
         } else {
           newOrder.syncedToDb = true;
           setOrderHistory(prev => prev.map(o => o.id === newInvoiceId ? { ...o, syncedToDb: true } : o));
           triggerToast(`Order ${newInvoiceId} placed & synced in real-time!`, "success");
         }
       } catch (dbErr) {
-        console.error("Network error saving order to DB:", dbErr);
-        triggerToast("Poor connection! Order saved locally (offline mode active).", "error");
+        console.error("Network or timeout error saving order to DB:", dbErr);
+        triggerToast("Poor connection! Order saved locally and will auto-sync when online.", "warning");
       }
 
       // 5. Silent in-memory background refresh (Ctrl+R effect without page reload)
