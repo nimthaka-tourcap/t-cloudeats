@@ -75,14 +75,14 @@ export default function LoginPage() {
         <div className="relative z-10 flex items-center gap-3.5">
           <Image
             src="/Round Logo.png"
-            alt="T-Cloud Eats"
+            alt="t-cloud eats"
             width={52}
             height={52}
             className="w-12 h-12 sm:w-[52px] sm:h-[52px] object-contain"
             priority
           />
-          <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 font-[family-name:var(--font-heading)]">
-            T-Cloud Eats
+          <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 font-[family-name:var(--font-heading)] lowercase">
+            t-cloud eats
           </span>
         </div>
 
