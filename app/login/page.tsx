@@ -4,9 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
-  Lock,
-  Mail,
-  ArrowRight,
   Loader2,
   Maximize,
   Minimize,
@@ -68,107 +65,123 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-[#090A0F] text-slate-100 font-sans antialiased flex flex-col justify-between p-6 overflow-hidden">
-      {/* ── Soft Cascading Diffuse Glow ───────────────────────────────── */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Subtle top-center cascading gradient */}
-        <div className="absolute top-[-25%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full bg-gradient-to-b from-sky-500/10 via-[#F26F21]/5 to-transparent blur-[120px]" />
-        {/* Delicate subtle mesh background */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `radial-gradient(circle, #ffffff 1px, transparent 1px)`,
-            backgroundSize: "28px 28px",
-          }}
-        />
-      </div>
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-white font-sans antialiased text-slate-900 select-none">
+      {/* ── Left Hero Pane (Matching Reference) ──────────────────────── */}
+      <aside className="w-full lg:w-[42%] bg-[#EEF2F6] flex flex-col justify-between p-8 sm:p-12 lg:p-16 shrink-0 relative overflow-hidden">
+        {/* Subtle decorative background gradient */}
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full bg-gradient-to-bl from-sky-100/60 to-transparent blur-3xl pointer-events-none" />
 
-      {/* ── Top Bar: Discreet Fullscreen ─────────────────────────────── */}
-      <header className="relative z-10 flex justify-end max-w-5xl w-full mx-auto">
-        <button
-          onClick={toggleFullscreen}
-          type="button"
-          className="p-2 rounded-xl text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors cursor-pointer"
-          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-        >
-          {isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
-        </button>
-      </header>
+        {/* Top: Bare Logo without any container box */}
+        <div className="relative z-10 flex items-center gap-3">
+          <Image
+            src="/Round Logo.png"
+            alt="T-Cloud Eats"
+            width={38}
+            height={38}
+            className="object-contain"
+            priority
+          />
+          <span className="text-base font-black tracking-tight text-slate-900 uppercase">
+            T-Cloud Eats
+          </span>
+        </div>
 
-      {/* ── Main Minimalist Login Card ───────────────────────────────── */}
-      <main className="relative z-10 w-full max-w-[360px] mx-auto my-auto">
-        {/* Subtle cascading ambient card outline glow */}
-        <div className="absolute -inset-0.5 rounded-3xl bg-gradient-to-b from-white/10 via-white/[0.02] to-transparent blur-sm pointer-events-none -z-10" />
+        {/* Bottom: Hero Typographic Tagline */}
+        <div className="relative z-10 py-10 lg:py-0">
+          <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-bold tracking-tight text-slate-900 leading-[1.12]">
+            Run your <br />
+            cloud kitchen. <br />
+            <span className="text-sky-600">Better.</span> <br />
+            <span className="text-[#F26F21]">Together.</span>
+          </h2>
+        </div>
 
-        <div className="rounded-2xl bg-[#111218]/90 border border-white/[0.08] backdrop-blur-xl p-7 sm:p-8 shadow-2xl space-y-6">
-          {/* Logo & Header */}
-          <div className="flex flex-col items-center text-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/[0.05] border border-white/10 flex items-center justify-center p-2 shadow-inner">
-              <Image
-                src="/Round Logo.png"
-                alt="T-Cloud Eats"
-                width={36}
-                height={36}
-                className="object-contain"
-                priority
-              />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold tracking-tight text-white">
-                T-Cloud Eats
-              </h1>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Cloud Kitchen &amp; POS Solution
-              </p>
-            </div>
+        {/* Subtle Left Footer for Mobile / Small Screens */}
+        <div className="relative z-10 hidden lg:block text-xs text-slate-400 font-medium">
+          Cloud Kitchen Operating System • Sri Lanka
+        </div>
+      </aside>
+
+      {/* ── Right Form Pane (Matching Reference) ─────────────────────── */}
+      <main className="flex-1 bg-white flex flex-col justify-between p-8 sm:p-12 lg:p-16">
+        {/* Top Header: Fullscreen */}
+        <div className="flex justify-end">
+          <button
+            onClick={toggleFullscreen}
+            type="button"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          >
+            {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+          </button>
+        </div>
+
+        {/* Center Form Section (No rectangle card box) */}
+        <div className="w-full max-w-[380px] mx-auto my-auto py-8 space-y-6">
+          <div>
+            <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400 font-bold block mb-2">
+              Cloud Kitchen POS &amp; ERP
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              Sign in
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Access your workspace.
+            </p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 pt-1">
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-zinc-300">
-                Email
+              <label className="block text-xs font-medium text-slate-700">
+                Work email
               </label>
-              <div className="relative flex items-center h-11 rounded-xl bg-white/[0.03] border border-white/[0.08] focus-within:border-white/25 focus-within:bg-white/[0.05] transition-all">
-                <Mail className="absolute left-3.5 text-zinc-500" size={15} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@t-cloudeats.com"
-                  className="w-full h-full bg-transparent pl-10 pr-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600"
-                  required
-                />
-              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@company.com"
+                className="w-full h-11 px-3.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
+                required
+              />
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-zinc-300">
-                Password
-              </label>
-              <div className="relative flex items-center h-11 rounded-xl bg-white/[0.03] border border-white/[0.08] focus-within:border-white/25 focus-within:bg-white/[0.05] transition-all">
-                <Lock className="absolute left-3.5 text-zinc-500" size={15} />
+              <div className="flex items-center justify-between text-xs">
+                <label className="font-medium text-slate-700">Password</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail("cashier@t-cloudeats.com");
+                    setPassword("cashier@ti321");
+                    setError("");
+                  }}
+                  className="text-sky-600 hover:text-sky-700 text-xs font-medium cursor-pointer"
+                >
+                  Fill credentials
+                </button>
+              </div>
+              <div className="relative flex items-center h-11 border border-slate-300 rounded-lg focus-within:border-slate-900 focus-within:ring-1 focus-within:ring-slate-900 transition bg-white">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full h-full bg-transparent pl-10 pr-10 text-sm text-zinc-100 outline-none placeholder:text-zinc-600"
+                  placeholder="••••••••••••"
+                  className="w-full h-full px-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none pr-10"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                  className="absolute right-3 text-slate-400 hover:text-slate-600 cursor-pointer"
                   title={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
             {error && (
-              <p className="text-rose-400 text-xs text-center bg-rose-500/10 border border-rose-500/20 py-2.5 rounded-xl">
+              <p className="text-rose-600 text-xs bg-rose-50 border border-rose-200 py-2.5 px-3 rounded-lg text-center font-medium">
                 {error}
               </p>
             )}
@@ -176,25 +189,26 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-11 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs tracking-wide uppercase flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 active:scale-[0.99] shadow-sm mt-2"
+              className="w-full h-11 rounded-lg bg-[#111827] hover:bg-[#1f2937] text-white font-semibold text-xs tracking-wide transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 mt-2 shadow-xs active:scale-[0.99]"
             >
               {isLoading ? (
-                <Loader2 className="animate-spin" size={15} />
+                <Loader2 className="animate-spin" size={16} />
               ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight size={14} />
-                </>
+                <span>Sign in</span>
               )}
             </button>
           </form>
-        </div>
-      </main>
 
-      {/* ── Discreet Minimal Footer ───────────────────────────────────── */}
-      <footer className="relative z-10 text-center text-[11px] text-zinc-600">
-        T-Cloud Eats • Sri Lanka
-      </footer>
+          <p className="text-[11px] text-slate-400 text-center sm:text-left">
+            T-Cloud Eats Enterprise Terminal • Sri Lanka
+          </p>
+        </div>
+
+        {/* Bottom Disclaimer */}
+        <footer className="text-xs text-slate-400 text-center sm:text-left">
+          © 2026 T-Cloud Eats (Pvt) Ltd. All rights reserved.
+        </footer>
+      </main>
     </div>
   );
 }
