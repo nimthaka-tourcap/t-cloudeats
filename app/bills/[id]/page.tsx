@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { RotateCw, AlertTriangle, Printer, Phone, Globe, Mail, Heart, Check, Upload, MapPin, Star, X, CreditCard, Landmark, DollarSign, Copy, FileText, ArrowLeft } from "lucide-react";
+import { RotateCw, AlertTriangle, Printer, Phone, Globe, Mail, Heart, Check, Upload, MapPin, Star, X, CreditCard, Landmark, Banknote, Copy, FileText, ArrowLeft, Eye, Download, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
 import Image from "next/image";
+import { STORE_CONFIG } from "@/lib/constants/store";
+import { isPdfReceipt, openReceiptSlip, downloadReceiptSlip, createReceiptBlobUrl } from "@/lib/utils/receipt-slip";
 
 interface OrderItem {
   quantity: number;
@@ -74,6 +76,21 @@ export default function BillPage() {
   const [copiedName, setCopiedName] = useState(false);
   const [copiedAccount, setCopiedAccount] = useState(false);
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [showSlipModal, setShowSlipModal] = useState(false);
+  const [isSlipFullScreen, setIsSlipFullScreen] = useState(false);
+  const [slipBlobUrl, setSlipBlobUrl] = useState("");
+
+  useEffect(() => {
+    if (showSlipModal && order?.customer?.payment_receipt && isPdfReceipt(order.customer.payment_receipt, order.customer.payment_receipt_filename)) {
+      const url = createReceiptBlobUrl(order.customer.payment_receipt);
+      setSlipBlobUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setSlipBlobUrl("");
+    }
+  }, [showSlipModal, order?.customer?.payment_receipt, order?.customer?.payment_receipt_filename]);
 
   const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
     setToast({ message, type });
@@ -140,8 +157,8 @@ export default function BillPage() {
     const file = e.target.files?.[0];
     if (!file || !order) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("File size too large. Maximum size is 5MB.", "error");
+    if (file.size > STORE_CONFIG.paymentSlips.maxSizeBytes) {
+      showToast(`File size too large. Maximum allowed size is ${STORE_CONFIG.paymentSlips.maxSizeDisplay}.`, "error");
       return;
     }
 
@@ -430,7 +447,7 @@ export default function BillPage() {
               <p className="text-[10px] font-bold text-[#FF6B35] uppercase tracking-wider">Select Payment Method</p>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { id: "Cash on delivery (COD)", label: "COD", desc: "Cash on Delivery", icon: DollarSign },
+                  { id: "Cash on delivery (COD)", label: "COD", desc: "Cash on Delivery", icon: Banknote },
                   { id: "Bank transfer", label: "Bank", desc: "Bank Transfer", icon: Landmark }
                 ].map((method) => {
                   const Icon = method.icon;
@@ -512,14 +529,21 @@ export default function BillPage() {
 
                 {/* Receipt Upload Button */}
                 <div className="space-y-2">
-                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Upload Transfer Invoice / Slip</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider">
+                      Upload Bank Transfer Slip / Invoice
+                    </p>
+                    <span className="text-[8px] text-slate-500 font-mono">
+                      PDF, PNG, JPG (Max {STORE_CONFIG.paymentSlips.maxSizeDisplay})
+                    </span>
+                  </div>
                   
                   <label className="flex items-center justify-center gap-2 w-full bg-[#FF6B35]/10 border border-dashed border-[#FF6B35]/30 hover:border-[#FF6B35] hover:bg-[#FF6B35]/15 py-3 px-4 rounded-xl text-xs font-bold text-slate-200 cursor-pointer transition-all duration-200">
                     <Upload size={14} className="text-[#FF6B35]" />
-                    <span>Upload Invoice Slip</span>
+                    <span>Upload Transfer Slip (PDF or Photo)</span>
                     <input 
                       type="file" 
-                      accept="image/*,application/pdf,.heic,.heif" 
+                      accept={STORE_CONFIG.paymentSlips.acceptString} 
                       className="hidden" 
                       onChange={handleFileChange}
                     />
@@ -537,47 +561,34 @@ export default function BillPage() {
                         <Check size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-emerald-400">Invoice uploaded successfully</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-[10px] font-bold text-emerald-400">Invoice uploaded successfully</p>
+                          {isPdfReceipt(order.customer.payment_receipt, order.customer.payment_receipt_filename) && (
+                            <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">PDF</span>
+                          )}
+                        </div>
                         <p className="text-[9px] text-slate-400 truncate mt-0.5">
                           {order.customer?.payment_receipt_filename || "Receipt invoice file"}
                         </p>
-                      </div>
-                      {/* Preview / Download Box */}
-                      <div className="relative w-10 h-10 rounded border border-white/10 overflow-hidden shrink-0 flex items-center justify-center bg-white/5">
-                        {order.customer.payment_receipt.startsWith("data:image/") && !order.customer.payment_receipt.includes("image/heic") && !order.customer.payment_receipt.includes("image/heif") ? (
-                          <img 
-                            src={order.customer.payment_receipt} 
-                            alt="Receipt preview" 
-                            className="object-cover w-full h-full cursor-zoom-in"
-                            onClick={() => {
-                              const w = window.open();
-                              w?.document.write(`<img src="${order.customer?.payment_receipt}" style="max-width: 100%; height: auto;" />`);
-                            }}
-                          />
-                        ) : (
+                        <div className="flex items-center gap-2 mt-1">
                           <button
                             type="button"
-                            onClick={() => {
-                              const w = window.open();
-                              if (order.customer?.payment_receipt?.startsWith("data:application/pdf")) {
-                                w?.document.write(`<embed src="${order.customer?.payment_receipt || ''}" type="application/pdf" width="100%" height="100%" />`);
-                              } else {
-                                w?.document.write(`
-                                  <html>
-                                    <body style="margin: 0; background: #060B18; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; color: white; font-family: sans-serif;">
-                                      <p style="font-size: 14px; font-weight: bold; margin-bottom: 20px;">Download/View File: ${order.customer?.payment_receipt_filename || 'Receipt'}</p>
-                                      <a href="${order.customer?.payment_receipt || ''}" download="${order.customer?.payment_receipt_filename || 'receipt'}" style="padding: 10px 20px; background: #FF6B35; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Download Attachment</a>
-                                    </body>
-                                  </html>
-                                `);
-                              }
-                            }}
-                            className="w-full h-full flex items-center justify-center text-slate-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
+                            onClick={() => setShowSlipModal(true)}
+                            className="text-[10px] font-bold text-[#FF6B35] hover:underline cursor-pointer flex items-center gap-0.5"
                           >
-                            <FileText size={16} />
+                            <Eye size={11} /> View Slip
                           </button>
-                        )}
+                          <span className="text-slate-600">•</span>
+                          <button
+                            type="button"
+                            onClick={() => downloadReceiptSlip(order.customer!.payment_receipt!, order.customer?.payment_receipt_filename)}
+                            className="text-[10px] font-bold text-slate-400 hover:text-white cursor-pointer flex items-center gap-0.5"
+                          >
+                            <Download size={11} /> Download
+                          </button>
+                        </div>
                       </div>
+
                       {/* Remove Button */}
                       <button
                         type="button"
@@ -696,26 +707,26 @@ export default function BillPage() {
                       )}
                       {!isFree && addonPrice !== 0 && (
                         <p className="text-[9px] text-amber-600 font-bold mt-0.5">
-                          {addonPrice > 0 ? "+ " : "- "}Addon Price: LKR {Math.abs(addonPrice).toLocaleString()}
+                          {addonPrice > 0 ? "+ " : "- "}Addon Price: Rs. {Math.abs(addonPrice).toLocaleString()}
                         </p>
                       )}
                       <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                        {item.quantity} x {isFree ? "LKR 0" : `LKR ${finalItemPrice.toLocaleString()}`}
+                        {item.quantity} x {isFree ? "Rs. 0" : `Rs. ${finalItemPrice.toLocaleString()}`}
                       </p>
                     </div>
                     <div className="flex flex-col items-end">
                       {isFree || (customPrice !== undefined && customPrice !== (item.menuItem ? item.menuItem.price : (item as any).price || 0)) ? (
                         <>
                           <span className="line-through text-[10px] text-slate-400 font-mono">
-                            LKR {(( (item.menuItem ? item.menuItem.price : (item as any).price || 0) + (item.addonPrice || 0) ) * item.quantity).toLocaleString()}
+                            Rs. {(( (item.menuItem ? item.menuItem.price : (item as any).price || 0) + (item.addonPrice || 0) ) * item.quantity).toLocaleString()}
                           </span>
                           <span className="font-mono font-bold text-slate-950 whitespace-nowrap">
-                            {isFree ? "LKR 0" : `LKR ${(finalItemPrice * item.quantity).toLocaleString()}`}
+                            {isFree ? "Rs. 0" : `Rs. ${(finalItemPrice * item.quantity).toLocaleString()}`}
                           </span>
                         </>
                       ) : (
                         <span className="font-mono font-bold text-slate-950 whitespace-nowrap">
-                          LKR ${(finalItemPrice * item.quantity).toLocaleString()}
+                          Rs. {(finalItemPrice * item.quantity).toLocaleString()}
                         </span>
                       )}
                     </div>
@@ -730,30 +741,30 @@ export default function BillPage() {
         <div className="py-4 space-y-1.5 text-xs">
           <div className="flex justify-between">
             <span className="font-semibold text-slate-500">Subtotal:</span>
-            <span className="font-mono font-bold text-slate-800">LKR {order.subtotal.toLocaleString()}</span>
+            <span className="font-mono font-bold text-slate-800">Rs. {order.subtotal.toLocaleString()}</span>
           </div>
           {order.customer?.discount_amount ? (
             <div className="flex justify-between text-red-600 font-medium">
               <span>
-                Discount ({order.customer.discount_type === "percentage" ? `${order.customer.discount_value}%` : "LKR"}):
+                Discount ({order.customer.discount_type === "percentage" ? `${order.customer.discount_value}%` : "Rs."}):
               </span>
-              <span className="font-mono">- LKR {order.customer.discount_amount.toLocaleString()}</span>
+              <span className="font-mono">- Rs. {order.customer.discount_amount.toLocaleString()}</span>
             </div>
           ) : null}
           {(order.delivery_fee || order.customer?.delivery_fee) ? (
             <div className="flex justify-between text-blue-600 font-medium">
               <span>Delivery Charge:</span>
-              <span className="font-mono">+ LKR {(order.delivery_fee || order.customer?.delivery_fee || 0).toLocaleString()}</span>
+              <span className="font-mono">+ Rs. {(order.delivery_fee || order.customer?.delivery_fee || 0).toLocaleString()}</span>
             </div>
           ) : null}
           <div className="flex justify-between">
             <span className="font-semibold text-slate-500">Taxes &amp; Service Charges:</span>
-            <span className="font-mono font-medium text-slate-500">LKR 0</span>
+            <span className="font-mono font-medium text-slate-500">Rs. 0</span>
           </div>
           <div className="flex justify-between items-center pt-2 border-t border-dashed border-slate-200">
             <span className="font-black text-sm uppercase">Total Amount:</span>
             <span className="font-mono text-base font-black text-[#FF6B35]">
-              LKR {order.total.toLocaleString()}
+              Rs. {order.total.toLocaleString()}
             </span>
           </div>
         </div>
@@ -977,6 +988,94 @@ export default function BillPage() {
                 <span>Submit Rating</span>
               )}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Slip Preview Modal */}
+      {showSlipModal && order?.customer?.payment_receipt && (
+        <div className={`fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex items-center justify-center ${isSlipFullScreen ? "p-0" : "p-3 sm:p-5"}`}>
+          <div className={`bg-[#111318] border border-[#1F2430] overflow-hidden shadow-2xl flex flex-col transition-all duration-200 ${
+            isSlipFullScreen ? "w-screen h-screen rounded-none" : "w-[96vw] max-w-6xl h-[92vh] rounded-2xl"
+          }`}>
+            <div className="px-5 py-3 border-b border-[#1F2430] flex items-center justify-between gap-3 bg-[#0A0B0F] shrink-0">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-white truncate">
+                    Payment Slip Preview
+                  </h3>
+                  {isPdfReceipt(order.customer.payment_receipt, order.customer.payment_receipt_filename) && (
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">PDF</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 truncate">
+                  {order.customer?.payment_receipt_filename || "Transfer Receipt"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => openReceiptSlip(order.customer!.payment_receipt!, order.customer?.payment_receipt_filename)}
+                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-semibold cursor-pointer flex items-center gap-1.5 border border-white/10 transition-colors"
+                  title="Open in dedicated full browser tab"
+                >
+                  <ExternalLink size={14} />
+                  <span>Open Full Tab</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadReceiptSlip(order.customer!.payment_receipt!, order.customer?.payment_receipt_filename)}
+                  className="px-3 py-1.5 rounded-lg bg-[#FF6B35] hover:bg-[#e05c0d] text-white text-xs font-medium cursor-pointer flex items-center gap-1.5 transition-colors"
+                  title="Download File"
+                >
+                  <Download size={14} />
+                  <span>Download</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsSlipFullScreen(!isSlipFullScreen)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer"
+                  title={isSlipFullScreen ? "Exit Fullscreen" : "Fullscreen"}
+                >
+                  {isSlipFullScreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSlipModal(false);
+                    setIsSlipFullScreen(false);
+                  }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer"
+                  title="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 w-full h-full overflow-hidden bg-slate-900 flex items-stretch relative">
+              {isPdfReceipt(order.customer.payment_receipt, order.customer.payment_receipt_filename) ? (
+                slipBlobUrl ? (
+                  <iframe
+                    src={`${slipBlobUrl}#navpanes=0&toolbar=1&view=FitH&zoom=page-width`}
+                    className="w-full h-full border-0 bg-slate-900"
+                    title="Payment Slip PDF"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
+                    Loading PDF document...
+                  </div>
+                )
+              ) : (
+                <div className="w-full h-full p-4 overflow-auto flex items-center justify-center bg-[#060B18]">
+                  <img
+                    src={order.customer.payment_receipt}
+                    alt="Payment Slip"
+                    className="max-h-full max-w-full object-contain rounded-xl shadow-lg border border-white/10"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

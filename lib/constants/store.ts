@@ -1,5 +1,5 @@
 export const STORE_CONFIG = {
-  name: "T-Cloud Eats",
+  name: "t-cloud eats",
   tagline: "eat. enjoy. repeat.",
   phone: "070 628 8109",
   whatsappPhone: "94706288109",
@@ -12,6 +12,19 @@ export const STORE_CONFIG = {
   currency: "Rs",
   currencyCode: "LKR",
   acceptedPayments: ["Cash on Delivery", "HelaPOS Card Payment", "PickMe Pay"],
+  // Bank Transfer Payment Slip & Invoice Upload Configuration
+  paymentSlips: {
+    maxSizeBytes: 10 * 1024 * 1024, // 10 MB limit
+    maxSizeDisplay: "10 MB",
+    allowedFormats: [
+      { ext: ".pdf", mime: "application/pdf", label: "PDF Document (E-Banking Statement / Receipt)" },
+      { ext: ".png", mime: "image/png", label: "PNG (Mobile Banking App Screenshot)" },
+      { ext: ".jpg, .jpeg", mime: "image/jpeg", label: "JPG / JPEG (ATM Slip or Camera Photo)" },
+      { ext: ".webp", mime: "image/webp", label: "WEBP (Optimized Web Image)" },
+      { ext: ".heic, .heif", mime: "image/heic, image/heif", label: "HEIC / HEIF (Apple iPhone Photo)" },
+    ],
+    acceptString: "image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf,.jpg,.jpeg,.png,.webp,.pdf,.heic,.heif",
+  },
   openingHours: {
     openHour: 11,
     closeHour: 24,

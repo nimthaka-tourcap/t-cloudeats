@@ -11,6 +11,15 @@ export async function POST(request: Request) {
     const userId = body.userId || "DIRECTOR";
 
     const result = await withTransaction(async (client) => {
+      const refId = `DEP-${depMonth}`;
+      const existingJe = await client.query(
+        `SELECT id FROM tce_journal_entries WHERE reference_type = 'DEPRECIATION' AND reference_id = $1 AND status = 'POSTED' LIMIT 1`,
+        [refId]
+      );
+      if (existingJe.rows.length > 0) {
+        return { message: `Depreciation for ${depMonth} is already posted (${existingJe.rows[0].id}).`, assetsDepreciated: 0, totalDepPosted: 0 };
+      }
+
       const assetsRes = await client.query(
         `SELECT * FROM tce_fixed_assets WHERE status = 'ACTIVE' ORDER BY id`
       );
@@ -20,6 +29,11 @@ export async function POST(request: Request) {
       const lines: { accountCode: string; debit?: number; credit?: number; memo?: string }[] = [];
 
       for (const asset of assetsRes.rows) {
+        const purchaseMonth = asset.purchase_date
+          ? new Date(asset.purchase_date).toISOString().slice(0, 7)
+          : null;
+        if (purchaseMonth && depMonth < purchaseMonth) continue; // Asset not yet in service in depMonth
+
         const lastDepMonth = asset.last_depreciation_date
           ? new Date(asset.last_depreciation_date).toISOString().slice(0, 7)
           : null;
@@ -37,7 +51,7 @@ export async function POST(request: Request) {
         await client.query(
           `UPDATE tce_fixed_assets
            SET accumulated_depreciation = accumulated_depreciation + $1,
-               last_depreciation_date = $2
+               last_depreciation_date = GREATEST(COALESCE(last_depreciation_date, $2::date), $2::date)
            WHERE id = $3`,
           [depAmount, depDate, asset.id]
         );

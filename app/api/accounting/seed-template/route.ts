@@ -70,7 +70,7 @@ export async function POST() {
           const monthlyDep = Math.round((fa.cost / 60) * 100) / 100;
           await client.query(
             `INSERT INTO tce_fixed_assets (id, name, asset_category, account_code, purchase_date, cost, residual_value, useful_life_months, monthly_depreciation, status)
-             VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, 0, 60, $6, 'ACTIVE')`,
+             VALUES ($1, $2, $3, $4, '2026-07-02', $5, 0, 60, $6, 'ACTIVE')`,
             [faId, fa.name, fa.category, fa.account, fa.cost, monthlyDep]
           );
           faInserted++;

@@ -42,11 +42,12 @@ import {
   PlayCircle,
   HardDrive,
   BookOpen,
-  ShieldCheck
+  ShieldCheck,
+  Calendar
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import PosTerminalView from "@/components/cashier/PosTerminalView";
-import type { ParkedOrder } from "@/lib/cashier/types";
+import { stepDateStr, getTodayDateStr, type ParkedOrder } from "@/lib/cashier/types";
 
 const TabLoader = () => (
   <div className="p-8 text-center text-xs text-slate-500">Loading view...</div>
@@ -60,6 +61,8 @@ const ShiftTallyView = dynamic(() => import("@/components/cashier/ShiftTallyView
 const ReceiptPrintModal = dynamic(() => import("@/components/cashier/ReceiptPrintModal"), { ssr: false });
 const QuickSearchModal = dynamic(() => import("@/components/cashier/QuickSearchModal"), { ssr: false });
 const CustomerCmsModal = dynamic(() => import("@/components/cashier/CustomerCmsModal"), { ssr: false });
+const SplitPaymentModal = dynamic(() => import("@/components/cashier/SplitPaymentModal"), { ssr: false });
+const NetworkSpeedOverlay = dynamic(() => import("@/components/cashier/NetworkSpeedOverlay"), { ssr: false });
 
 // ============================================================================
 // --- TYPES & DATA ---
@@ -118,6 +121,10 @@ interface CustomerDetails {
   discount_amount?: number;
   delivery_fee?: number;
   payment_status?: "Paid" | "Not Paid" | string;
+  split_cash_amount?: number;
+  split_bank_amount?: number;
+  settled_at?: string;
+  settled_biz_date?: string;
 }
 
 interface Order {
@@ -705,10 +712,13 @@ function isWithinOneHour(timestamp: string): boolean {
   return diffMs <= 60 * 60 * 1000;
 }
 
-function getNextInvoiceNumber(history: Order[]): string {
-  const currentBizDateStr = getBusinessDateStr(new Date());
+function getNextInvoiceNumber(history: Order[], customDate?: Date | string | null): string {
+  const dateObj = customDate
+    ? (typeof customDate === "string" ? new Date(customDate.includes("T") ? customDate : `${customDate}T12:00:00`) : customDate)
+    : new Date();
+  const currentBizDateStr = getBusinessDateStr(dateObj);
 
-  // Get all of today's orders (excluding Ignored)
+  // Get all of target date's orders (excluding Ignored)
   const todaysOrders = history.filter(o =>
     getBusinessDateStr(o.timestamp) === currentBizDateStr &&
     o.status !== "Ignored" &&
@@ -734,7 +744,7 @@ function getNextInvoiceNumber(history: Order[]): string {
     }
   });
 
-  // If the highest sequence order of today is Voided, reuse it!
+  // If the highest sequence order of target date is Voided, reuse it!
   if (maxSeqOrder && (maxSeqOrder as Order).status === "Voided") {
     return `INV-${currentBizDateStr}-${String(maxSeq).padStart(3, "0")}`;
   }
@@ -915,30 +925,118 @@ export default function PosPage() {
   const [invFilterStockStatus, setInvFilterStockStatus] = useState<"All" | "Low Stock" | "Out of Stock" | "Normal">("All");
   const [stockSectionTab, setStockSectionTab] = useState<"inventory" | "costing">("costing");
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [orderBookingDate, setOrderBookingDate] = useState<string | null>(null);
   const [commentEditingItemId, setCommentEditingItemId] = useState<number | null>(null);
   const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [isDatabaseSyncing, setIsDatabaseSyncing] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [networkSpeedMbps, setNetworkSpeedMbps] = useState<number | null>(null);
+  const [isNetworkUnstable, setIsNetworkUnstable] = useState<boolean>(false);
+  const [isSpeedChecking, setIsSpeedChecking] = useState<boolean>(false);
   const isLoadingRef = useRef(false);
   const isSyncingOfflineRef = useRef(false);
   const hasShownInitialSyncToastRef = useRef(false);
   const hasShownOfflineSyncToastRef = useRef(false);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setIsOnline(window.navigator.onLine);
-      const handleOnline = () => setIsOnline(true);
-      const handleOffline = () => setIsOnline(false);
-      window.addEventListener("online", handleOnline);
-      window.addEventListener("offline", handleOffline);
-      return () => {
-        window.removeEventListener("online", handleOnline);
-        window.removeEventListener("offline", handleOffline);
-      };
+  // Measure real-time network speed (at least 1.0 Mbps required)
+  const measureNetworkSpeed = useCallback(async (): Promise<number> => {
+    if (typeof window === "undefined") return 0;
+    if (!window.navigator.onLine) {
+      setIsOnline(false);
+      setNetworkSpeedMbps(0);
+      setIsNetworkUnstable(true);
+      return 0;
+    }
+
+    const navConn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    let reportedDownlink: number | null = null;
+    if (navConn && typeof navConn.downlink === "number") {
+      reportedDownlink = navConn.downlink;
+    }
+
+    setIsSpeedChecking(true);
+    try {
+      const tStart = performance.now();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const res = await fetch(`/api/ping?t=${Date.now()}`, {
+        cache: "no-store",
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) throw new Error("Ping failed");
+      const text = await res.text();
+      const tEnd = performance.now();
+
+      const durationSeconds = Math.max(0.001, (tEnd - tStart) / 1000);
+      const bytesReceived = new Blob([text]).size;
+      const bitsReceived = bytesReceived * 8;
+      const calculatedMbps = (bitsReceived / durationSeconds) / (1024 * 1024);
+
+      const finalSpeed = reportedDownlink !== null
+        ? Math.max(reportedDownlink, calculatedMbps)
+        : calculatedMbps;
+
+      setIsOnline(true);
+      setNetworkSpeedMbps(finalSpeed);
+      setIsNetworkUnstable(finalSpeed < 1.0);
+      return finalSpeed;
+    } catch (err) {
+      if (reportedDownlink !== null && reportedDownlink >= 1.0 && window.navigator.onLine) {
+        setIsOnline(true);
+        setNetworkSpeedMbps(reportedDownlink);
+        setIsNetworkUnstable(false);
+        return reportedDownlink;
+      }
+      setNetworkSpeedMbps(0);
+      setIsNetworkUnstable(true);
+      return 0;
+    } finally {
+      setIsSpeedChecking(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    measureNetworkSpeed();
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      measureNetworkSpeed();
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setNetworkSpeedMbps(0);
+      setIsNetworkUnstable(true);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    const navConn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    if (navConn && navConn.addEventListener) {
+      navConn.addEventListener("change", measureNetworkSpeed);
+    }
+
+    // Auto-recheck interval: 3s if unstable to auto-unblur immediately, else 15s
+    const intervalTimer = setInterval(() => {
+      measureNetworkSpeed();
+    }, isNetworkUnstable ? 3000 : 15000);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      if (navConn && navConn.removeEventListener) {
+        navConn.removeEventListener("change", measureNetworkSpeed);
+      }
+      clearInterval(intervalTimer);
+    };
+  }, [measureNetworkSpeed, isNetworkUnstable]);
 
   // Load inventory from Supabase (tce_inventory), fallback to localStorage
   useEffect(() => {
@@ -1052,6 +1150,7 @@ export default function PosPage() {
 
   // CMS Profiles Modal & Edit States
   const [showCMSModal, setShowCMSModal] = useState(false);
+  const [splitModalOrder, setSplitModalOrder] = useState<Order | null>(null);
   const [cmsSearchQuery, setCmsSearchQuery] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<{ phone: string; name: string; address: string; birthday?: string | null; address_label?: string | null } | null>(null);
   const [editCustName, setEditCustName] = useState("");
@@ -1460,35 +1559,56 @@ export default function PosPage() {
     const now = Date.now();
     if (now - cacheTime > 10 * 60 * 1000) {
       // We do NOT clear t-cloud-eats-orders to prevent losing unsynced offline orders.
-      // loadOrdersAndCMS will safely fetch from DB and merge with any unsynced local orders.
       localStorage.removeItem("t-cloud-eats-cms");
-      localStorage.removeItem(`t-cloud-eats-notifications-${currentUser}`);
-      console.log("Cache expired (10 minutes). Wiping CMS and notification caches.");
+      console.log("Cache expired (10 minutes). Wiping CMS cache.");
     }
     localStorage.setItem("t-cloud-eats-cache-time", now.toString());
 
-    // Load notifications
+    // Load notifications - filter out any legacy mock alerts
     const savedNotifications = localStorage.getItem(`t-cloud-eats-notifications-${currentUser}`);
     if (savedNotifications) {
       try {
         const list = JSON.parse(savedNotifications);
-        setNotificationsList(list);
-        setUnreadCount(list.filter((n: any) => !n.read).length);
+        const filteredList = Array.isArray(list)
+          ? list.filter((n: any) =>
+              n &&
+              n.text &&
+              !n.text.includes("Kitchen Alert") &&
+              !n.text.includes("Rider Alert") &&
+              !n.text.includes("Google Sync")
+            )
+          : [];
+        setNotificationsList(filteredList);
+        setUnreadCount(filteredList.filter((n: any) => !n.read).length);
+        localStorage.setItem(`t-cloud-eats-notifications-${currentUser}`, JSON.stringify(filteredList));
       } catch (e) {
         console.error(e);
+        setNotificationsList([]);
+        setUnreadCount(0);
       }
     } else {
-      const defaults = [
-        { id: 1, text: "Kitchen Alert: Order INV-260702-001 is ready for Pick Up!", time: "5 mins ago", read: false },
-        { id: 2, text: "Rider Alert: Delivery driver assigned to Order INV-260702-002!", time: "12 mins ago", read: false },
-        { id: 3, text: "Google Sync: Menu prices updated from Google Sheet.", time: "1 hour ago", read: true }
-      ];
-      setNotificationsList(defaults);
-      setUnreadCount(defaults.filter(n => !n.read).length);
-      localStorage.setItem(`t-cloud-eats-notifications-${currentUser}`, JSON.stringify(defaults));
+      setNotificationsList([]);
+      setUnreadCount(0);
+      localStorage.setItem(`t-cloud-eats-notifications-${currentUser}`, JSON.stringify([]));
     }
 
     loadOrdersAndCMS();
+
+    // Helper to format raw row from Realtime payload
+    const formatRealtimeOrder = (o: any): Order => {
+      const parsedCust = typeof o.customer === "string" ? JSON.parse(o.customer || "{}") : (o.customer || {});
+      const parsedItems = typeof o.items === "string" ? JSON.parse(o.items || "[]") : (o.items || []);
+      return {
+        ...o,
+        items: parsedItems,
+        customer: parsedCust,
+        subtotal: Number(o.subtotal) || 0,
+        tax: Number(o.tax) || 0,
+        total: Number(o.total) || 0,
+        payment_status: o.payment_status || parsedCust.payment_status || "Paid",
+        syncedToDb: true
+      };
+    };
 
     // Subscribe to realtime changes on orders & customers with debouncing!
     let realtimeDebounceTimer: NodeJS.Timeout | null = null;
@@ -1504,7 +1624,73 @@ export default function PosPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tce_orders" },
-        () => {
+        (payload: any) => {
+          if (!payload) return;
+
+          // 1. Millisecond instant order sync directly from websocket payload
+          if (payload.eventType === "INSERT" && payload.new) {
+            const newOrder = formatRealtimeOrder(payload.new);
+            setOrderHistory(prev => {
+              if (prev.some(o => o.id === newOrder.id)) {
+                return prev.map(o => o.id === newOrder.id ? { ...o, ...newOrder } : o);
+              }
+              const next = [newOrder, ...prev];
+              try { localStorage.setItem("t-cloud-eats-orders", JSON.stringify(next)); } catch {}
+              return next;
+            });
+          } else if (payload.eventType === "UPDATE" && payload.new) {
+            const updatedOrder = formatRealtimeOrder(payload.new);
+            setOrderHistory(prev => {
+              const next = prev.map(o => o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o);
+              try { localStorage.setItem("t-cloud-eats-orders", JSON.stringify(next)); } catch {}
+              return next;
+            });
+          } else if (payload.eventType === "DELETE" && payload.old?.id) {
+            const delId = payload.old.id;
+            setOrderHistory(prev => {
+              const next = prev.filter(o => o.id !== delId);
+              try { localStorage.setItem("t-cloud-eats-orders", JSON.stringify(next)); } catch {}
+              return next;
+            });
+          }
+
+          // 2. Detect customer payment slip upload
+          if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
+            const newRow = payload.new;
+            const oldRow = payload.old;
+            if (newRow && newRow.customer) {
+              try {
+                const newCust = typeof newRow.customer === "string" ? JSON.parse(newRow.customer || "{}") : newRow.customer;
+                const oldCust = oldRow?.customer ? (typeof oldRow.customer === "string" ? JSON.parse(oldRow.customer || "{}") : oldRow.customer) : null;
+                if (newCust?.payment_receipt && (!oldCust || !oldCust.payment_receipt || oldCust.payment_receipt !== newCust.payment_receipt)) {
+                  const orderId = newRow.id;
+                  const custName = newCust.name || "Customer";
+                  const slipNotification = {
+                    id: `slip-${orderId}-${Date.now()}`,
+                    text: `📄 Payment Slip: ${custName} uploaded payment slip for Order #${orderId}`,
+                    time: "Just now",
+                    read: false,
+                    orderId,
+                    bizDate: getBusinessDateStr(newRow.timestamp)
+                  };
+
+                  setNotificationsList(prev => {
+                    if (prev.some(n => n.orderId === orderId && n.text.includes("Payment Slip"))) {
+                      return prev;
+                    }
+                    const updated = [slipNotification, ...prev];
+                    const user = localStorage.getItem("t-cloud-eats-user") || "default";
+                    localStorage.setItem(`t-cloud-eats-notifications-${user}`, JSON.stringify(updated));
+                    return updated;
+                  });
+                  setUnreadCount(prev => prev + 1);
+                  triggerToast(`📄 Slip uploaded for Order #${orderId} (${custName})`, "info");
+                }
+              } catch (err) {
+                console.error("Error inspecting realtime slip payload", err);
+              }
+            }
+          }
           triggerDebouncedReload();
         }
       )
@@ -1518,7 +1704,30 @@ export default function PosPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tce_tallies" },
-        () => {
+        (payload: any) => {
+          // Instant live sync for shift tallies directly from websocket
+          if (payload && (payload.eventType === "INSERT" || payload.eventType === "UPDATE") && payload.new) {
+            const t = payload.new;
+            const record = {
+              openingBalance: Number(t.opening_balance) || 0,
+              bankTransfer: Number(t.bank_transfer) || 0,
+              actualCash: Number(t.actual_cash) || 0,
+              expenses: typeof t.expenses === "string" ? JSON.parse(t.expenses) : (t.expenses || []),
+              carry_forward: Number(t.carry_forward) || 0,
+              discrepancy: Number(t.discrepancy) || 0,
+              submitted: t.submitted ?? false,
+              submitted_at: t.submitted_at,
+              submitted_by: t.submitted_by
+            };
+            setAllTalliesMap(prev => ({ ...prev, [t.id]: record }));
+            if (t.id === selectedLogBizDateStr) {
+              setOpeningBalance(record.openingBalance);
+              setBankTransfer(record.bankTransfer);
+              setActualCash(record.actualCash);
+              setOperationalExpenses(record.expenses);
+              setTallySubmitted(record.submitted);
+            }
+          }
           triggerDebouncedReload();
         }
       )
@@ -1731,9 +1940,18 @@ export default function PosPage() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Notification States
+  interface CashierNotificationItem {
+    id: string | number;
+    text: string;
+    time: string;
+    read: boolean;
+    orderId?: string | number;
+    bizDate?: string;
+  }
+
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [notificationsList, setNotificationsList] = useState<{ id: number; text: string; time: string; read: boolean }[]>([]);
+  const [notificationsList, setNotificationsList] = useState<CashierNotificationItem[]>([]);
 
   const triggerToast = (message: string, type: ToastType = "success") => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -1743,7 +1961,7 @@ export default function PosPage() {
     }, 3000);
   };
 
-  const saveNotifications = (newList: { id: number; text: string; time: string; read: boolean }[]) => {
+  const saveNotifications = (newList: CashierNotificationItem[]) => {
     setNotificationsList(newList);
     setUnreadCount(newList.filter(n => !n.read).length);
     const user = localStorage.getItem("t-cloud-eats-user") || "default";
@@ -1863,21 +2081,78 @@ export default function PosPage() {
       });
   };
 
-  const handlePaymentStatusChange = async (orderId: string, newPaymentStatus: "Paid" | "Not Paid") => {
+  const handlePaymentStatusChange = async (
+    orderId: string,
+    newPaymentMode: "Cash" | "Account Transfer" | "Credit" | "Split" | "Paid" | "Not Paid",
+    splitDetails?: { cashAmount: number; bankAmount: number; settledBizDate?: string }
+  ) => {
     // 1. Optimistically update local state & localStorage
     const target = orderHistory.find(o => o.id === orderId);
     if (!target) return;
 
+    if (newPaymentMode === "Split" && !splitDetails) {
+      setSplitModalOrder(target);
+      return;
+    }
+
+    let finalMethod = target.customer?.payment_method || "Cash";
+    let finalStatus: "Paid" | "Not Paid" = "Paid";
+    let splitCash = target.customer?.split_cash_amount;
+    let splitBank = target.customer?.split_bank_amount;
+    let settledAt = target.customer?.settled_at;
+    let settledBizDate = target.customer?.settled_biz_date;
+    const todayStr = getTodayDateStr();
+
+    if (newPaymentMode === "Cash") {
+      finalMethod = "Cash";
+      finalStatus = "Paid";
+      splitCash = undefined;
+      splitBank = undefined;
+      settledAt = new Date().toISOString();
+      settledBizDate = todayStr;
+    } else if (newPaymentMode === "Account Transfer") {
+      finalMethod = "Bank transfer";
+      finalStatus = "Paid";
+      splitCash = undefined;
+      splitBank = undefined;
+      settledAt = new Date().toISOString();
+      settledBizDate = todayStr;
+    } else if (newPaymentMode === "Credit" || newPaymentMode === "Not Paid") {
+      finalMethod = "Credit";
+      finalStatus = "Not Paid";
+      splitCash = undefined;
+      splitBank = undefined;
+      settledAt = undefined;
+      settledBizDate = undefined;
+    } else if (newPaymentMode === "Split") {
+      finalMethod = "Split";
+      finalStatus = "Paid";
+      splitCash = splitDetails?.cashAmount ?? 0;
+      splitBank = splitDetails?.bankAmount ?? 0;
+      settledAt = new Date().toISOString();
+      settledBizDate = splitDetails?.settledBizDate || todayStr;
+    } else if (newPaymentMode === "Paid") {
+      finalMethod = finalMethod === "Credit" ? "Cash" : finalMethod;
+      finalStatus = "Paid";
+      settledAt = new Date().toISOString();
+      settledBizDate = todayStr;
+    }
+
     const updatedCustomer: CustomerDetails = {
       ...(target.customer || { phone: "", name: "", address: "" }),
-      payment_status: newPaymentStatus
+      payment_method: finalMethod,
+      payment_status: finalStatus,
+      split_cash_amount: splitCash,
+      split_bank_amount: splitBank,
+      settled_at: settledAt,
+      settled_biz_date: settledBizDate
     };
 
     const updatedHistory = orderHistory.map(o => {
       if (o.id === orderId) {
         return {
           ...o,
-          payment_status: newPaymentStatus,
+          payment_status: finalStatus,
           customer: updatedCustomer
         };
       }
@@ -1901,7 +2176,7 @@ export default function PosPage() {
         console.error("Supabase payment status update error:", error);
         triggerToast("Saved locally, database sync pending", "warning");
       } else {
-        triggerToast(`Invoice ${orderId} payment set to ${newPaymentStatus}`, "success");
+        triggerToast(`Order ${orderId} payment set to ${newPaymentMode}`, "success");
       }
     } catch (err) {
       console.error("Network error updating payment status:", err);
@@ -2247,7 +2522,10 @@ export default function PosPage() {
       localStorage.setItem("t-cloud-eats-cms", JSON.stringify(updatedCms));
 
       // 2. Create new order in "Preparing" status
-      const newInvoiceId = getNextInvoiceNumber(orderHistory);
+      const orderDateObj = orderBookingDate
+        ? new Date(orderBookingDate.includes("T") ? orderBookingDate : `${orderBookingDate}T12:00:00`)
+        : new Date();
+      const newInvoiceId = getNextInvoiceNumber(orderHistory, orderDateObj);
       const cleanHistory = orderHistory.filter(o => o.id !== newInvoiceId);
 
       const finalDeliveryFee = orderType === "Direct" ? (deliveryFee || 0) : 0;
@@ -2264,7 +2542,7 @@ export default function PosPage() {
 
       const newOrder: Order = {
         id: newInvoiceId,
-        timestamp: new Date().toISOString(),
+        timestamp: orderDateObj.toISOString(),
         items: cart,
         subtotal,
         tax,
@@ -2326,6 +2604,7 @@ export default function PosPage() {
       setDiscountType("percentage");
       setDiscountValue(0);
       setShowCustomerModal(false);
+      setOrderBookingDate(null);
 
       // Trigger background re-validation from DB
       loadOrdersAndCMS(true);
@@ -2524,28 +2803,125 @@ export default function PosPage() {
     return todaysCreditOrders.reduce((sum, o) => sum + o.total, 0);
   }, [todaysCreditOrders]);
 
-  // Settlement baseline date (All dates up to baseline are settled by default; rule enforces from now on)
-  // Settlement baseline date (All dates prior to today are considered settled; rule enforces starting today)
-  const settlementBaselineDate = useMemo(() => {
-    return currentBizDate;
-  }, [currentBizDate]);
+  // Map of all shift tallies for fast check and carry-forward calculation
+  const [allTalliesMap, setAllTalliesMap] = useState<Record<string, any>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("t-cloud-eats-shift-tallies");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return {};
+  });
 
-  // Check if the most recent past business day with orders has an unsettled tally
+  const fetchAllTallies = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from("tce_tallies").select("*");
+      if (!error && data) {
+        const map: Record<string, any> = {};
+        for (const item of data) {
+          map[item.id] = {
+            openingBalance: Number(item.opening_balance) || 0,
+            bankTransfer: Number(item.bank_transfer) || 0,
+            actualCash: Number(item.actual_cash) || 0,
+            expenses: typeof item.expenses === "string" ? JSON.parse(item.expenses) : (item.expenses || []),
+            carry_forward: Number(item.carry_forward) || 0,
+            discrepancy: Number(item.discrepancy) || 0,
+            submitted: item.submitted ?? false,
+            submitted_at: item.submitted_at,
+            submitted_by: item.submitted_by
+          };
+        }
+        setAllTalliesMap(prev => ({ ...prev, ...map }));
+        try {
+          const localStr = localStorage.getItem("t-cloud-eats-shift-tallies") || "{}";
+          const localMap = JSON.parse(localStr);
+          localStorage.setItem("t-cloud-eats-shift-tallies", JSON.stringify({ ...localMap, ...map }));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load tallies map from Supabase", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAllTallies();
+  }, [fetchAllTallies]);
+
+  // Calculate previous shift carry-forward excess or shortage for the selected date
+  const carryForwardInfo = useMemo(() => {
+    const orderDates = orderHistory
+      .filter(o => o.status !== "Voided" && o.status !== "Ignored")
+      .map(o => getBusinessDateStr(o.timestamp));
+    const tallyDates = Object.keys(allTalliesMap);
+    const pastDates = Array.from(new Set([...orderDates, ...tallyDates]))
+      .filter(d => d < selectedLogBizDateStr)
+      .sort();
+
+    if (pastDates.length === 0) {
+      return { prevBizDate: null, carryForward: 0, formattedDate: null };
+    }
+
+    const prevDate = pastDates[pastDates.length - 1];
+    const prevTally = allTalliesMap[prevDate];
+
+    let discrepancy = 0;
+    if (prevTally) {
+      if (prevTally.discrepancy !== undefined && prevTally.discrepancy !== null && !isNaN(Number(prevTally.discrepancy))) {
+        discrepancy = Number(prevTally.discrepancy);
+      } else {
+        const prevOrders = orderHistory.filter(
+          o => getBusinessDateStr(o.timestamp) === prevDate && o.status !== "Voided" && o.status !== "Ignored"
+        );
+        const prevRev = prevOrders.reduce((sum, o) => sum + o.total, 0);
+        const prevCredit = prevOrders
+          .filter(o => o.payment_status === "Unpaid")
+          .reduce((sum, o) => sum + o.total, 0);
+        const prevBank = Number(prevTally.bankTransfer || prevTally.bank_transfer || 0);
+        const prevCashRev = Math.max(0, prevRev - prevBank - prevCredit);
+        const prevExpList = Array.isArray(prevTally.expenses) ? prevTally.expenses : [];
+        const prevExp = prevExpList.reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0);
+        const prevOpen = Number(prevTally.openingBalance || prevTally.opening_balance || 0);
+        const prevCarry = Number(prevTally.carry_forward || 0);
+        const prevExpectedClosing = prevOpen + prevCarry + prevCashRev - prevExp;
+        const prevActual = Number(prevTally.actualCash || prevTally.actual_cash || 0);
+        discrepancy = prevActual - prevExpectedClosing;
+      }
+    }
+
+    const formattedDate = `20${prevDate.slice(0, 2)}-${prevDate.slice(2, 4)}-${prevDate.slice(4, 6)}`;
+    return {
+      prevBizDate: prevDate,
+      carryForward: discrepancy,
+      formattedDate
+    };
+  }, [selectedLogBizDateStr, orderHistory, allTalliesMap]);
+
+  // Check if the most recent past business day with orders has an unsettled tally ("balance of last day")
   const unclosedPastShiftInfo = useMemo(() => {
-    // Only check past dates that started from the settlement baseline onwards
     const pastBizDates = Array.from(
       new Set(
         orderHistory
           .filter(o => o.status !== "Voided" && o.status !== "Ignored")
           .map(o => getBusinessDateStr(o.timestamp))
-          .filter(d => d < currentBizDate && d >= settlementBaselineDate)
+          .filter(d => d < currentBizDate)
       )
     ).sort();
 
     if (pastBizDates.length === 0) return null;
 
-    // Check only the most recent past business day that had orders
+    // Check only the most recent past business day that had orders ("last day")
     const lastPastDate = pastBizDates[pastBizDates.length - 1];
+
+    // Check if this date has a submitted tally in allTalliesMap or localStorage
+    const dayTally = allTalliesMap[lastPastDate];
+    if (dayTally?.submitted === true) {
+      return null; // Past day is closed & balanced!
+    }
 
     try {
       const allTalliesStr = localStorage.getItem("t-cloud-eats-shift-tallies");
@@ -2564,7 +2940,14 @@ export default function PosPage() {
       bizDateStr: lastPastDate,
       formattedDate: formattedPastDate
     };
-  }, [orderHistory, currentBizDate, settlementBaselineDate, tallySubmitted]);
+  }, [orderHistory, currentBizDate, allTalliesMap, tallySubmitted]);
+
+  // Auto-show warning popup if entering POS screen with unsettled past shift
+  useEffect(() => {
+    if (unclosedPastShiftInfo && activeSidebar === "new_order") {
+      setShowUnsettledTallyModal(true);
+    }
+  }, [unclosedPastShiftInfo, activeSidebar]);
 
   // Load shift tally from Supabase (tce_tallies), fallback to localStorage
   useEffect(() => {
@@ -2586,17 +2969,21 @@ export default function PosPage() {
           setOperationalExpenses(parsedExps);
           setTallySubmitted(data.submitted ?? (selectedLogBizDateStr < currentBizDate));
 
-          // Cache in localStorage
+          // Cache in allTalliesMap & localStorage
+          const record = {
+            openingBalance: Number(data.opening_balance) || 0,
+            bankTransfer: Number(data.bank_transfer) || 0,
+            actualCash: Number(data.actual_cash) || 0,
+            expenses: parsedExps,
+            carry_forward: Number(data.carry_forward) || 0,
+            discrepancy: Number(data.discrepancy) || 0,
+            submitted: data.submitted ?? (selectedLogBizDateStr < currentBizDate),
+          };
+          setAllTalliesMap(prev => ({ ...prev, [selectedLogBizDateStr]: record }));
           try {
             const allTalliesStr = localStorage.getItem("t-cloud-eats-shift-tallies") || "{}";
             const allTallies = JSON.parse(allTalliesStr);
-            allTallies[selectedLogBizDateStr] = {
-              openingBalance: Number(data.opening_balance) || 0,
-              bankTransfer: Number(data.bank_transfer) || 0,
-              actualCash: Number(data.actual_cash) || 0,
-              expenses: parsedExps,
-              submitted: data.submitted ?? (selectedLogBizDateStr < currentBizDate),
-            };
+            allTallies[selectedLogBizDateStr] = record;
             localStorage.setItem("t-cloud-eats-shift-tallies", JSON.stringify(allTallies));
           } catch (storageErr) {
             console.error("Failed to cache tally locally:", storageErr);
@@ -2650,18 +3037,30 @@ export default function PosPage() {
     sub?: boolean
   ) => {
     const isSub = sub !== undefined ? sub : tallySubmitted;
+    const carryForward = carryForwardInfo.carryForward;
+    // Calculate discrepancy with carry-forward accounted for
+    const shiftRev = todaysOrders.reduce((sum, o) => sum + o.total, 0);
+    const totalExp = expList.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const expectedCashRev = Math.max(0, shiftRev - bt - todaysCreditAmount);
+    const expectedClosing = op + carryForward + expectedCashRev - totalExp;
+    const discrepancy = ac - expectedClosing;
+
+    const updatedRecord = {
+      openingBalance: op,
+      bankTransfer: bt,
+      actualCash: ac,
+      expenses: expList,
+      carry_forward: carryForward,
+      discrepancy: discrepancy,
+      submitted: isSub,
+    };
+    setAllTalliesMap(prev => ({ ...prev, [selectedLogBizDateStr]: updatedRecord }));
 
     // 1. Update local storage
     try {
       const allTalliesStr = localStorage.getItem("t-cloud-eats-shift-tallies") || "{}";
       const allTallies = JSON.parse(allTalliesStr);
-      allTallies[selectedLogBizDateStr] = {
-        openingBalance: op,
-        bankTransfer: bt,
-        actualCash: ac,
-        expenses: expList,
-        submitted: isSub,
-      };
+      allTallies[selectedLogBizDateStr] = updatedRecord;
       localStorage.setItem("t-cloud-eats-shift-tallies", JSON.stringify(allTallies));
     } catch (e) {
       console.error("Error saving shift tally locally:", e);
@@ -2683,6 +3082,8 @@ export default function PosPage() {
           bank_transfer: bt,
           actual_cash: ac,
           expenses: expList,
+          carry_forward: carryForward,
+          discrepancy: discrepancy,
           submitted: isSub,
           submitted_at: isSub ? new Date().toISOString() : null,
           submitted_by: currentUser,
@@ -3153,6 +3554,7 @@ export default function PosPage() {
         if (e.key === "Escape" || (e.key === "Backspace" && !editingInput)) {
           e.preventDefault();
           setShowCustomerModal(false);
+      setOrderBookingDate(null);
           setShowOrderTypeModal(true);
           return;
         }
@@ -3197,33 +3599,47 @@ export default function PosPage() {
       }
 
       // CRITICAL SAFETY GUARD: Ignore all navigation/action keys inside text inputs/selects/textareas
-      if (editingInput) return;
+      const isDateInput = (e.target as HTMLElement)?.tagName === "INPUT" && (e.target as HTMLInputElement)?.type === "date";
+      if (editingInput && !isDateInput) return;
 
-      // 5. Order Logs Zone Navigation
-      if (activeSidebar === "order_history") {
-        if (e.key === "ArrowDown") {
+      // 5. Order Logs & Shift Tally Date & Zone Navigation (Invoices Tab)
+      if (activeSidebar === "order_history" || activeSidebar === "reports") {
+        if (e.key === "ArrowLeft") {
           e.preventDefault();
-          setFocusedOrderIndex((prev) =>
-            todaysAllOrders.length > 0 ? Math.min(prev + 1, todaysAllOrders.length - 1) : 0
-          );
+          setSelectedLogDate(prev => stepDateStr(prev, -1));
           return;
         }
-        if (e.key === "ArrowUp") {
+        if (e.key === "ArrowRight") {
           e.preventDefault();
-          setFocusedOrderIndex((prev) => Math.max(prev - 1, 0));
+          setSelectedLogDate(prev => stepDateStr(prev, 1));
           return;
         }
-        if (e.key === "Enter" && todaysAllOrders[focusedOrderIndex]) {
-          e.preventDefault();
-          setLatestOrder(todaysAllOrders[focusedOrderIndex]);
-          setShowReceiptModal(true);
-          return;
-        }
-        if (e.key === "Backspace" || e.key === "Escape") {
-          e.preventDefault();
-          setActiveSidebar("new_order");
-          setFocusZone("GRID");
-          return;
+
+        if (activeSidebar === "order_history") {
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setFocusedOrderIndex((prev) =>
+              todaysAllOrders.length > 0 ? Math.min(prev + 1, todaysAllOrders.length - 1) : 0
+            );
+            return;
+          }
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setFocusedOrderIndex((prev) => Math.max(prev - 1, 0));
+            return;
+          }
+          if (e.key === "Enter" && todaysAllOrders[focusedOrderIndex]) {
+            e.preventDefault();
+            setLatestOrder(todaysAllOrders[focusedOrderIndex]);
+            setShowReceiptModal(true);
+            return;
+          }
+          if (e.key === "Backspace" || e.key === "Escape") {
+            e.preventDefault();
+            setActiveSidebar("new_order");
+            setFocusZone("GRID");
+            return;
+          }
         }
         return;
       }
@@ -3330,22 +3746,30 @@ export default function PosPage() {
   });
 
   return (
-    <div className="h-screen w-screen bg-white text-slate-900 font-sans antialiased selection:bg-sky-500 selection:text-white flex overflow-hidden relative">
+    <>
+      <div className={`h-screen w-screen bg-white text-slate-900 font-sans antialiased selection:bg-sky-500 selection:text-white flex overflow-hidden relative transition-all duration-300 ${
+        isNetworkUnstable ? "blur-xl pointer-events-none select-none filter opacity-40" : ""
+      }`}>
 
       <style dangerouslySetInnerHTML={{
         __html: `
-        html, body {
-          overflow: hidden !important;
-          height: 100vh !important;
-          margin: 0 !important;
-          padding: 0 !important;
-        }
         ::-webkit-scrollbar {
-          display: none !important;
+          width: 6px;
+          height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #CBD5E1;
+          border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: #94A3B8;
         }
         * {
-          -ms-overflow-style: none !important;
-          scrollbar-width: none !important;
+          scrollbar-width: thin;
+          scrollbar-color: #CBD5E1 transparent;
         }
       `}} />
 
@@ -3508,9 +3932,6 @@ export default function PosPage() {
                 {activeSidebar === "finance_assets_payroll" && "Fixed Assets & Payroll"}
                 {activeSidebar === "settings" && "System & Tax Settings"}
               </h1>
-              <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-medium">
-                <ShieldCheck size={12} /> Owner Mode
-              </span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -3518,27 +3939,11 @@ export default function PosPage() {
                 type="button"
                 onClick={() => setShowQuickSearch(true)}
                 className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-slate-100 text-xs text-slate-700 hover:text-slate-900 transition cursor-pointer"
-                title="Quick Search (Ctrl+K)"
+                title="Quick Search"
               >
                 <Search size={13} />
                 <span>Quick Search</span>
-                <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-600">Ctrl K</kbd>
               </button>
-              {activeSidebar === "new_order" && (
-                <div className="relative w-64">
-                  <Search
-                    className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-slate-500 transition-colors duration-200"
-                    size={14}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search dishes..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-xs text-slate-900 placeholder:text-slate-500 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-500 outline-none rounded-xl transition-all duration-200"
-                  />
-                </div>
-              )}
 
               {/* Notification Button */}
               <div className="relative">
@@ -3658,6 +4063,7 @@ export default function PosPage() {
                 onPaymentStatusChange={handlePaymentStatusChange}
                 onLoadOrder={(id) => {
                   setSelectedInvoiceId(id);
+                  setActiveSidebar("new_order");
                   triggerToast(`Loaded ${id}`, "info");
                 }}
                 onVoidOrder={handleVoidOrder}
@@ -3666,6 +4072,19 @@ export default function PosPage() {
                   setShowReceiptModal(true);
                 }}
                 renderAdminMetric={renderAdminMetric}
+                onRefreshOrders={async () => {
+                  triggerToast(`Updating order list for ${selectedLogDate}...`, "info");
+                  await loadOrdersAndCMS(true);
+                  triggerToast(`Order list updated for ${selectedLogDate}`, "success");
+                }}
+                onAddOrderForDate={(dateStr) => {
+                  setOrderBookingDate(dateStr);
+                  setSelectedInvoiceId(null);
+                  setActiveSidebar("new_order");
+                  triggerToast(`Recording order for shift: ${dateStr}`, "info");
+                }}
+                allOrders={orderHistory as any}
+                onOpenSplitModal={(ord) => setSplitModalOrder(ord as any)}
               />
             )}
 
@@ -3779,15 +4198,21 @@ export default function PosPage() {
                   setShowCMSModal(true);
                 }}
                 renderAdminMetric={renderAdminMetric}
+                carryForwardBalance={carryForwardInfo.carryForward}
+                prevShiftDateStr={carryForwardInfo.formattedDate}
+                onPaymentStatusChange={handlePaymentStatusChange}
+                allOrders={orderHistory as any}
+                onOpenSplitModal={(ord) => setSplitModalOrder(ord as any)}
               />
             )}
 
           </div>
         </main>
 
-        {/* Right Cart Panel */}
-        <aside className="w-[340px] flex flex-col h-full shrink-0" style={{ background: "#FFFFFF", borderLeft: "1px solid #E2E8F0" }}>
-          <div className="flex flex-col h-full">
+        {/* Right Cart Panel (Only rendered for POS Billing tab) */}
+        {activeSidebar === "new_order" && (
+          <aside className="w-[340px] flex flex-col h-full shrink-0" style={{ background: "#FFFFFF", borderLeft: "1px solid #E2E8F0" }}>
+            <div className="flex flex-col h-full">
 
             {/* Ticket Header */}
             <div className="px-4 py-3.5 flex flex-col gap-2.5 shrink-0" style={{ borderBottom: "1px solid #E2E8F0" }}>
@@ -3827,7 +4252,7 @@ export default function PosPage() {
                   style={{ direction: "rtl" }}
                 >
                   <option value="active" style={{ background: "#080E1C", color: "#F26F21", direction: "ltr" }}>
-                    New Order ({getNextInvoiceNumber(orderHistory)})
+                    New Order ({getNextInvoiceNumber(orderHistory, orderBookingDate)})
                   </option>
                   {todaysOrders.map(order => (
                     <option key={order.id} value={order.id} style={{ background: "#080E1C", color: "#94A3B8", direction: "ltr" }}>
@@ -3836,6 +4261,27 @@ export default function PosPage() {
                   ))}
                 </select>
               </label>
+
+              {orderBookingDate && !selectedInvoiceId && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-2.5 flex items-center justify-between text-xs text-amber-900 shadow-sm">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <Calendar size={14} className="text-amber-600 shrink-0" />
+                    <span>Recording for Shift:</span>
+                    <span className="font-mono text-amber-800">{orderBookingDate}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOrderBookingDate(null);
+                      triggerToast("Reset to today's shift date", "info");
+                    }}
+                    className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-200 hover:bg-amber-300 text-amber-950 transition cursor-pointer"
+                    title="Cancel shift backdating and return to today"
+                  >
+                    Reset to Today
+                  </button>
+                </div>
+              )}
 
               {selectedInvoiceId && (
                 <div className="text-[9px] font-bold text-center uppercase tracking-wider text-slate-500">
@@ -4186,28 +4632,49 @@ export default function PosPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleParkCurrentOrder}
-                    disabled={cart.length === 0}
-                    className="min-h-[44px] px-3.5 rounded-xl bg-white border border-slate-200 hover:border-amber-300 hover:bg-amber-50 text-slate-700 hover:text-amber-800 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition"
-                    title="Hold / Park Order"
-                  >
-                    <PauseCircle size={15} />
-                    <span>Hold</span>
-                  </button>
-                  <button
-                    onClick={handlePlaceOrderClick}
-                    disabled={cart.length === 0}
-                    className={`flex-1 min-h-[44px] font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer disabled:cursor-not-allowed uppercase tracking-wider active:scale-95 ${cart.length === 0
-                      ? "bg-slate-200 text-slate-500"
-                      : "bg-sky-500 hover:bg-sky-600 text-white shadow-sm"
+                <div className="flex flex-col gap-2">
+                  {unclosedPastShiftInfo && (
+                    <div
+                      onClick={() => setShowUnsettledTallyModal(true)}
+                      className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between cursor-pointer hover:bg-amber-100 transition shadow-sm animate-pulse"
+                      title="Click to view unsettled shift details"
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-[11px]">
+                        <AlertTriangle size={14} className="text-amber-600 shrink-0" />
+                        <span>Shift {unclosedPastShiftInfo.formattedDate} Unsettled</span>
+                      </div>
+                      <span className="text-[10px] font-black underline uppercase tracking-wider text-amber-700">
+                        Tally Required →
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleParkCurrentOrder}
+                      disabled={cart.length === 0}
+                      className="min-h-[44px] px-3.5 rounded-xl bg-white border border-slate-200 hover:border-amber-300 hover:bg-amber-50 text-slate-700 hover:text-amber-800 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition"
+                      title="Hold / Park Order"
+                    >
+                      <PauseCircle size={15} />
+                      <span>Hold</span>
+                    </button>
+                    <button
+                      onClick={handlePlaceOrderClick}
+                      disabled={cart.length === 0}
+                      className={`flex-1 min-h-[44px] font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer disabled:cursor-not-allowed uppercase tracking-wider active:scale-95 ${
+                        cart.length === 0
+                          ? "bg-slate-200 text-slate-500"
+                          : unclosedPastShiftInfo
+                          ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+                          : "bg-sky-500 hover:bg-sky-600 text-white shadow-sm"
                       }`}
-                  >
-                    <Check size={15} />
-                    <span>Place Order (F2)</span>
-                  </button>
+                    >
+                      {unclosedPastShiftInfo ? <AlertTriangle size={15} /> : <Check size={15} />}
+                      <span>{unclosedPastShiftInfo ? "Tally Required to Order" : "Place Order (F2)"}</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -4241,37 +4708,49 @@ export default function PosPage() {
 
           </div>
         </aside>
+      )}
       </div>
 
-      {/* Unsettled Shift Tally Blocker Modal */}
+      {/* Unsettled Shift Tally Blocker Modal / Warning Popup */}
       {showUnsettledTallyModal && unclosedPastShiftInfo && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white border border-amber-500/50 rounded-3xl p-6 max-w-md w-full text-center space-y-5 shadow-2xl relative">
-            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-600">
-              <AlertTriangle size={28} />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white border-2 border-amber-500 rounded-3xl p-6 sm:p-7 max-w-md w-full text-center space-y-5 shadow-2xl relative">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 border-2 border-amber-200 flex items-center justify-center mx-auto text-amber-600 shadow-inner">
+              <AlertTriangle size={32} />
             </div>
 
-            <div className="space-y-1.5">
-              <h3 className="text-base font-black text-slate-900 uppercase tracking-wider">
-                Previous Shift Tally Unsettled
+            <div className="space-y-2">
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">
+                Order Placement Locked
+              </span>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-wider">
+                Previous Shift Tally Required
               </h3>
-              <p className="text-xs text-slate-700">
-                You cannot place new orders today until the shift on <strong className="text-amber-700 font-mono">{unclosedPastShiftInfo.formattedDate}</strong> is balanced, submitted, and locked.
+              <p className="text-xs text-slate-600 leading-relaxed">
+                The shift balance for <strong className="text-amber-700 font-mono text-sm">{unclosedPastShiftInfo.formattedDate}</strong> must be tallied and submitted by the owner before any new orders can be placed for today.
               </p>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-left text-xs space-y-1.5 text-slate-600">
-              <div className="flex justify-between">
-                <span>Unsettled Shift Date:</span>
-                <span className="font-mono font-bold text-amber-700">{unclosedPastShiftInfo.formattedDate}</span>
+            <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 text-left text-xs space-y-2 text-slate-700">
+              <div className="flex justify-between items-center pb-1.5 border-b border-amber-200/60">
+                <span className="text-slate-500">Unsettled Shift Date:</span>
+                <span className="font-mono font-black text-amber-800">{unclosedPastShiftInfo.formattedDate}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Status:</span>
-                <span className="font-bold text-rose-700 uppercase text-[10px]">Tally Not Submitted</span>
+              <div className="flex justify-between items-center pb-1.5 border-b border-amber-200/60">
+                <span className="text-slate-500">Tally Status:</span>
+                <span className="font-bold text-rose-600 uppercase text-[10px] px-2 py-0.5 rounded bg-rose-50 border border-rose-200">
+                  Not Submitted
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Balance Carry-Over:</span>
+                <span className="font-semibold text-slate-800 text-[11px]">
+                  Any shortage / excess will continue to next day
+                </span>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+            <div className="flex flex-col gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => {
@@ -4279,19 +4758,20 @@ export default function PosPage() {
                   setActiveSidebar("reports");
                   setShowUnsettledTallyModal(false);
                   setShowCustomerModal(false);
+      setOrderBookingDate(null);
                   setShowOrderTypeModal(false);
                 }}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-black py-3 rounded-xl uppercase tracking-wider text-xs cursor-pointer transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-3.5 rounded-xl uppercase tracking-wider text-xs cursor-pointer transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
               >
-                <span>Settle Previous Shift Now</span>
-                <span>→</span>
+                <span>Tally {unclosedPastShiftInfo.formattedDate} Shift Now</span>
+                <span className="text-sm">→</span>
               </button>
               <button
                 type="button"
                 onClick={() => setShowUnsettledTallyModal(false)}
-                className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold uppercase tracking-wider text-xs cursor-pointer border border-slate-200 transition-all"
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px] cursor-pointer border border-slate-200 transition-all"
               >
-                Dismiss
+                Dismiss Warning
               </button>
             </div>
           </div>
@@ -5016,6 +5496,24 @@ export default function PosPage() {
         onDeleteCustomer={handleDeleteCustomerClick}
       />
 
+      {/* Split Bill Payment Modal */}
+      {splitModalOrder && (
+        <SplitPaymentModal
+          isOpen={!!splitModalOrder}
+          onClose={() => setSplitModalOrder(null)}
+          order={splitModalOrder as any}
+          currentBizDate={getTodayDateStr()}
+          onConfirmSplit={async (orderId, cashAmt, bankAmt, settledBizDate) => {
+            await handlePaymentStatusChange(orderId, "Split", {
+              cashAmount: cashAmt,
+              bankAmount: bankAmt,
+              settledBizDate,
+            });
+            setSplitModalOrder(null);
+          }}
+        />
+      )}
+
       {/* Custom / Special Order Product Modal */}
       {showCustomItemModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
@@ -5121,6 +5619,18 @@ export default function PosPage() {
         </div>
       )}
 
-    </div>
+      </div>
+
+      {/* Internet Speed & Connectivity Guard Overlay */}
+      {isNetworkUnstable && (
+        <NetworkSpeedOverlay
+          isOnline={isOnline}
+          speedMbps={networkSpeedMbps}
+          minRequiredMbps={1.0}
+          onRetry={measureNetworkSpeed}
+          isChecking={isSpeedChecking}
+        />
+      )}
+    </>
   );
 }

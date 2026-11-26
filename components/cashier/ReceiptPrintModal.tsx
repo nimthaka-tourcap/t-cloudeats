@@ -115,7 +115,7 @@ export default function ReceiptPrintModal({
           >
             {/* Header */}
             <div className="text-center border-b border-dashed border-slate-300 pb-2.5">
-              <h3 className="font-bold text-sm uppercase tracking-wide">{STORE_CONFIG.name}</h3>
+              <h3 className="font-bold text-sm tracking-wide lowercase">{STORE_CONFIG.name}</h3>
               {printMode === "RECEIPT" ? (
                 <>
                   <p className="text-[11px] text-slate-600">{STORE_CONFIG.address}</p>

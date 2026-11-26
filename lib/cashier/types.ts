@@ -44,6 +44,10 @@ export interface CashierCustomerDetails {
   discount_amount?: number;
   delivery_fee?: number;
   payment_status?: "Paid" | "Not Paid" | string;
+  split_cash_amount?: number;
+  split_bank_amount?: number;
+  settled_at?: string;
+  settled_biz_date?: string;
 }
 
 export interface CashierOrder {
@@ -99,6 +103,52 @@ export function getBusinessDateStr(dateInput: Date | string = new Date()): strin
   const mm = String(dateCopy.getMonth() + 1).padStart(2, "0");
   const dd = String(dateCopy.getDate()).padStart(2, "0");
   return `${yy}${mm}${dd}`;
+}
+
+export function getTodayDateStr(): string {
+  const local = new Date();
+  const yy = local.getFullYear();
+  const mm = String(local.getMonth() + 1).padStart(2, "0");
+  const dd = String(local.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
+export function stepDateStr(dateStr: string, days: number): string {
+  if (!dateStr) return getTodayDateStr();
+  const parts = dateStr.split("-").map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return dateStr;
+  const [year, month, day] = parts;
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+  utcDate.setUTCDate(utcDate.getUTCDate() + days);
+  const nextY = utcDate.getUTCFullYear();
+  const nextM = String(utcDate.getUTCMonth() + 1).padStart(2, "0");
+  const nextD = String(utcDate.getUTCDate()).padStart(2, "0");
+  return `${nextY}-${nextM}-${nextD}`;
+}
+
+export type OrderPaymentMode = "Cash" | "Account Transfer" | "Credit" | "Split";
+
+/**
+ * Derives payment mode: by default all orders are Cash; Bank/Transfer is Account Transfer; unpaid/not paid is Credit; split is Split.
+ */
+export function getOrderPaymentMode(order: CashierOrder | any): OrderPaymentMode {
+  const pStatus = (order?.payment_status || order?.customer?.payment_status || "").toString().toLowerCase();
+  const pMethod = (order?.customer?.payment_method || order?.payment_method || "").toString().toLowerCase();
+
+  // If unpaid or marked credit -> Credit
+  if (pStatus.includes("unpaid") || pStatus.includes("not paid") || pMethod === "credit") {
+    return "Credit";
+  }
+  // If split payment -> Split
+  if (pMethod.includes("split") || ((order?.customer?.split_cash_amount || 0) > 0 && (order?.customer?.split_bank_amount || 0) > 0)) {
+    return "Split";
+  }
+  // If bank / account / online / transfer / card -> Account Transfer
+  if (pMethod.includes("bank") || pMethod.includes("transfer") || pMethod.includes("account") || pMethod.includes("card") || pMethod.includes("online")) {
+    return "Account Transfer";
+  }
+  // Otherwise default to Cash
+  return "Cash";
 }
 
 /**
