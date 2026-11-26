@@ -72,16 +72,16 @@ export default function LoginPage() {
         <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full bg-gradient-to-bl from-sky-100/60 to-transparent blur-3xl pointer-events-none" />
 
         {/* Top: Bare Logo without any container box */}
-        <div className="relative z-10 flex items-center gap-3">
+        <div className="relative z-10 flex items-center gap-3.5">
           <Image
             src="/Round Logo.png"
             alt="T-Cloud Eats"
-            width={38}
-            height={38}
-            className="object-contain"
+            width={52}
+            height={52}
+            className="w-12 h-12 sm:w-[52px] sm:h-[52px] object-contain"
             priority
           />
-          <span className="text-base font-black tracking-tight text-slate-900 uppercase">
+          <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 font-[family-name:var(--font-heading)]">
             T-Cloud Eats
           </span>
         </div>
@@ -96,9 +96,17 @@ export default function LoginPage() {
           </h2>
         </div>
 
-        {/* Subtle Left Footer for Mobile / Small Screens */}
-        <div className="relative z-10 hidden lg:block text-xs text-slate-400 font-medium">
-          Cloud Kitchen Operating System • Sri Lanka
+        {/* Left Footer: A product by Stack37 */}
+        <div className="relative z-10 text-xs text-slate-500 font-medium">
+          A product by{" "}
+          <a
+            href="https://stack37.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-800 hover:text-black font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+          >
+            Stack37
+          </a>
         </div>
       </aside>
 
@@ -198,16 +206,10 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          <p className="text-[11px] text-slate-400 text-center sm:text-left">
-            T-Cloud Eats Enterprise Terminal • Sri Lanka
-          </p>
         </div>
 
-        {/* Bottom Disclaimer */}
-        <footer className="text-xs text-slate-400 text-center sm:text-left">
-          © 2026 T-Cloud Eats (Pvt) Ltd. All rights reserved.
-        </footer>
+        {/* Empty bottom space to maintain vertical balance */}
+        <div className="hidden lg:block h-6" />
       </main>
     </div>
   );
