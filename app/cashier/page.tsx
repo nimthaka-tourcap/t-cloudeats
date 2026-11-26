@@ -62,7 +62,6 @@ const ReceiptPrintModal = dynamic(() => import("@/components/cashier/ReceiptPrin
 const QuickSearchModal = dynamic(() => import("@/components/cashier/QuickSearchModal"), { ssr: false });
 const CustomerCmsModal = dynamic(() => import("@/components/cashier/CustomerCmsModal"), { ssr: false });
 const SplitPaymentModal = dynamic(() => import("@/components/cashier/SplitPaymentModal"), { ssr: false });
-const NetworkSpeedOverlay = dynamic(() => import("@/components/cashier/NetworkSpeedOverlay"), { ssr: false });
 
 // ============================================================================
 // --- TYPES & DATA ---
@@ -931,112 +930,10 @@ export default function PosPage() {
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [isDatabaseSyncing, setIsDatabaseSyncing] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
-  const [networkSpeedMbps, setNetworkSpeedMbps] = useState<number | null>(null);
-  const [isNetworkUnstable, setIsNetworkUnstable] = useState<boolean>(false);
-  const [isSpeedChecking, setIsSpeedChecking] = useState<boolean>(false);
   const isLoadingRef = useRef(false);
   const isSyncingOfflineRef = useRef(false);
   const hasShownInitialSyncToastRef = useRef(false);
   const hasShownOfflineSyncToastRef = useRef(false);
-
-  // Measure real-time network speed (at least 1.0 Mbps required)
-  const measureNetworkSpeed = useCallback(async (): Promise<number> => {
-    if (typeof window === "undefined") return 0;
-    if (!window.navigator.onLine) {
-      setIsOnline(false);
-      setNetworkSpeedMbps(0);
-      setIsNetworkUnstable(true);
-      return 0;
-    }
-
-    const navConn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
-    let reportedDownlink: number | null = null;
-    if (navConn && typeof navConn.downlink === "number") {
-      reportedDownlink = navConn.downlink;
-    }
-
-    setIsSpeedChecking(true);
-    try {
-      const tStart = performance.now();
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-
-      const res = await fetch(`/api/ping?t=${Date.now()}`, {
-        cache: "no-store",
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (!res.ok) throw new Error("Ping failed");
-      const text = await res.text();
-      const tEnd = performance.now();
-
-      const durationSeconds = Math.max(0.001, (tEnd - tStart) / 1000);
-      const bytesReceived = new Blob([text]).size;
-      const bitsReceived = bytesReceived * 8;
-      const calculatedMbps = (bitsReceived / durationSeconds) / (1024 * 1024);
-
-      const finalSpeed = reportedDownlink !== null
-        ? Math.max(reportedDownlink, calculatedMbps)
-        : calculatedMbps;
-
-      setIsOnline(true);
-      setNetworkSpeedMbps(finalSpeed);
-      setIsNetworkUnstable(finalSpeed < 1.0);
-      return finalSpeed;
-    } catch (err) {
-      if (reportedDownlink !== null && reportedDownlink >= 1.0 && window.navigator.onLine) {
-        setIsOnline(true);
-        setNetworkSpeedMbps(reportedDownlink);
-        setIsNetworkUnstable(false);
-        return reportedDownlink;
-      }
-      setNetworkSpeedMbps(0);
-      setIsNetworkUnstable(true);
-      return 0;
-    } finally {
-      setIsSpeedChecking(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    measureNetworkSpeed();
-
-    const handleOnline = () => {
-      setIsOnline(true);
-      measureNetworkSpeed();
-    };
-    const handleOffline = () => {
-      setIsOnline(false);
-      setNetworkSpeedMbps(0);
-      setIsNetworkUnstable(true);
-    };
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    const navConn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
-    if (navConn && navConn.addEventListener) {
-      navConn.addEventListener("change", measureNetworkSpeed);
-    }
-
-    // Auto-recheck interval: 3s if unstable to auto-unblur immediately, else 15s
-    const intervalTimer = setInterval(() => {
-      measureNetworkSpeed();
-    }, isNetworkUnstable ? 3000 : 15000);
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-      if (navConn && navConn.removeEventListener) {
-        navConn.removeEventListener("change", measureNetworkSpeed);
-      }
-      clearInterval(intervalTimer);
-    };
-  }, [measureNetworkSpeed, isNetworkUnstable]);
 
   // Load inventory from Supabase (tce_inventory), fallback to localStorage
   useEffect(() => {
@@ -3747,9 +3644,7 @@ export default function PosPage() {
 
   return (
     <>
-      <div className={`h-screen w-screen bg-white text-slate-900 font-sans antialiased selection:bg-sky-500 selection:text-white flex overflow-hidden relative transition-all duration-300 ${
-        isNetworkUnstable ? "blur-xl pointer-events-none select-none filter opacity-40" : ""
-      }`}>
+      <div className="h-screen w-screen bg-white text-slate-900 font-sans antialiased selection:bg-sky-500 selection:text-white flex overflow-hidden relative">
 
       <style dangerouslySetInnerHTML={{
         __html: `
@@ -5620,17 +5515,6 @@ export default function PosPage() {
       )}
 
       </div>
-
-      {/* Internet Speed & Connectivity Guard Overlay */}
-      {isNetworkUnstable && (
-        <NetworkSpeedOverlay
-          isOnline={isOnline}
-          speedMbps={networkSpeedMbps}
-          minRequiredMbps={1.0}
-          onRetry={measureNetworkSpeed}
-          isChecking={isSpeedChecking}
-        />
-      )}
     </>
   );
 }
