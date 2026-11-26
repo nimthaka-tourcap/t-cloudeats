@@ -346,7 +346,7 @@ export default function BillPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080E1C] py-8 px-4 flex flex-col items-center justify-start relative select-none">
+    <div className="min-h-screen bg-[#0A0B0F] py-8 px-4 flex flex-col items-center justify-start relative select-none">
       
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] rounded-full bg-[#FF6B35]/5 blur-[120px] pointer-events-none" />
       {/* Back Button */}
@@ -468,7 +468,7 @@ export default function BillPage() {
               <div className="border border-[#1E2D4E] bg-white/[0.02] p-4 rounded-xl space-y-4">
                 <div className="space-y-2">
                   <p className="text-[9px] font-black uppercase text-[#FF6B35] tracking-wider">NDB Bank Details</p>
-                  <div className="bg-[#090D1A] border border-[#1E2D4E] p-3 rounded-lg text-xs space-y-1.5 font-mono text-slate-300">
+                  <div className="bg-[#0A0B0F] border border-[#1E2D4E] p-3 rounded-lg text-xs space-y-1.5 font-mono text-slate-300">
                     <div className="flex justify-between">
                       <span className="text-slate-500">Bank:</span>
                       <span className="font-bold text-white text-right">National Development Bank (NDB)</span>
@@ -954,7 +954,7 @@ export default function BillPage() {
                 value={reviewComment}
                 onChange={(e) => setReviewComment(e.target.value)}
                 placeholder="Delicious Kottu! Highly recommended..."
-                className="w-full bg-[#090D1A] border border-[#1E2D4E] rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF6B35]/60 min-h-[80px] resize-none"
+                className="w-full bg-[#0A0B0F] border border-[#1E2D4E] rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF6B35]/60 min-h-[80px] resize-none"
               />
             </div>
 
