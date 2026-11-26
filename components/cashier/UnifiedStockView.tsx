@@ -216,7 +216,7 @@ export default function UnifiedStockView({
     <div className="space-y-6">
       {/* Unified Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex flex-wrap p-1 rounded-xl bg-[#111318] border border-[#1F2430] gap-1">
+        <div className="inline-flex flex-wrap p-1 rounded-xl bg-slate-100 border border-slate-200 gap-1">
           {[
             { id: "STOCK", label: `Live Stock & GRN (${invList.length})`, icon: <Package size={14} /> },
             { id: "RECIPES", label: `Recipes & Costing (${recipeList.length})`, icon: <UtensilsCrossed size={14} /> },
@@ -227,7 +227,7 @@ export default function UnifiedStockView({
               key={t.id}
               type="button"
               onClick={() => setTab(t.id as any)}
-              className={`min-h-[40px] px-3.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${tab === t.id ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
+              className={`min-h-[40px] px-3.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${tab === t.id ? "bg-sky-500 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                 }`}
             >
               {t.icon}
@@ -245,14 +245,14 @@ export default function UnifiedStockView({
               setSelectedInvId(invList[0]?.id || "");
               setUnit(invList[0]?.unit || "kg");
             }}
-            className="min-h-[44px] px-4 rounded-xl bg-[#F26F21] hover:bg-[#e06117] text-white text-xs font-semibold cursor-pointer"
+            className="min-h-[44px] px-4 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold cursor-pointer"
           >
             + Purchase GRN
           </button>
           <button
             type="button"
             onClick={onAddNewInventoryItem}
-            className="min-h-[44px] px-4 rounded-xl bg-[#111318] border border-[#1F2430] hover:bg-white/[0.05] text-zinc-200 text-xs font-medium cursor-pointer"
+            className="min-h-[44px] px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-medium cursor-pointer"
           >
             + New Ingredient
           </button>
@@ -273,22 +273,21 @@ export default function UnifiedStockView({
                 key={f.id}
                 type="button"
                 onClick={() => setStockCategoryFilter(f.id as any)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition ${
-                  stockCategoryFilter === f.id
-                    ? "bg-sky-500 text-white"
-                    : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition ${stockCategoryFilter === f.id
+                  ? "bg-sky-500 text-white"
+                  : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
+                  }`}
               >
                 {f.label}
               </button>
             ))}
           </div>
-          <div className="bg-[#111318] border border-[#1F2430] rounded-xl overflow-x-auto">
+          <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto">
             {loading && invList.length === 0 ? (
-              <div className="p-8 text-center text-xs text-zinc-500">Loading inventory...</div>
+              <div className="p-8 text-center text-xs text-slate-500">Loading inventory...</div>
             ) : (
               <table className="w-full text-xs text-left">
-                <thead className="text-zinc-400 border-b border-[#1F2430] bg-[#0A0B0F]">
+                <thead className="text-slate-600 border-b border-slate-200 bg-slate-50">
                   <tr>
                     <th className="px-4 py-3 font-medium">SKU</th>
                     <th className="px-4 py-3 font-medium">Ingredient</th>
@@ -301,21 +300,21 @@ export default function UnifiedStockView({
                     <th className="px-4 py-3 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1F2430]">
+                <tbody className="divide-y divide-slate-200">
                   {filteredStockList.map((item) => (
-                    <tr key={item.id} className="hover:bg-white/[0.02]">
-                      <td className="px-4 py-3 font-mono text-zinc-500">{item.sku}</td>
-                      <td className="px-4 py-3 text-white font-medium">{item.name}</td>
-                      <td className="px-4 py-3 text-zinc-400">{item.category}</td>
-                      <td className="px-4 py-3 text-zinc-400">{item.storage_location}</td>
-                      <td className="px-4 py-3 text-right font-mono tabular-nums text-emerald-400">
+                    <tr key={item.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-mono text-slate-500">{item.sku}</td>
+                      <td className="px-4 py-3 text-slate-900 font-medium">{item.name}</td>
+                      <td className="px-4 py-3 text-slate-600">{item.category}</td>
+                      <td className="px-4 py-3 text-slate-600">{item.storage_location}</td>
+                      <td className="px-4 py-3 text-right font-mono tabular-nums text-emerald-700 font-medium">
                         {Number(item.quantity).toFixed(2)}
                       </td>
-                      <td className="px-4 py-3 text-zinc-400">{item.unit}</td>
-                      <td className="px-4 py-3 text-right font-mono tabular-nums text-zinc-300">
+                      <td className="px-4 py-3 text-slate-600">{item.unit}</td>
+                      <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-700">
                         {formatLKR2(item.unit_cost)}
                       </td>
-                      <td className="px-4 py-3 text-right font-mono tabular-nums text-white">
+                      <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-900 font-medium">
                         {formatLKR2(Number(item.quantity) * Number(item.unit_cost))}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -326,7 +325,7 @@ export default function UnifiedStockView({
                               setError("");
                               setEditingIng({ ...item });
                             }}
-                            className="min-h-[36px] px-2.5 rounded-lg bg-[#0A0B0F] border border-[#1F2430] text-zinc-300 hover:text-white flex items-center gap-1 cursor-pointer"
+                            className="min-h-[36px] px-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
                             title="Edit Ingredient"
                           >
                             <Pencil size={13} /> Edit
@@ -334,7 +333,7 @@ export default function UnifiedStockView({
                           <button
                             type="button"
                             onClick={() => handleDeleteIngredient(item.id, item.name)}
-                            className="min-h-[36px] px-2.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white cursor-pointer transition"
+                            className="min-h-[36px] px-2.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white cursor-pointer transition"
                             title="Delete Ingredient"
                           >
                             <Trash2 size={13} />
@@ -354,13 +353,13 @@ export default function UnifiedStockView({
       {tab === "RECIPES" && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-slate-900">
               Database-Linked Recipes (Auto-COGS on POS Sync)
             </h3>
             <button
               type="button"
               onClick={() => setShowRecipeDrawer(true)}
-              className="min-h-[40px] px-3.5 rounded-xl bg-[#F26F21] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[40px] px-3.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
             >
               <Plus size={14} /> Map Recipe
             </button>
@@ -370,19 +369,19 @@ export default function UnifiedStockView({
             {recipeList.map((r) => (
               <div
                 key={r.id}
-                className="bg-[#111318] border border-[#1F2430] rounded-xl p-4 text-xs space-y-2.5"
+                className="bg-white border border-slate-200 rounded-xl p-4 text-xs space-y-2.5"
               >
-                <div className="flex justify-between items-center border-b border-[#1F2430] pb-2">
+                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
                   <div>
-                    <p className="font-semibold text-white text-sm">{r.dish_name}</p>
-                    <span className="text-zinc-500">{r.portion}</span>
+                    <p className="font-semibold text-slate-900 text-sm">{r.dish_name}</p>
+                    <span className="text-slate-500">{r.portion}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <p className="font-mono tabular-nums font-semibold text-emerald-400">
+                      <p className="font-mono tabular-nums font-semibold text-emerald-700">
                         {formatLKR2(r.computed_total_cost)}
                       </p>
-                      <p className="text-zinc-500">
+                      <p className="text-slate-500">
                         Food {formatLKR2(r.computed_food_cost)} + Pkg {formatLKR2(r.packaging_cost)}
                       </p>
                     </div>
@@ -405,7 +404,7 @@ export default function UnifiedStockView({
                         );
                         setShowRecipeDrawer(true);
                       }}
-                      className="p-2 rounded-lg bg-[#0A0B0F] border border-[#1F2430] text-zinc-300 hover:text-white cursor-pointer"
+                      className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
                       title="Edit Recipe"
                     >
                       <Pencil size={13} />
@@ -413,7 +412,7 @@ export default function UnifiedStockView({
                     <button
                       type="button"
                       onClick={() => handleDeleteRecipe(r.id, r.dish_name)}
-                      className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white cursor-pointer transition"
+                      className="p-2 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white cursor-pointer transition"
                       title="Delete Recipe"
                     >
                       <Trash2 size={13} />
@@ -422,11 +421,11 @@ export default function UnifiedStockView({
                 </div>
                 <div className="space-y-1">
                   {(r.ingredients || []).map((ing: any) => (
-                    <div key={ing.id} className="flex justify-between text-zinc-400">
+                    <div key={ing.id} className="flex justify-between text-slate-600">
                       <span>
                         {ing.ingredient_name} ({ing.recipe_qty} {ing.recipe_unit})
                       </span>
-                      <span className="font-mono tabular-nums text-zinc-200">
+                      <span className="font-mono tabular-nums text-slate-900 font-medium">
                         {formatLKR2(ing.computed_cost)}
                       </span>
                     </div>
@@ -437,7 +436,7 @@ export default function UnifiedStockView({
           </div>
 
           {/* Embedded Food Cost Matrix & Simulator */}
-          <div className="pt-4 border-t border-[#1F2430]">
+          <div className="pt-4 border-t border-slate-200">
             <FoodCostingModule onAddStockClick={onAddNewInventoryItem} />
           </div>
         </div>
@@ -455,7 +454,7 @@ export default function UnifiedStockView({
                 setSelectedInvId(invList[0]?.id || "");
                 setUnit(invList[0]?.unit || "kg");
               }}
-              className="min-h-[44px] px-4 rounded-xl bg-[#111318] border border-[#1F2430] hover:bg-white/[0.05] text-white text-xs font-medium cursor-pointer"
+              className="min-h-[44px] px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-medium cursor-pointer"
             >
               + Weekly Stock-Take
             </button>
@@ -467,15 +466,15 @@ export default function UnifiedStockView({
                 setSelectedInvId(invList[0]?.id || "");
                 setUnit(invList[0]?.unit || "kg");
               }}
-              className="min-h-[44px] px-4 rounded-xl bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-300 text-xs font-medium cursor-pointer"
+              className="min-h-[44px] px-4 rounded-xl bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 text-xs font-medium cursor-pointer"
             >
               + Log Kitchen Waste
             </button>
           </div>
 
-          <div className="bg-[#111318] border border-[#1F2430] rounded-xl overflow-x-auto">
+          <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto">
             <table className="w-full text-xs text-left">
-              <thead className="text-zinc-400 border-b border-[#1F2430] bg-[#0A0B0F]">
+              <thead className="text-slate-600 border-b border-slate-200 bg-slate-50">
                 <tr>
                   <th className="px-4 py-3 font-medium">Date</th>
                   <th className="px-4 py-3 font-medium">Type</th>
@@ -485,23 +484,23 @@ export default function UnifiedStockView({
                   <th className="px-4 py-3 font-medium">Reason</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1F2430]">
+              <tbody className="divide-y divide-slate-200">
                 {movementList.map((m) => (
-                  <tr key={m.id} className="hover:bg-white/[0.02]">
-                    <td className="px-4 py-3 text-zinc-400">{String(m.created_at).slice(0, 10)}</td>
-                    <td className="px-4 py-3 text-zinc-200">{m.movement_type}</td>
-                    <td className="px-4 py-3 font-mono text-zinc-400">{m.inventory_id}</td>
+                  <tr key={m.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-slate-600">{String(m.created_at).slice(0, 10)}</td>
+                    <td className="px-4 py-3 text-slate-900 font-medium">{m.movement_type}</td>
+                    <td className="px-4 py-3 font-mono text-slate-600">{m.inventory_id}</td>
                     <td
-                      className={`px-4 py-3 text-right font-mono tabular-nums ${Number(m.quantity_delta) < 0 ? "text-rose-400" : "text-emerald-400"
+                      className={`px-4 py-3 text-right font-mono tabular-nums font-medium ${Number(m.quantity_delta) < 0 ? "text-rose-700" : "text-emerald-700"
                         }`}
                     >
                       {Number(m.quantity_delta) > 0 ? "+" : ""}
                       {Number(m.quantity_delta).toFixed(3)} {m.unit}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-white">
+                    <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-900 font-medium">
                       {formatLKR2(m.total_cost)}
                     </td>
-                    <td className="px-4 py-3 text-zinc-400">{m.reason}</td>
+                    <td className="px-4 py-3 text-slate-600">{m.reason}</td>
                   </tr>
                 ))}
               </tbody>
@@ -515,14 +514,14 @@ export default function UnifiedStockView({
 
       {/* Slide-Over Drawer: Purchase / Stock-Take / Waste */}
       {opMode && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex justify-end">
           <form
             onSubmit={handleStockOp}
-            className="w-full max-w-md bg-[#111318] border-l border-[#1F2430] h-full p-6 flex flex-col justify-between overflow-y-auto"
+            className="w-full max-w-md bg-white border-l border-slate-200 h-full p-6 flex flex-col justify-between overflow-y-auto shadow-2xl"
           >
             <div className="space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-[#1F2430] pb-3">
-                <h4 className="text-sm font-semibold text-white">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <h4 className="text-sm font-semibold text-slate-900">
                   {opMode === "PURCHASE"
                     ? "Record Purchase (GRN)"
                     : opMode === "STOCK_TAKE"
@@ -532,16 +531,16 @@ export default function UnifiedStockView({
                 <button
                   type="button"
                   onClick={() => setOpMode(null)}
-                  className="text-zinc-400 hover:text-white cursor-pointer"
+                  className="text-slate-500 hover:text-slate-900 cursor-pointer"
                 >
                   <X size={16} />
                 </button>
               </div>
               {error && (
-                <p className="text-rose-400 bg-rose-500/10 p-3 rounded-lg">{error}</p>
+                <p className="text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-lg">{error}</p>
               )}
               <div>
-                <label className="block text-zinc-400 mb-1">Ingredient</label>
+                <label className="block text-slate-700 font-medium mb-1">Ingredient</label>
                 <select
                   value={selectedInvId}
                   onChange={(e) => {
@@ -549,7 +548,7 @@ export default function UnifiedStockView({
                     const found = invList.find((x) => x.id === e.target.value);
                     if (found) setUnit(found.unit);
                   }}
-                  className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white outline-none"
+                  className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                 >
                   {invList.map((i) => (
                     <option key={i.id} value={i.id}>
@@ -560,7 +559,7 @@ export default function UnifiedStockView({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-400 mb-1">
+                  <label className="block text-slate-700 font-medium mb-1">
                     {opMode === "STOCK_TAKE" ? "Physical Count" : "Quantity"}
                   </label>
                   <input
@@ -569,15 +568,15 @@ export default function UnifiedStockView({
                     required
                     value={qty}
                     onChange={(e) => setQty(e.target.value)}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white font-mono outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 font-mono outline-none focus:bg-white focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Unit</label>
+                  <label className="block text-slate-700 font-medium mb-1">Unit</label>
                   <select
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                   >
                     <option value="kg">kg</option>
                     <option value="g">g</option>
@@ -592,31 +591,31 @@ export default function UnifiedStockView({
               {opMode === "PURCHASE" ? (
                 <>
                   <div>
-                    <label className="block text-zinc-400 mb-1">Total Cost (LKR)</label>
+                    <label className="block text-slate-700 font-medium mb-1">Total Cost (LKR)</label>
                     <input
                       type="number"
                       step="0.01"
                       required
                       value={totalCost}
                       onChange={(e) => setTotalCost(e.target.value)}
-                      className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white font-mono outline-none"
+                      className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 font-mono outline-none focus:bg-white focus:border-sky-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-zinc-400 mb-1">Supplier</label>
+                    <label className="block text-slate-700 font-medium mb-1">Supplier</label>
                     <input
                       type="text"
                       value={supplier}
                       onChange={(e) => setSupplier(e.target.value)}
-                      className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white outline-none"
+                      className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-zinc-400 mb-1">Payment Account</label>
+                    <label className="block text-slate-700 font-medium mb-1">Payment Account</label>
                     <select
                       value={paymentAccount}
                       onChange={(e) => setPaymentAccount(e.target.value)}
-                      className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white outline-none"
+                      className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                     >
                       <option value="1120">1120 — Bank Operating</option>
                       <option value="1110">1110 — Cash in Hand</option>
@@ -626,29 +625,29 @@ export default function UnifiedStockView({
                 </>
               ) : (
                 <div>
-                  <label className="block text-zinc-400 mb-1">Reason</label>
+                  <label className="block text-slate-700 font-medium mb-1">Reason</label>
                   <input
                     type="text"
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     placeholder="Audit note..."
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:bg-white focus:border-sky-500"
                   />
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-2 pt-4 border-t border-[#1F2430]">
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setOpMode(null)}
-                className="min-h-[44px] px-4 rounded-xl text-xs text-zinc-400 hover:text-white cursor-pointer"
+                className="min-h-[44px] px-4 rounded-xl text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={busy}
-                className="min-h-[44px] px-5 rounded-xl bg-[#F26F21] text-white text-xs font-semibold cursor-pointer"
+                className="min-h-[44px] px-5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold cursor-pointer"
               >
                 {busy ? "Posting..." : "Post & Update Ledger"}
               </button>
@@ -659,54 +658,54 @@ export default function UnifiedStockView({
 
       {/* Slide-Over Drawer: Map Recipe */}
       {showRecipeDrawer && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex justify-end">
           <form
             onSubmit={handleSaveRecipe}
-            className="w-full max-w-lg bg-[#111318] border-l border-[#1F2430] h-full p-6 flex flex-col justify-between overflow-y-auto"
+            className="w-full max-w-lg bg-white border-l border-slate-200 h-full p-6 flex flex-col justify-between overflow-y-auto shadow-2xl"
           >
             <div className="space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-[#1F2430] pb-3">
-                <h4 className="text-sm font-semibold text-white">Map Dish Recipe</h4>
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <h4 className="text-sm font-semibold text-slate-900">Map Dish Recipe</h4>
                 <button
                   type="button"
                   onClick={() => setShowRecipeDrawer(false)}
-                  className="text-zinc-400 hover:text-white cursor-pointer"
+                  className="text-slate-500 hover:text-slate-900 cursor-pointer"
                 >
                   <X size={16} />
                 </button>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-zinc-400 mb-1">Menu Dish Title</label>
+                  <label className="block text-slate-700 font-medium mb-1">Menu Dish Title</label>
                   <input
                     type="text"
                     required
                     value={dishName}
                     onChange={(e) => setDishName(e.target.value)}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Packaging (LKR)</label>
+                  <label className="block text-slate-700 font-medium mb-1">Packaging (LKR)</label>
                   <input
                     type="number"
                     value={packagingCost}
                     onChange={(e) => setPackagingCost(e.target.value)}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white font-mono outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 font-mono outline-none focus:bg-white focus:border-sky-500"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-zinc-400 mb-1">Portion</label>
+                <label className="block text-slate-700 font-medium mb-1">Portion</label>
                 <input
                   type="text"
                   value={portion}
                   onChange={(e) => setPortion(e.target.value)}
-                  className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white outline-none"
+                  className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-zinc-400">Ingredients</label>
+                <label className="block text-slate-700 font-medium">Ingredients</label>
                 {ingredients.map((ing, idx) => (
                   <div key={idx} className="grid grid-cols-12 gap-2">
                     <select
@@ -718,7 +717,7 @@ export default function UnifiedStockView({
                         if (inv) next[idx].ingredient_name = inv.name;
                         setIngredients(next);
                       }}
-                      className="col-span-6 min-h-[40px] bg-[#0A0B0F] border border-[#1F2430] rounded-lg px-2 text-white outline-none"
+                      className="col-span-6 min-h-[40px] bg-slate-50 border border-slate-200 rounded-lg px-2 text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                     >
                       <option value="">Select food stock...</option>
                       {foodInvList.map((i) => (
@@ -736,7 +735,7 @@ export default function UnifiedStockView({
                         next[idx].recipe_qty = e.target.value;
                         setIngredients(next);
                       }}
-                      className="col-span-3 min-h-[40px] bg-[#0A0B0F] border border-[#1F2430] rounded-lg px-2 text-white font-mono outline-none"
+                      className="col-span-3 min-h-[40px] bg-slate-50 border border-slate-200 rounded-lg px-2 text-slate-900 font-mono outline-none focus:bg-white focus:border-sky-500"
                     />
                     <select
                       value={ing.recipe_unit}
@@ -745,7 +744,7 @@ export default function UnifiedStockView({
                         next[idx].recipe_unit = e.target.value;
                         setIngredients(next);
                       }}
-                      className="col-span-3 min-h-[40px] bg-[#0A0B0F] border border-[#1F2430] rounded-lg px-2 text-white outline-none"
+                      className="col-span-3 min-h-[40px] bg-slate-50 border border-slate-200 rounded-lg px-2 text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                     >
                       <option value="g">g</option>
                       <option value="ml">ml</option>
@@ -765,24 +764,24 @@ export default function UnifiedStockView({
                       { inventory_id: "", ingredient_name: "", recipe_qty: "10", recipe_unit: "g" },
                     ])
                   }
-                  className="text-[#F26F21] hover:underline cursor-pointer"
+                  className="text-sky-600 hover:text-sky-700 hover:underline font-medium cursor-pointer"
                 >
                   + Add Ingredient
                 </button>
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-4 border-t border-[#1F2430]">
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setShowRecipeDrawer(false)}
-                className="min-h-[44px] px-4 rounded-xl text-xs text-zinc-400 cursor-pointer"
+                className="min-h-[44px] px-4 rounded-xl text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={busy}
-                className="min-h-[44px] px-5 rounded-xl bg-[#F26F21] text-white text-xs font-semibold cursor-pointer"
+                className="min-h-[44px] px-5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold cursor-pointer"
               >
                 Save Recipe
               </button>
@@ -792,60 +791,60 @@ export default function UnifiedStockView({
       )}
       {/* Slide-Over Drawer: Edit Ingredient */}
       {editingIng && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex justify-end">
           <form
             onSubmit={handleSaveIngredientEdit}
-            className="w-full max-w-md bg-[#111318] border-l border-[#1F2430] h-full p-6 flex flex-col justify-between overflow-y-auto"
+            className="w-full max-w-md bg-white border-l border-slate-200 h-full p-6 flex flex-col justify-between overflow-y-auto shadow-2xl"
           >
             <div className="space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-[#1F2430] pb-3">
-                <h4 className="text-sm font-semibold text-white">Edit Ingredient</h4>
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <h4 className="text-sm font-semibold text-slate-900">Edit Ingredient</h4>
                 <button
                   type="button"
                   onClick={() => setEditingIng(null)}
-                  className="text-zinc-400 hover:text-white cursor-pointer"
+                  className="text-slate-500 hover:text-slate-900 cursor-pointer"
                 >
                   <X size={16} />
                 </button>
               </div>
-              {error && <p className="text-rose-400 bg-rose-500/10 p-3 rounded-lg">{error}</p>}
+              {error && <p className="text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-lg">{error}</p>}
               <div>
-                <label className="block text-zinc-400 mb-1">Ingredient Name</label>
+                <label className="block text-slate-700 font-medium mb-1">Ingredient Name</label>
                 <input
                   type="text"
                   required
                   value={editingIng.name || ""}
                   onChange={(e) => setEditingIng({ ...editingIng, name: e.target.value })}
-                  className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white outline-none"
+                  className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-400 mb-1">SKU</label>
+                  <label className="block text-slate-700 font-medium mb-1">SKU</label>
                   <input
                     type="text"
                     value={editingIng.sku || ""}
                     onChange={(e) => setEditingIng({ ...editingIng, sku: e.target.value })}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white font-mono outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 font-mono outline-none focus:bg-white focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Category</label>
+                  <label className="block text-slate-700 font-medium mb-1">Category</label>
                   <input
                     type="text"
                     value={editingIng.category || ""}
                     onChange={(e) => setEditingIng({ ...editingIng, category: e.target.value })}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-zinc-400 mb-1">Base Unit</label>
+                  <label className="block text-slate-700 font-medium mb-1">Base Unit</label>
                   <select
                     value={editingIng.unit || "kg"}
                     onChange={(e) => setEditingIng({ ...editingIng, unit: e.target.value })}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-2 text-sm text-white outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                   >
                     <option value="kg">kg</option>
                     <option value="g">g</option>
@@ -859,43 +858,43 @@ export default function UnifiedStockView({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Qty</label>
+                  <label className="block text-slate-700 font-medium mb-1">Qty</label>
                   <input
                     type="number"
                     step="0.001"
                     value={editingIng.quantity ?? 0}
                     onChange={(e) => setEditingIng({ ...editingIng, quantity: e.target.value })}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white font-mono outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 font-mono outline-none focus:bg-white focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Par Level</label>
+                  <label className="block text-slate-700 font-medium mb-1">Par Level</label>
                   <input
                     type="number"
                     step="0.01"
                     value={editingIng.par_level ?? 0}
                     onChange={(e) => setEditingIng({ ...editingIng, par_level: e.target.value })}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white font-mono outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 font-mono outline-none focus:bg-white focus:border-sky-500"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-400 mb-1">Unit Cost (Rs.)</label>
+                  <label className="block text-slate-700 font-medium mb-1">Unit Cost (Rs.)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={editingIng.unit_cost ?? 0}
                     onChange={(e) => setEditingIng({ ...editingIng, unit_cost: e.target.value })}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white font-mono outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 font-mono outline-none focus:bg-white focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Storage Location</label>
+                  <label className="block text-slate-700 font-medium mb-1">Storage Location</label>
                   <select
                     value={editingIng.storage_location || "Dry Shelf"}
                     onChange={(e) => setEditingIng({ ...editingIng, storage_location: e.target.value })}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-2 text-sm text-white outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                   >
                     <option value="Cooler">Cooler</option>
                     <option value="Freezer">Freezer</option>
@@ -905,38 +904,37 @@ export default function UnifiedStockView({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-400 mb-1">Supplier</label>
+                  <label className="block text-slate-700 font-medium mb-1">Supplier</label>
                   <input
                     type="text"
                     value={editingIng.supplier || ""}
                     onChange={(e) => setEditingIng({ ...editingIng, supplier: e.target.value })}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white outline-none"
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Expiration Date</label>
+                  <label className="block text-slate-700 font-medium mb-1">Expiration Date</label>
                   <input
                     type="date"
                     value={editingIng.expiration_date ? String(editingIng.expiration_date).slice(0, 10) : ""}
                     onChange={(e) => setEditingIng({ ...editingIng, expiration_date: e.target.value })}
-                    className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white outline-none"
-                    style={{ colorScheme: "dark" }}
+                    className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-sky-500"
                   />
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-4 border-t border-[#1F2430]">
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setEditingIng(null)}
-                className="min-h-[44px] px-4 rounded-xl text-xs text-zinc-400 hover:text-white cursor-pointer"
+                className="min-h-[44px] px-4 rounded-xl text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={busy}
-                className="min-h-[44px] px-5 rounded-xl bg-[#F26F21] text-white text-xs font-semibold cursor-pointer"
+                className="min-h-[44px] px-5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold cursor-pointer"
               >
                 {busy ? "Saving..." : "Save Changes"}
               </button>

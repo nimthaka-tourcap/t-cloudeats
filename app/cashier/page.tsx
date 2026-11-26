@@ -3,20 +3,21 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { 
-  Plus, 
-  Minus, 
-  Trash2, 
-  ShoppingBag, 
-  History, 
-  FolderKanban, 
-  Settings as SettingsIcon, 
-  LogOut, 
-  Lock, 
-  Search, 
-  Check, 
-  Printer, 
-  TrendingUp, 
+import dynamic from "next/dynamic";
+import {
+  Plus,
+  Minus,
+  Trash2,
+  ShoppingBag,
+  History,
+  FolderKanban,
+  Settings as SettingsIcon,
+  LogOut,
+  Lock,
+  Search,
+  Check,
+  Printer,
+  TrendingUp,
   X,
   ChevronLeft,
   ChevronRight,
@@ -44,16 +45,21 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import UnifiedStockView from "@/components/cashier/UnifiedStockView";
-import UnifiedFinanceSection from "@/components/cashier/UnifiedFinanceSection";
-import ReceiptPrintModal from "@/components/cashier/ReceiptPrintModal";
-import QuickSearchModal from "@/components/cashier/QuickSearchModal";
 import PosTerminalView from "@/components/cashier/PosTerminalView";
-import OrderLogsView from "@/components/cashier/OrderLogsView";
-import MenuManagerView from "@/components/cashier/MenuManagerView";
-import ShiftTallyView from "@/components/cashier/ShiftTallyView";
-import CustomerCmsModal from "@/components/cashier/CustomerCmsModal";
 import type { ParkedOrder } from "@/lib/cashier/types";
+
+const TabLoader = () => (
+  <div className="p-8 text-center text-xs text-slate-500">Loading view...</div>
+);
+
+const UnifiedStockView = dynamic(() => import("@/components/cashier/UnifiedStockView"), { ssr: false, loading: TabLoader });
+const UnifiedFinanceSection = dynamic(() => import("@/components/cashier/UnifiedFinanceSection"), { ssr: false, loading: TabLoader });
+const OrderLogsView = dynamic(() => import("@/components/cashier/OrderLogsView"), { ssr: false, loading: TabLoader });
+const MenuManagerView = dynamic(() => import("@/components/cashier/MenuManagerView"), { ssr: false, loading: TabLoader });
+const ShiftTallyView = dynamic(() => import("@/components/cashier/ShiftTallyView"), { ssr: false, loading: TabLoader });
+const ReceiptPrintModal = dynamic(() => import("@/components/cashier/ReceiptPrintModal"), { ssr: false });
+const QuickSearchModal = dynamic(() => import("@/components/cashier/QuickSearchModal"), { ssr: false });
+const CustomerCmsModal = dynamic(() => import("@/components/cashier/CustomerCmsModal"), { ssr: false });
 
 // ============================================================================
 // --- TYPES & DATA ---
@@ -146,33 +152,33 @@ function isOrderInReportRange(timestamp: string, filter: ReportDateFilter): bool
 
   const now = new Date();
   const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  
+
   if (filter === "7_days") {
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0, 0);
     return orderDate >= start && orderDate <= endOfToday;
   }
-  
+
   if (filter === "14_days") {
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 13, 0, 0, 0, 0);
     return orderDate >= start && orderDate <= endOfToday;
   }
-  
+
   if (filter === "30_days") {
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29, 0, 0, 0, 0);
     return orderDate >= start && orderDate <= endOfToday;
   }
-  
+
   if (filter === "this_month") {
     const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
     return orderDate >= start && orderDate <= endOfToday;
   }
-  
+
   if (filter === "last_month") {
     const start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
     const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
     return orderDate >= start && orderDate <= end;
   }
-  
+
   return true;
 }
 
@@ -542,13 +548,13 @@ interface MinimalMenuCardProps {
 function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
   const getCategoryConfig = (category: string): { emoji: string; accent: string; bg: string } => {
     switch (category) {
-      case "Kottu":        return { emoji: "🥘", accent: "#EF4444", bg: "rgba(239,68,68,0.08)" };
+      case "Kottu": return { emoji: "🥘", accent: "#EF4444", bg: "rgba(239,68,68,0.08)" };
       case "Ultimate Bites": return { emoji: "🍗", accent: "#A855F7", bg: "rgba(168,85,247,0.08)" };
-      case "Fried Rice":   return { emoji: "🍚", accent: "#F59E0B", bg: "rgba(245,158,11,0.08)" };
-      case "Chopsuey":     return { emoji: "🥗", accent: "#06B6D4", bg: "rgba(6,182,212,0.08)" };
-      case "Beverages":    return { emoji: "🥤", accent: "#3B82F6", bg: "rgba(59,130,246,0.08)" };
-      case "Pasta":        return { emoji: "🍝", accent: "#EC4899", bg: "rgba(236,72,153,0.08)" };
-      default:             return { emoji: "🍽️", accent: "#10B981", bg: "rgba(16,185,129,0.08)" };
+      case "Fried Rice": return { emoji: "🍚", accent: "#F59E0B", bg: "rgba(245,158,11,0.08)" };
+      case "Chopsuey": return { emoji: "🥗", accent: "#06B6D4", bg: "rgba(6,182,212,0.08)" };
+      case "Beverages": return { emoji: "🥤", accent: "#3B82F6", bg: "rgba(59,130,246,0.08)" };
+      case "Pasta": return { emoji: "🍝", accent: "#EC4899", bg: "rgba(236,72,153,0.08)" };
+      default: return { emoji: "🍽️", accent: "#10B981", bg: "rgba(16,185,129,0.08)" };
     }
   };
 
@@ -701,11 +707,11 @@ function isWithinOneHour(timestamp: string): boolean {
 
 function getNextInvoiceNumber(history: Order[]): string {
   const currentBizDateStr = getBusinessDateStr(new Date());
-  
+
   // Get all of today's orders (excluding Ignored)
-  const todaysOrders = history.filter(o => 
-    getBusinessDateStr(o.timestamp) === currentBizDateStr && 
-    o.status !== "Ignored" && 
+  const todaysOrders = history.filter(o =>
+    getBusinessDateStr(o.timestamp) === currentBizDateStr &&
+    o.status !== "Ignored" &&
     o.id.startsWith("INV-")
   );
 
@@ -738,13 +744,13 @@ function getNextInvoiceNumber(history: Order[]): string {
 
 function getStatusBadgeStyle(status: Order["status"]): { bg: string; text: string; border: string } {
   switch (status) {
-    case "Preparing":  return { bg: "rgba(245,158,11,0.08)", text: "#F59E0B", border: "rgba(245,158,11,0.2)" };
-    case "Ready":      return { bg: "rgba(168,85,247,0.08)", text: "#A855F7", border: "rgba(168,85,247,0.2)" };
+    case "Preparing": return { bg: "rgba(245,158,11,0.08)", text: "#F59E0B", border: "rgba(245,158,11,0.2)" };
+    case "Ready": return { bg: "rgba(168,85,247,0.08)", text: "#A855F7", border: "rgba(168,85,247,0.2)" };
     case "Dispatched": return { bg: "rgba(59,130,246,0.08)", text: "#3B82F6", border: "rgba(59,130,246,0.2)" };
-    case "Completed":  return { bg: "rgba(16,185,129,0.08)", text: "#10B981", border: "rgba(16,185,129,0.2)" };
-    case "Voided":     return { bg: "rgba(239,68,68,0.08)",  text: "#EF4444", border: "rgba(239,68,68,0.2)" };
-    case "Ignored":    return { bg: "rgba(148,163,184,0.08)", text: "#94A3B8", border: "rgba(148,163,184,0.2)" };
-    default:           return { bg: "rgba(148,163,184,0.08)", text: "#94A3B8", border: "rgba(148,163,184,0.2)" };
+    case "Completed": return { bg: "rgba(16,185,129,0.08)", text: "#10B981", border: "rgba(16,185,129,0.2)" };
+    case "Voided": return { bg: "rgba(239,68,68,0.08)", text: "#EF4444", border: "rgba(239,68,68,0.2)" };
+    case "Ignored": return { bg: "rgba(148,163,184,0.08)", text: "#94A3B8", border: "rgba(148,163,184,0.2)" };
+    default: return { bg: "rgba(148,163,184,0.08)", text: "#94A3B8", border: "rgba(148,163,184,0.2)" };
   }
 }
 
@@ -826,7 +832,7 @@ export default function PosPage() {
       try {
         const raw = localStorage.getItem("t-cloud-eats-parked-orders");
         if (raw) return JSON.parse(raw);
-      } catch {}
+      } catch { }
     }
     return [];
   });
@@ -890,7 +896,7 @@ export default function PosPage() {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [showInventoryModal, setShowInventoryModal] = useState(false);
   const [editingInventoryItem, setEditingInventoryItem] = useState<InventoryItem | null>(null);
-  
+
   // Inventory form fields
   const [invName, setInvName] = useState("");
   const [invCategory, setInvCategory] = useState("Produce");
@@ -1139,7 +1145,7 @@ export default function PosPage() {
   const sessionIdRef = useRef<string>("");
   const syncChannelRef = useRef<any>(null);
   const isNetworkUpdateRef = useRef<boolean>(false);
-  
+
   useEffect(() => {
     sessionIdRef.current = Math.random().toString(36).substring(2, 15);
   }, []);
@@ -1174,7 +1180,7 @@ export default function PosPage() {
       }
     }
   }, [selectedInvoiceId, orderHistory]);
-  
+
   // Menu Database State
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -1192,7 +1198,7 @@ export default function PosPage() {
     isSyncingOfflineRef.current = true;
     console.log("[Sync] Triggering sync for offline orders:", offlineOrders);
     let successfullySynced = 0;
-    
+
     try {
       for (const order of offlineOrders) {
         try {
@@ -1209,7 +1215,7 @@ export default function PosPage() {
               type: order.type,
               customer: order.customer
             }, { onConflict: "id" });
-          
+
           if (error) {
             console.error(`[Sync] Failed to sync order ${order.id}:`, error);
           } else {
@@ -1221,7 +1227,7 @@ export default function PosPage() {
           console.error(`[Sync] Network error syncing order ${order.id}:`, e);
         }
       }
-      
+
       if (successfullySynced > 0) {
         // Update localStorage so these orders are permanently marked synced locally
         const localSavedStr = localStorage.getItem("t-cloud-eats-orders");
@@ -1256,22 +1262,20 @@ export default function PosPage() {
     setLoadingOrders(true);
 
     try {
-      // 1. Clean up ignored orders older than 2 days in Supabase (non-blocking / 4s timeout)
+      // 1. Clean up ignored orders older than 2 days in Supabase in background (non-blocking)
       const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-      try {
-        await withTimeout(
-          Promise.resolve(
-            supabase
-              .from("tce_orders")
-              .delete()
-              .eq("status", "Ignored")
-              .lt("timestamp", twoDaysAgo)
-          ),
-          4000
-        );
-      } catch (e) {
+      void withTimeout(
+        Promise.resolve(
+          supabase
+            .from("tce_orders")
+            .delete()
+            .eq("status", "Ignored")
+            .lt("timestamp", twoDaysAgo)
+        ),
+        4000
+      ).catch((e) => {
         console.error("Failed to prune expired ignored orders from database:", e);
-      }
+      });
 
       // 2. Concurrently fetch orders and customers with 5s timeout
       const [ordersRes, customersRes] = await Promise.allSettled([
@@ -1336,7 +1340,7 @@ export default function PosPage() {
             }
             return true;
           });
-          
+
           // Smart Merge: retrieve offline/unsynced orders from localStorage
           const localSavedStr = localStorage.getItem("t-cloud-eats-orders");
           let merged = [...filtered];
@@ -1350,7 +1354,7 @@ export default function PosPage() {
               if (offlineUnsynced.length > 0) {
                 merged = [...merged, ...offlineUnsynced].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
                 console.log("Preserved offline unsynced orders:", offlineUnsynced);
-                
+
                 // Trigger sync in the background only if not already syncing
                 if (!isSyncingOfflineRef.current) {
                   syncOfflineOrders(offlineUnsynced);
@@ -1360,7 +1364,7 @@ export default function PosPage() {
               console.error("Failed to parse local orders during merge", err);
             }
           }
-          
+
           setOrderHistory(merged);
           localStorage.setItem("t-cloud-eats-orders", JSON.stringify(merged));
 
@@ -1369,7 +1373,7 @@ export default function PosPage() {
             hasShownInitialSyncToastRef.current = true;
             const todayBizDate = getBusinessDateStr(new Date());
             const todayOrdersCount = merged.filter((o: any) => getBusinessDateStr(o.timestamp) === todayBizDate && o.status !== "Ignored" && o.status !== "Voided").length;
-            
+
             if (todayOrdersCount > 0) {
               triggerToast(`Synced with database: ${todayOrdersCount} order${todayOrdersCount > 1 ? 's' : ''} for today`, "success");
             } else {
@@ -1528,12 +1532,42 @@ export default function PosPage() {
 
   // Load menu items from database on mount and subscribe to Realtime updates
   useEffect(() => {
+    // Instant localStorage hydration for zero-wait initial render
+    try {
+      const cachedMenu = localStorage.getItem("t-cloud-eats-menu-cache");
+      if (cachedMenu) {
+        const parsed = JSON.parse(cachedMenu);
+        if (Array.isArray(parsed) && parsed.length > 0) setMenuItems(parsed);
+      }
+      const cachedOrders = localStorage.getItem("t-cloud-eats-orders");
+      if (cachedOrders) {
+        const parsed = JSON.parse(cachedOrders);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setOrderHistory((prev) => (prev.length === 0 ? parsed : prev));
+        }
+      }
+      const cachedCustomers = localStorage.getItem("t-cloud-eats-customers");
+      if (cachedCustomers) {
+        const parsed = JSON.parse(cachedCustomers);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCustomers((prev) => (prev.length === 0 ? parsed : prev));
+        }
+      }
+    } catch {
+      // Ignore cache parse errors
+    }
+
     async function loadMenu() {
       try {
         const res = await fetch("/api/menu");
         if (res.ok) {
           const data = await res.json();
           setMenuItems(data);
+          try {
+            localStorage.setItem("t-cloud-eats-menu-cache", JSON.stringify(data));
+          } catch {
+            // Ignore quota errors
+          }
         } else {
           triggerToast("Failed to load menu from database", "error");
         }
@@ -1572,12 +1606,12 @@ export default function PosPage() {
     channel
       .on("broadcast", { event: "draft-update" }, ({ payload }) => {
         if (!payload || payload.senderId === sessionIdRef.current) return;
-        
+
         console.log("[Broadcast Sync] Received state update:", payload);
-        
+
         // Block outgoing sync triggers during network state updates to prevent loopback/echoes
         isNetworkUpdateRef.current = true;
-        
+
         if (payload.cart !== undefined) setCart(payload.cart);
         if (payload.selectedInvoiceId !== undefined) setSelectedInvoiceId(payload.selectedInvoiceId);
         if (payload.activeSidebar !== undefined) setActiveSidebar(payload.activeSidebar);
@@ -1597,7 +1631,7 @@ export default function PosPage() {
         if (payload.customerAddress !== undefined) setCustomerAddress(payload.customerAddress);
         if (payload.showCustomerModal !== undefined) setShowCustomerModal(payload.showCustomerModal);
         if (payload.activeAddressTab !== undefined) setActiveAddressTab(payload.activeAddressTab);
-        
+
         // Reset the update block once layout/rendering cycles complete
         setTimeout(() => {
           isNetworkUpdateRef.current = false;
@@ -1618,7 +1652,7 @@ export default function PosPage() {
     if (isNetworkUpdateRef.current) return; // Do not broadcast state updates received from network
 
     const channel = syncChannelRef.current;
-    
+
     const timeoutId = setTimeout(() => {
       if (isNetworkUpdateRef.current) return;
       channel.send({
@@ -1654,7 +1688,7 @@ export default function PosPage() {
       return (
         <span className={`inline-flex items-center gap-1.5 ${textClass}`}>
           {value}
-          <button 
+          <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
@@ -1752,11 +1786,14 @@ export default function PosPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ limit: 500 }),
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   useEffect(() => {
-    triggerBackgroundPosSync();
+    const timer = setTimeout(() => {
+      triggerBackgroundPosSync();
+    }, 1200);
+    return () => clearTimeout(timer);
   }, [triggerBackgroundPosSync]);
 
   const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
@@ -1892,14 +1929,14 @@ export default function PosPage() {
     } else if (selectedOrder.status === "Dispatched") {
       nextStatus = "Completed";
     }
-    
+
     updateOrderStatus(selectedOrder.id, nextStatus);
   };
 
   const handleSaveCustomer = async () => {
     if (!editingCustomer) return;
     setIsUpdatingCust(true);
-    
+
     let birthdayIso = null;
     if (editCustBirthMonth && editCustBirthDay) {
       birthdayIso = new Date(`2000-${editCustBirthMonth}-${editCustBirthDay}T00:00:00`).toISOString();
@@ -1914,10 +1951,10 @@ export default function PosPage() {
     };
 
     // Update locally immediately
-    setCustomers(prev => 
+    setCustomers(prev =>
       prev.map(c => c.phone === editingCustomer.phone ? updatedCmsCustomer : c)
     );
-    
+
     // Update customer details in all past orders locally
     const updatedHistory = orderHistory.map(o => {
       if (o.customer && o.customer.phone === editingCustomer.phone) {
@@ -1935,7 +1972,7 @@ export default function PosPage() {
     });
     setOrderHistory(updatedHistory);
     localStorage.setItem("t-cloud-eats-orders", JSON.stringify(updatedHistory));
-    
+
     // Close modal
     setEditingCustomer(null);
     setIsUpdatingCust(false);
@@ -1958,7 +1995,7 @@ export default function PosPage() {
           triggerToast("Saved locally, cloud update failed", "warning");
         } else {
           triggerToast("Customer profile updated successfully!", "success");
-          
+
           // Update customer details in all past orders in Supabase
           const updatedCustObj = {
             phone: editingCustomer.phone,
@@ -1966,7 +2003,7 @@ export default function PosPage() {
             address: editCustAddress,
             address_label: editCustAddressLabel || null
           };
-          
+
           Promise.resolve(
             supabase
               .from("tce_orders")
@@ -2028,14 +2065,14 @@ export default function PosPage() {
 
   const handlePhoneChange = (val: string, cc: string = customerCountryCode) => {
     setCustomerPhone(val);
-    
+
     // Check if the Sri Lankan number starts with 0
     let processedNum = val.trim().replace(/\D/g, "");
     if (cc === "+94" && processedNum.startsWith("0")) {
       processedNum = processedNum.substring(1);
     }
     const formattedPhone = `${cc}${processedNum}`;
-    
+
     const existing = customers.find(c => c.phone === formattedPhone);
     if (existing) {
       setCustomerName(existing.name);
@@ -2163,10 +2200,10 @@ export default function PosPage() {
       selectedType === "Delivery"
         ? "Direct"
         : selectedType === "Take Away"
-        ? "POS"
-        : selectedType === "3rd Party"
-        ? "3rd Party"
-        : "Dine In"
+          ? "POS"
+          : selectedType === "3rd Party"
+            ? "3rd Party"
+            : "Dine In"
     );
     setShowOrderTypeModal(false);
     setShowCustomerModal(true);
@@ -2191,14 +2228,14 @@ export default function PosPage() {
       triggerToast("Please enter name and phone number", "warning");
       return;
     }
-    
+
     // Process phone number
     let processedNum = customerPhone.trim().replace(/\D/g, "");
     if (customerCountryCode === "+94" && processedNum.startsWith("0")) {
       processedNum = processedNum.substring(1);
     }
     const formattedPhone = `${customerCountryCode}${processedNum}`;
-    
+
     const newCustomer = { phone: formattedPhone, name: customerName, address: customerAddress };
 
     setIsPlacingOrder(true);
@@ -2289,7 +2326,7 @@ export default function PosPage() {
       setDiscountType("percentage");
       setDiscountValue(0);
       setShowCustomerModal(false);
-      
+
       // Trigger background re-validation from DB
       loadOrdersAndCMS(true);
     } finally {
@@ -2326,7 +2363,7 @@ export default function PosPage() {
         triggerToast("This order is voided or ignored and cannot be modified", "warning");
         return;
       }
-      
+
       const withinHour = isWithinOneHour(loadedOrder.timestamp);
       if (delta < 0) {
         const cartItem = cart.find(ci => ci.menuItem.id === itemId);
@@ -2363,7 +2400,7 @@ export default function PosPage() {
         triggerToast("This order is voided or ignored and cannot be modified", "warning");
         return;
       }
-      
+
       const withinHour = isWithinOneHour(loadedOrder.timestamp);
       const cartItem = cart.find(ci => ci.menuItem.id === itemId);
       const isPersistedItem = cartItem && !cartItem.isNew;
@@ -2437,7 +2474,7 @@ export default function PosPage() {
     }
     return getBusinessDateStr(new Date());
   }, [selectedLogDate]);
-  
+
   const todaysOrders = useMemo(() => {
     return orderHistory.filter(order => {
       const isSelectedDate = getBusinessDateStr(order.timestamp) === selectedLogBizDateStr;
@@ -2802,11 +2839,11 @@ export default function PosPage() {
 
   const reportData = useMemo(() => {
     const groups: Record<string, { dateStr: string; orderCount: number; revenue: number }> = {};
-    
+
     filteredReportOrders.forEach(order => {
       const bizDate = getBusinessDateStr(order.timestamp);
       const formattedDate = `20${bizDate.slice(0, 2)}-${bizDate.slice(2, 4)}-${bizDate.slice(4, 6)}`;
-      
+
       if (!groups[bizDate]) {
         groups[bizDate] = {
           dateStr: formattedDate,
@@ -2824,7 +2861,7 @@ export default function PosPage() {
   const filteredInventory = useMemo(() => {
     return inventoryItems.filter(item => {
       const query = invSearchQuery.toLowerCase();
-      const matchesSearch = 
+      const matchesSearch =
         item.name.toLowerCase().includes(query) ||
         item.sku.toLowerCase().includes(query) ||
         item.category.toLowerCase().includes(query) ||
@@ -3294,8 +3331,9 @@ export default function PosPage() {
 
   return (
     <div className="h-screen w-screen bg-white text-slate-900 font-sans antialiased selection:bg-sky-500 selection:text-white flex overflow-hidden relative">
-      
-      <style dangerouslySetInnerHTML={{__html: `
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
         html, body {
           overflow: hidden !important;
           height: 100vh !important;
@@ -3316,13 +3354,12 @@ export default function PosPage() {
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`px-4 py-3.5 rounded-xl shadow-lg flex items-center justify-between gap-3 border transition-all duration-300 ${
-              toast.type === "success" 
-                ? "bg-emerald-50 border-emerald-200 text-emerald-900" 
-                : toast.type === "error" 
-                  ? "bg-rose-50 border-rose-200 text-rose-900" 
-                  : "bg-slate-900 border-slate-800 text-white"
-            }`}
+            className={`px-4 py-3.5 rounded-xl shadow-lg flex items-center justify-between gap-3 border transition-all duration-300 ${toast.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+              : toast.type === "error"
+                ? "bg-rose-50 border-rose-200 text-rose-900"
+                : "bg-slate-900 border-slate-800 text-white"
+              }`}
           >
             <span className="text-xs font-bold">{toast.message}</span>
             <button onClick={() => removeToast(toast.id)} className={toast.type === "info" ? "text-slate-300 hover:text-white cursor-pointer" : "text-slate-500 hover:text-slate-900 cursor-pointer"}>
@@ -3334,7 +3371,7 @@ export default function PosPage() {
 
       {/* Full-Bleed Console Container (No Outer Borders) */}
       <div className="flex-1 h-full flex bg-white overflow-hidden">
-        
+
         {/* Left Crisp White ERP Sidebar (Reference Style) */}
         <aside className={`hidden md:flex flex-col justify-between bg-white border-r border-slate-200 shrink-0 transition-all duration-200 ${sidebarCollapsed ? "w-[72px] p-2.5" : "w-[232px] p-4"}`}>
           <div className="space-y-6 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
@@ -3376,14 +3413,14 @@ export default function PosPage() {
                 </p>
               )}
               {([
-                { key: "new_order",              icon: <ShoppingBag size={17} />,  label: "POS Billing" },
-                { key: "order_history",          icon: <History size={17} />,      label: "Orders & E-Bills" },
-                { key: "reports",                icon: <BarChart3 size={17} />,    label: "Shift Tally" },
-                { key: "menu_management",        icon: <FolderKanban size={17} />, label: "Menu & Customers" },
-                { key: "inventory",              icon: <Boxes size={17} />,        label: "Stock & Recipes" },
-                { key: "finance_reports",        icon: <Landmark size={17} />,     label: "Finance & Reports" },
-                { key: "finance_ledger",         icon: <BookOpen size={17} />,     label: "General Ledger" },
-                { key: "finance_assets_payroll", icon: <HardDrive size={17} />,    label: "Assets & Payroll" },
+                { key: "new_order", icon: <ShoppingBag size={17} />, label: "POS Billing" },
+                { key: "order_history", icon: <History size={17} />, label: "Orders & E-Bills" },
+                { key: "reports", icon: <BarChart3 size={17} />, label: "Shift Tally" },
+                { key: "menu_management", icon: <FolderKanban size={17} />, label: "Menu & Customers" },
+                { key: "inventory", icon: <Boxes size={17} />, label: "Stock & Recipes" },
+                { key: "finance_reports", icon: <Landmark size={17} />, label: "Finance & Reports" },
+                { key: "finance_ledger", icon: <BookOpen size={17} />, label: "General Ledger" },
+                { key: "finance_assets_payroll", icon: <HardDrive size={17} />, label: "Assets & Payroll" },
               ] as { key: UnifiedTab; icon: React.ReactNode; label: string }[]).map(({ key, icon, label }) => {
                 const isActive = activeSidebar === key;
                 return (
@@ -3392,11 +3429,10 @@ export default function PosPage() {
                     type="button"
                     onClick={() => handleSidebarClick(key)}
                     title={sidebarCollapsed ? label : undefined}
-                    className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-                      isActive
-                        ? "bg-sky-500 text-white shadow-xs"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
+                    className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer ${isActive
+                      ? "bg-sky-500 text-white shadow-xs"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className={isActive ? "text-white shrink-0" : "text-slate-500 shrink-0"}>{icon}</span>
@@ -3421,11 +3457,10 @@ export default function PosPage() {
                 type="button"
                 onClick={() => handleSidebarClick("settings")}
                 title={sidebarCollapsed ? "Settings & Tax" : undefined}
-                className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-                  activeSidebar === "settings"
-                    ? "bg-sky-500 text-white shadow-xs"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
+                className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeSidebar === "settings"
+                  ? "bg-sky-500 text-white shadow-xs"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <SettingsIcon size={17} className={activeSidebar === "settings" ? "text-white shrink-0" : "text-slate-500 shrink-0"} />
@@ -3458,7 +3493,7 @@ export default function PosPage() {
 
         {/* Main Content Pane */}
         <main className="flex-1 h-full overflow-hidden flex flex-col pb-16 md:pb-0 bg-[#F8FAFC]">
-          
+
           {/* Header */}
           <header className="px-6 py-3.5 border-b border-slate-200 bg-white flex items-center justify-between gap-4 shrink-0">
             <div className="flex items-center gap-3">
@@ -3515,11 +3550,10 @@ export default function PosPage() {
                       saveNotifications(readList);
                     }
                   }}
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer relative border ${
-                    showNotifications
-                      ? "bg-sky-50 border-sky-200 text-sky-600"
-                      : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                  }`}
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer relative border ${showNotifications
+                    ? "bg-sky-50 border-sky-200 text-sky-600"
+                    : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
                   title="Notifications"
                 >
                   <Bell size={14} className={unreadCount > 0 ? "animate-pulse text-amber-600" : ""} />
@@ -3537,7 +3571,7 @@ export default function PosPage() {
                     <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-xl p-4 space-y-3 z-50">
                       <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                         <span className="text-[10px] font-black uppercase tracking-wider text-slate-700">Live Kitchen Alerts</span>
-                        <button 
+                        <button
                           onClick={() => {
                             setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
                             setUnreadCount(0);
@@ -3754,7 +3788,7 @@ export default function PosPage() {
         {/* Right Cart Panel */}
         <aside className="w-[340px] flex flex-col h-full shrink-0" style={{ background: "#FFFFFF", borderLeft: "1px solid #E2E8F0" }}>
           <div className="flex flex-col h-full">
-            
+
             {/* Ticket Header */}
             <div className="px-4 py-3.5 flex flex-col gap-2.5 shrink-0" style={{ borderBottom: "1px solid #E2E8F0" }}>
               <div className="flex items-center justify-between">
@@ -3762,8 +3796,8 @@ export default function PosPage() {
                   <ShoppingBag size={15} style={{ color: "#F26F21" }} />
                   <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: "#0F172A" }}>Active Ticket</span>
                 </div>
-                <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded" 
-                  style={{ 
+                <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded"
+                  style={{
                     background: (selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "rgba(245,158,11,0.12)" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "rgba(168,85,247,0.12)" : "rgba(59,130,246,0.12)",
                     color: (selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "#F59E0B" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "#A855F7" : "#3B82F6",
                     border: `1px solid ${(selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "rgba(245,158,11,0.25)" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "rgba(168,85,247,0.25)" : "rgba(59,130,246,0.25)"}`
@@ -3808,8 +3842,8 @@ export default function PosPage() {
                   Fulfillment: <span style={{
                     color: (selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "#F59E0B" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "#A855F7" : "#3B82F6"
                   }}>{selectedOrderType} ({
-                    (selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "POS" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "3rd Party" : "Direct"
-                  })</span>
+                      (selectedOrderType === "Take Away" || selectedOrderType === "POS") ? "POS" : (selectedOrderType === "Pick Up" || selectedOrderType === "3rd Party") ? "3rd Party" : "Direct"
+                    })</span>
                 </div>
               )}
 
@@ -3845,9 +3879,8 @@ export default function PosPage() {
                       setFocusZone("CART");
                       setFocusedCartIndex(cartIdx);
                     }}
-                    className={`rounded-xl p-3 flex gap-2 items-start cursor-pointer transition ${
-                      isCartFocused ? "ring-2 ring-emerald-400/80" : ""
-                    }`}
+                    className={`rounded-xl p-3 flex gap-2 items-start cursor-pointer transition ${isCartFocused ? "ring-2 ring-emerald-400/80" : ""
+                      }`}
                     style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
                   >
                     <div className="flex-1 min-w-0">
@@ -3926,11 +3959,10 @@ export default function PosPage() {
                             <button
                               type="button"
                               onClick={() => toggleFreeItem(item.menuItem.id, item.isNew)}
-                              className={`text-[8px] font-black uppercase px-2 py-1 rounded-lg transition-colors cursor-pointer border ${
-                                item.isFree
-                                  ? "bg-emerald-500 text-white border-emerald-400"
-                                  : "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20"
-                              }`}
+                              className={`text-[8px] font-black uppercase px-2 py-1 rounded-lg transition-colors cursor-pointer border ${item.isFree
+                                ? "bg-emerald-500 text-white border-emerald-400"
+                                : "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20"
+                                }`}
                             >
                               {item.isFree ? "✓ 100% Free Item" : "🎁 Make 100% Free"}
                             </button>
@@ -3954,15 +3986,15 @@ export default function PosPage() {
                                   const priceVal = parseFloat(priceInput?.value) || 0;
                                   const unitPriceRaw = unitPriceInput?.value.trim();
                                   const unitPriceVal = unitPriceRaw !== "" && !isNaN(parseFloat(unitPriceRaw)) ? parseFloat(unitPriceRaw) : undefined;
-                                  
-                                  setCart(prev => prev.map(ci => 
-                                    ci.menuItem.id === item.menuItem.id && ci.isNew === item.isNew 
-                                      ? { 
-                                          ...ci, 
-                                          comment: descVal || undefined, 
-                                          addonPrice: priceVal || undefined,
-                                          customItemPrice: unitPriceVal
-                                        } 
+
+                                  setCart(prev => prev.map(ci =>
+                                    ci.menuItem.id === item.menuItem.id && ci.isNew === item.isNew
+                                      ? {
+                                        ...ci,
+                                        comment: descVal || undefined,
+                                        addonPrice: priceVal || undefined,
+                                        customItemPrice: unitPriceVal
+                                      }
                                       : ci
                                   ));
                                   setCommentEditingItemId(null);
@@ -3994,11 +4026,10 @@ export default function PosPage() {
                           <button
                             type="button"
                             onClick={() => toggleFreeItem(item.menuItem.id, item.isNew)}
-                            className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded transition-all cursor-pointer border ${
-                              item.isFree
-                                ? "bg-emerald-500 text-white border-emerald-400"
-                                : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/30"
-                            }`}
+                            className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded transition-all cursor-pointer border ${item.isFree
+                              ? "bg-emerald-500 text-white border-emerald-400"
+                              : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/30"
+                              }`}
                             title={item.isFree ? "Remove free status" : "Make this item 100% Free"}
                           >
                             {item.isFree ? "FREE" : "🎁 Free"}
@@ -4062,7 +4093,7 @@ export default function PosPage() {
                   <span>Subtotal</span>
                   <span className="font-mono">Rs {displayedSubtotal.toLocaleString()}</span>
                 </div>
-                
+
                 {/* Discount Inputs */}
                 <div className="space-y-1.5 pt-1.5 border-t border-slate-200">
                   <div className="flex justify-between items-center">
@@ -4110,7 +4141,7 @@ export default function PosPage() {
                       onClick={handleStatusAdvance}
                       className="w-full font-black py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-[10px] cursor-pointer uppercase tracking-widest text-white shadow-lg active:scale-95 hover:opacity-90"
                       style={{
-                        background: selectedOrder.status === "Preparing" 
+                        background: selectedOrder.status === "Preparing"
                           ? "linear-gradient(135deg, #F59E0B, #D97706)" // Orange for Ready
                           : selectedOrder.status === "Ready" && selectedOrder.type === "Delivery"
                             ? "linear-gradient(135deg, #3B82F6, #2563EB)" // Blue for Dispatch
@@ -4169,11 +4200,10 @@ export default function PosPage() {
                   <button
                     onClick={handlePlaceOrderClick}
                     disabled={cart.length === 0}
-                    className={`flex-1 min-h-[44px] font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer disabled:cursor-not-allowed uppercase tracking-wider active:scale-95 ${
-                      cart.length === 0
-                        ? "bg-slate-200 text-slate-500"
-                        : "bg-sky-500 hover:bg-sky-600 text-white shadow-sm"
-                    }`}
+                    className={`flex-1 min-h-[44px] font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer disabled:cursor-not-allowed uppercase tracking-wider active:scale-95 ${cart.length === 0
+                      ? "bg-slate-200 text-slate-500"
+                      : "bg-sky-500 hover:bg-sky-600 text-white shadow-sm"
+                      }`}
                   >
                     <Check size={15} />
                     <span>Place Order (F2)</span>
@@ -4220,7 +4250,7 @@ export default function PosPage() {
             <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-600">
               <AlertTriangle size={28} />
             </div>
-            
+
             <div className="space-y-1.5">
               <h3 className="text-base font-black text-slate-900 uppercase tracking-wider">
                 Previous Shift Tally Unsettled
@@ -4371,9 +4401,8 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => handleSelectOrderType("Delivery")}
-                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-[#3B82F6]/10 border transition-all cursor-pointer text-left group active:scale-95 ${
-                  orderTypeModalIndex === 0 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-[#3B82F6]/50"
-                }`}
+                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-[#3B82F6]/10 border transition-all cursor-pointer text-left group active:scale-95 ${orderTypeModalIndex === 0 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-[#3B82F6]/50"
+                  }`}
               >
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform shrink-0">
                   <Truck size={20} />
@@ -4387,9 +4416,8 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => handleSelectOrderType("Take Away")}
-                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-[#F26F21]/10 border transition-all cursor-pointer text-left group active:scale-95 ${
-                  orderTypeModalIndex === 1 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-[#F26F21]/50"
-                }`}
+                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-[#F26F21]/10 border transition-all cursor-pointer text-left group active:scale-95 ${orderTypeModalIndex === 1 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-[#F26F21]/50"
+                  }`}
               >
                 <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform shrink-0">
                   <ShoppingBag size={20} />
@@ -4403,9 +4431,8 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => handleSelectOrderType("3rd Party")}
-                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-[#8B5CF6]/10 border transition-all cursor-pointer text-left group active:scale-95 ${
-                  orderTypeModalIndex === 2 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-[#8B5CF6]/50"
-                }`}
+                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-[#8B5CF6]/10 border transition-all cursor-pointer text-left group active:scale-95 ${orderTypeModalIndex === 2 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-[#8B5CF6]/50"
+                  }`}
               >
                 <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform shrink-0">
                   <Smartphone size={20} />
@@ -4419,9 +4446,8 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => handleSelectOrderType("Dine In")}
-                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-emerald-500/10 border transition-all cursor-pointer text-left group active:scale-95 ${
-                  orderTypeModalIndex === 3 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-emerald-500/50"
-                }`}
+                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-emerald-500/10 border transition-all cursor-pointer text-left group active:scale-95 ${orderTypeModalIndex === 3 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-emerald-500/50"
+                  }`}
               >
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform shrink-0">
                   <Utensils size={20} />
@@ -4457,44 +4483,40 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => setOrderType("Direct")}
-                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
-                  orderType === "Direct"
-                    ? "bg-[#3B82F6] text-white shadow" 
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
+                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${orderType === "Direct"
+                  ? "bg-[#3B82F6] text-white shadow"
+                  : "text-slate-500 hover:text-slate-800"
+                  }`}
               >
                 🚚 Delivery
               </button>
               <button
                 type="button"
                 onClick={() => setOrderType("POS")}
-                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
-                  orderType === "POS"
-                    ? "bg-[#F26F21] text-white shadow" 
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
+                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${orderType === "POS"
+                  ? "bg-[#F26F21] text-white shadow"
+                  : "text-slate-500 hover:text-slate-800"
+                  }`}
               >
                 🛍️ Takeaway
               </button>
               <button
                 type="button"
                 onClick={() => setOrderType("3rd Party")}
-                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
-                  orderType === "3rd Party" 
-                    ? "bg-[#8B5CF6] text-white shadow" 
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
+                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${orderType === "3rd Party"
+                  ? "bg-[#8B5CF6] text-white shadow"
+                  : "text-slate-500 hover:text-slate-800"
+                  }`}
               >
                 🛵 3rd Party
               </button>
               <button
                 type="button"
                 onClick={() => setOrderType("Dine In")}
-                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
-                  orderType === "Dine In" 
-                    ? "bg-emerald-500 text-white shadow" 
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
+                className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${orderType === "Dine In"
+                  ? "bg-emerald-500 text-white shadow"
+                  : "text-slate-500 hover:text-slate-800"
+                  }`}
               >
                 🍽️ Dine In
               </button>
@@ -4552,7 +4574,7 @@ export default function PosPage() {
                 {/* Suggestions List */}
                 {showNameSuggestions && customerName && (
                   (() => {
-                    const filtered = customers.filter(c => 
+                    const filtered = customers.filter(c =>
                       c.name.toLowerCase().includes(customerName.toLowerCase()) &&
                       c.name.toLowerCase() !== customerName.toLowerCase()
                     ).slice(0, 5);
@@ -4567,7 +4589,7 @@ export default function PosPage() {
                             type="button"
                             onMouseDown={() => {
                               setCustomerName(c.name);
-                              
+
                               let phoneVal = c.phone;
                               let ccVal = "+94";
                               if (phoneVal.startsWith("+")) {
@@ -4576,7 +4598,7 @@ export default function PosPage() {
                               }
                               setCustomerCountryCode(ccVal);
                               setCustomerPhone(phoneVal);
-                              
+
                               setCustomerAddress(c.address);
                               const parsed = parseAddress(c.address);
                               setAddrHomeNo(parsed.homeNo);
@@ -4585,7 +4607,7 @@ export default function PosPage() {
                               setAddrPostalCode(parsed.postalCode);
                               setOriginalAutofilledAddress(c.address);
                               setShowAddressSelector(false);
-                              
+
                               setShowNameSuggestions(false);
                             }}
                             className="w-full text-left px-4 py-2 flex flex-col gap-0.5 cursor-pointer hover:bg-[#FF6B35]/10 transition-colors"
@@ -4628,7 +4650,7 @@ export default function PosPage() {
 
                 {showAddressSelector && originalAutofilledAddress && (() => {
                   const isSavedActive = activeAddressTab === "saved";
-                  
+
                   const currentCustomerObj = customers.find(c => {
                     let searchPhone = customerCountryCode + customerPhone;
                     // Check clean version of phone numbers to be safe
@@ -4651,15 +4673,13 @@ export default function PosPage() {
                           setCustomerAddress(originalAutofilledAddress);
                           setActiveAddressTab("saved");
                         }}
-                        className={`flex items-center gap-1.5 text-[9px] font-extrabold px-3 py-1 rounded-full border transition-all cursor-pointer ${
-                          isSavedActive
-                            ? "bg-[#FF6B35]/15 text-[#FF6B35] border-[#FF6B35]/30"
-                            : "bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-700 hover:text-slate-700"
-                        }`}
+                        className={`flex items-center gap-1.5 text-[9px] font-extrabold px-3 py-1 rounded-full border transition-all cursor-pointer ${isSavedActive
+                          ? "bg-[#FF6B35]/15 text-[#FF6B35] border-[#FF6B35]/30"
+                          : "bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-700 hover:text-slate-700"
+                          }`}
                       >
-                        <span className={`w-2 h-2 rounded-full border flex items-center justify-center ${
-                          isSavedActive ? "border-[#FF6B35] bg-[#FF6B35]" : "border-slate-500"
-                        }`} />
+                        <span className={`w-2 h-2 rounded-full border flex items-center justify-center ${isSavedActive ? "border-[#FF6B35] bg-[#FF6B35]" : "border-slate-500"
+                          }`} />
                         <span>{displayLabelText}</span>
                       </button>
 
@@ -4674,21 +4694,19 @@ export default function PosPage() {
                           setCustomerAddress("");
                           setActiveAddressTab("new");
                         }}
-                        className={`flex items-center gap-1.5 text-[9px] font-extrabold px-3 py-1 rounded-full border transition-all cursor-pointer ${
-                          !isSavedActive
-                            ? "bg-[#FF6B35]/15 text-[#FF6B35] border-[#FF6B35]/30"
-                            : "bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-700 hover:text-slate-700"
-                        }`}
+                        className={`flex items-center gap-1.5 text-[9px] font-extrabold px-3 py-1 rounded-full border transition-all cursor-pointer ${!isSavedActive
+                          ? "bg-[#FF6B35]/15 text-[#FF6B35] border-[#FF6B35]/30"
+                          : "bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-700 hover:text-slate-700"
+                          }`}
                       >
-                        <span className={`w-2 h-2 rounded-full border flex items-center justify-center ${
-                          !isSavedActive ? "border-[#FF6B35] bg-[#FF6B35]" : "border-slate-500"
-                        }`} />
+                        <span className={`w-2 h-2 rounded-full border flex items-center justify-center ${!isSavedActive ? "border-[#FF6B35] bg-[#FF6B35]" : "border-slate-500"
+                          }`} />
                         <span>New Address</span>
                       </button>
                     </div>
                   );
                 })()}
-                
+
                 {/* Home No & Street Name */}
                 <div className="flex gap-2">
                   <div className="w-1/3">
