@@ -101,7 +101,7 @@ export default function LedgerView({ journals, coa, onRefresh }: LedgerViewProps
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          className="bg-[#111318] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-zinc-200 outline-none"
+          className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 outline-none"
         >
           <option value="ALL">All Journal Types</option>
           <option value="POS_SALE">POS Sales</option>
@@ -118,7 +118,7 @@ export default function LedgerView({ journals, coa, onRefresh }: LedgerViewProps
 
         <button
           onClick={() => { setError(""); setShowDrawer(true); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F26F21] hover:bg-[#e06117] text-white text-xs font-medium cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           New Entry
@@ -126,9 +126,9 @@ export default function LedgerView({ journals, coa, onRefresh }: LedgerViewProps
       </div>
 
       {/* Journal List */}
-      <div className="bg-[#111318] border border-white/[0.07] rounded-xl divide-y divide-white/[0.06]">
+      <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-200">
         {filtered.length === 0 ? (
-          <div className="p-10 text-center text-xs text-zinc-500">
+          <div className="p-10 text-center text-xs text-slate-500">
             No journal entries found.
           </div>
         ) : (
@@ -139,14 +139,14 @@ export default function LedgerView({ journals, coa, onRefresh }: LedgerViewProps
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 text-xs">
-                  <span className="font-mono text-zinc-300">{je.id}</span>
-                  <span className="text-zinc-500">•</span>
-                  <span className="text-zinc-400">{String(je.entry_date).slice(0, 10)}</span>
-                  <span className="px-2 py-0.5 rounded bg-white/[0.05] text-[10px] text-zinc-300">
+                  <span className="font-mono text-slate-700">{je.id}</span>
+                  <span className="text-slate-500">•</span>
+                  <span className="text-slate-500">{String(je.entry_date).slice(0, 10)}</span>
+                  <span className="px-2 py-0.5 rounded bg-white/[0.05] text-[10px] text-slate-700">
                     {je.reference_type}
                   </span>
                   {je.status === "REVERSED" && (
-                    <span className="text-[10px] text-amber-400">
+                    <span className="text-[10px] text-amber-600">
                       Reversed ({je.reversed_by_id})
                     </span>
                   )}
@@ -155,7 +155,7 @@ export default function LedgerView({ journals, coa, onRefresh }: LedgerViewProps
                 {je.status === "POSTED" && je.reference_type !== "REVERSAL" && (
                   <button
                     onClick={() => { setError(""); setReverseTarget(je); }}
-                    className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-amber-400 cursor-pointer"
+                    className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-amber-600 cursor-pointer"
                   >
                     <RotateCcw className="w-3 h-3" />
                     Reverse
@@ -163,18 +163,18 @@ export default function LedgerView({ journals, coa, onRefresh }: LedgerViewProps
                 )}
               </div>
 
-              <p className="text-xs font-medium text-white">{je.description}</p>
+              <p className="text-xs font-medium text-slate-900">{je.description}</p>
 
               <div className="space-y-1 pt-1">
                 {(je.lines || []).map((l: any) => (
-                  <div key={l.id} className="grid grid-cols-12 text-[11px] text-zinc-400">
+                  <div key={l.id} className="grid grid-cols-12 text-[11px] text-slate-500">
                     <span className="col-span-6 font-mono truncate">
                       {l.account_code} {l.account_name}
                     </span>
-                    <span className="col-span-3 text-right font-mono tabular-nums text-zinc-200">
+                    <span className="col-span-3 text-right font-mono tabular-nums text-slate-800">
                       {Number(l.debit) > 0 ? `Dr ${formatLKR2(l.debit)}` : ""}
                     </span>
-                    <span className="col-span-3 text-right font-mono tabular-nums text-zinc-200">
+                    <span className="col-span-3 text-right font-mono tabular-nums text-slate-800">
                       {Number(l.credit) > 0 ? `Cr ${formatLKR2(l.credit)}` : ""}
                     </span>
                   </div>
@@ -188,11 +188,11 @@ export default function LedgerView({ journals, coa, onRefresh }: LedgerViewProps
       {/* Slide-Over Drawer: New Expense / Journal */}
       {showDrawer && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
-          <div className="w-full max-w-md bg-[#111318] border-l border-white/[0.08] h-full p-6 flex flex-col justify-between overflow-y-auto">
+          <div className="w-full max-w-md bg-white border-l border-slate-200 h-full p-6 flex flex-col justify-between overflow-y-auto">
             <form onSubmit={handlePostEntry} className="space-y-5">
-              <div className="flex items-center justify-between border-b border-white/[0.07] pb-3">
-                <h3 className="text-sm font-semibold text-white">New Journal / Expense</h3>
-                <button type="button" onClick={() => setShowDrawer(false)} className="text-zinc-500 hover:text-white cursor-pointer">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <h3 className="text-sm font-semibold text-slate-900">New Journal / Expense</h3>
+                <button type="button" onClick={() => setShowDrawer(false)} className="text-slate-500 hover:text-slate-900 cursor-pointer">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -219,58 +219,58 @@ export default function LedgerView({ journals, coa, onRefresh }: LedgerViewProps
                       setDescription(p.desc);
                       if (p.amt) setAmount(p.amt);
                     }}
-                    className="px-2.5 py-1 rounded-md bg-[#0A0B0F] border border-white/[0.08] hover:border-white/20 text-[11px] text-zinc-300 cursor-pointer"
+                    className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-slate-100 text-[11px] text-slate-700 cursor-pointer"
                   >
                     {p.label}
                   </button>
                 ))}
               </div>
 
-              {error && <p className="text-xs text-rose-400 bg-rose-500/10 p-2.5 rounded-lg">{error}</p>}
+              {error && <p className="text-xs text-rose-600 bg-rose-500/10 p-2.5 rounded-lg">{error}</p>}
 
               <div className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-zinc-400 mb-1">Date</label>
-                  <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="w-full bg-[#0A0B0F] border border-white/[0.08] rounded-lg px-3 py-2 text-white outline-none" />
+                  <label className="block text-slate-500 mb-1">Date</label>
+                  <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Type</label>
-                  <select value={referenceType} onChange={(e) => setReferenceType(e.target.value)} className="w-full bg-[#0A0B0F] border border-white/[0.08] rounded-lg px-3 py-2 text-white outline-none">
+                  <label className="block text-slate-500 mb-1">Type</label>
+                  <select value={referenceType} onChange={(e) => setReferenceType(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 outline-none">
                     <option value="EXPENSE">Operating Expense (OpEx)</option>
                     <option value="MANUAL">Manual / Capital / Director Loan</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Amount (LKR)</label>
-                  <input type="number" step="0.01" required placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-[#0A0B0F] border border-white/[0.08] rounded-lg px-3 py-2 text-white font-mono outline-none" />
+                  <label className="block text-slate-500 mb-1">Amount (LKR)</label>
+                  <input type="number" step="0.01" required placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 font-mono outline-none" />
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Debit Account (Dr)</label>
-                  <select value={debitAccount} onChange={(e) => setDebitAccount(e.target.value)} className="w-full bg-[#0A0B0F] border border-white/[0.08] rounded-lg px-3 py-2 text-white outline-none">
+                  <label className="block text-slate-500 mb-1">Debit Account (Dr)</label>
+                  <select value={debitAccount} onChange={(e) => setDebitAccount(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 outline-none">
                     {coa.map((c) => (
                       <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Credit Account (Cr)</label>
-                  <select value={creditAccount} onChange={(e) => setCreditAccount(e.target.value)} className="w-full bg-[#0A0B0F] border border-white/[0.08] rounded-lg px-3 py-2 text-white outline-none">
+                  <label className="block text-slate-500 mb-1">Credit Account (Cr)</label>
+                  <select value={creditAccount} onChange={(e) => setCreditAccount(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 outline-none">
                     {coa.map((c) => (
                       <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-zinc-400 mb-1">Description</label>
-                  <input type="text" required placeholder="Narration..." value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0A0B0F] border border-white/[0.08] rounded-lg px-3 py-2 text-white outline-none" />
+                  <label className="block text-slate-500 mb-1">Description</label>
+                  <input type="text" required placeholder="Narration..." value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 outline-none" />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.07]">
-                <button type="button" onClick={() => setShowDrawer(false)} className="px-4 py-2 rounded-lg text-xs text-zinc-400 hover:text-white cursor-pointer">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" onClick={() => setShowDrawer(false)} className="px-4 py-2 rounded-lg text-xs text-slate-500 hover:text-slate-900 cursor-pointer">
                   Cancel
                 </button>
-                <button type="submit" disabled={submitting} className="px-4 py-2 rounded-lg bg-[#F26F21] text-white text-xs font-medium cursor-pointer disabled:opacity-50">
+                <button type="submit" disabled={submitting} className="px-4 py-2 rounded-lg bg-sky-500 text-white text-xs font-medium cursor-pointer disabled:opacity-50">
                   {submitting ? "Posting..." : "Post Entry"}
                 </button>
               </div>
@@ -282,22 +282,22 @@ export default function LedgerView({ journals, coa, onRefresh }: LedgerViewProps
       {/* Reversal Modal */}
       {reverseTarget && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <form onSubmit={handleReverse} className="w-full max-w-md bg-[#111318] border border-white/[0.08] rounded-xl p-5 space-y-4">
-            <h4 className="text-sm font-semibold text-white">Reverse {reverseTarget.id}</h4>
-            <p className="text-xs text-zinc-400">
+          <form onSubmit={handleReverse} className="w-full max-w-md bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+            <h4 className="text-sm font-semibold text-slate-900">Reverse {reverseTarget.id}</h4>
+            <p className="text-xs text-slate-500">
               Posts an audit-compliant mirror reversal entry. Hard deletion is prohibited.
             </p>
-            {error && <p className="text-xs text-rose-400">{error}</p>}
+            {error && <p className="text-xs text-rose-600">{error}</p>}
             <input
               type="text"
               required
               placeholder="Mandatory reason (e.g. Duplicate entry)"
               value={reverseReason}
               onChange={(e) => setReverseReason(e.target.value)}
-              className="w-full bg-[#0A0B0F] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 outline-none"
             />
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setReverseTarget(null)} className="px-3 py-1.5 text-xs text-zinc-400 cursor-pointer">
+              <button type="button" onClick={() => setReverseTarget(null)} className="px-3 py-1.5 text-xs text-slate-500 cursor-pointer">
                 Cancel
               </button>
               <button type="submit" disabled={submitting} className="px-3 py-1.5 rounded-lg bg-amber-500 text-zinc-950 text-xs font-semibold cursor-pointer">

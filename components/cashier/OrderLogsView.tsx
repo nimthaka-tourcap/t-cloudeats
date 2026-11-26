@@ -123,8 +123,8 @@ export default function OrderLogsView({
                 onClick={() => setStatusFilter(st)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition ${
                   statusFilter === st
-                    ? "bg-[#1C1F26] text-white border border-white/10"
-                    : "text-zinc-400 hover:text-white"
+                    ? "bg-sky-500 text-white"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 {st}
@@ -177,9 +177,8 @@ export default function OrderLogsView({
                       ref={(el) => {
                         rowRefs.current[idx] = el;
                       }}
-                      className={`hover:bg-white/[0.02] ${
-                        isRowFocused ? "bg-emerald-500/10 ring-1 ring-inset ring-emerald-400/70" : ""
-                      }`}
+                      className={`hover:bg-white/[0.02] ${isRowFocused ? "bg-emerald-500/10 ring-1 ring-inset ring-emerald-400/70" : ""
+                        }`}
                     >
                       <td className="px-4 py-3 font-mono text-white">
                         <div className="flex flex-col gap-1">
@@ -230,13 +229,12 @@ export default function OrderLogsView({
                       <td className="px-4 py-3 text-zinc-300">{order.type}</td>
                       <td className="px-4 py-3">
                         <span
-                          className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                            order.status === "Completed"
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : order.status === "Voided"
+                          className={`px-2 py-0.5 rounded-md text-xs font-medium ${order.status === "Completed"
+                            ? "bg-emerald-500/10 text-emerald-400"
+                            : order.status === "Voided"
                               ? "bg-rose-500/10 text-rose-400"
                               : "bg-amber-500/10 text-amber-400"
-                          }`}
+                            }`}
                         >
                           {order.status}
                         </span>
@@ -251,11 +249,10 @@ export default function OrderLogsView({
                               e.target.value as "Paid" | "Not Paid"
                             )
                           }
-                          className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium bg-[#0A0B0F] outline-none cursor-pointer disabled:opacity-40 ${
-                            isPaid
-                              ? "border-emerald-500/30 text-emerald-400"
-                              : "border-rose-500/40 text-rose-400"
-                          }`}
+                          className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium bg-[#0A0B0F] outline-none cursor-pointer disabled:opacity-40 ${isPaid
+                            ? "border-emerald-500/30 text-emerald-400"
+                            : "border-rose-500/40 text-rose-400"
+                            }`}
                         >
                           <option value="Paid">Paid</option>
                           <option value="Not Paid">Not Paid</option>

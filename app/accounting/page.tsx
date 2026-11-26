@@ -11,7 +11,7 @@ export default function AccountingRedirectPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#0A0B0F] flex items-center justify-center text-zinc-400 text-xs">
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-slate-600 text-xs font-medium">
       Opening Finance &amp; SLFRS Reports...
     </div>
   );

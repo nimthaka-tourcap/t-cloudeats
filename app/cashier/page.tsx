@@ -524,10 +524,7 @@ function LiveClock() {
   }, []);
 
   return (
-    <div
-      className="font-mono text-[10px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap"
-      style={{ background: "#0E1628", border: "1px solid #1E2D4E", color: "#F26F21" }}
-    >
+    <div className="font-mono text-[11px] font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap bg-slate-50 border border-slate-200 text-slate-700">
       {time} • COLOMBO
     </div>
   );
@@ -560,7 +557,7 @@ function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
   return (
     <div
       onClick={() => onAdd(item)}
-      className="group relative bg-[#0E1628] border border-[#1E2D4E] hover:border-[#F26F21]/50 rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all duration-250 hover:shadow-[0_8px_32px_rgba(242,111,33,0.12)] select-none"
+      className="group relative bg-slate-50 border border-slate-200 hover:border-[#F26F21]/50 rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all duration-250 hover:shadow-[0_8px_32px_rgba(242,111,33,0.12)] select-none"
       style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
     >
       {/* Colored accent top-bar */}
@@ -607,7 +604,7 @@ function MinimalMenuCard({ item, onAdd }: MinimalMenuCardProps) {
 
       {/* Text Details */}
       <div className="px-4 py-4 flex flex-col gap-3 flex-1">
-        <h3 className="font-bold text-[12px] text-slate-100 leading-snug line-clamp-2 group-hover:text-[#F26F21] transition-colors duration-150">
+        <h3 className="font-bold text-[12px] text-slate-900 leading-snug line-clamp-2 group-hover:text-[#F26F21] transition-colors duration-150">
           {item.title}
         </h3>
         <div className="flex items-center justify-between mt-auto">
@@ -638,38 +635,38 @@ interface MinimalDataTableProps {
 
 function MinimalDataTable({ items, onEdit, onDelete }: MinimalDataTableProps) {
   return (
-    <div className="bg-[#111625] border border-[#222E4E] rounded-2xl overflow-y-auto max-h-[550px]" style={{ scrollbarWidth: "thin" }}>
+    <div className="bg-white border border-slate-200 rounded-2xl overflow-y-auto max-h-[550px]" style={{ scrollbarWidth: "thin" }}>
       <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="border-b border-[#222E4E] text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-[#090D1A] sticky top-0 z-10 shadow-sm">
-            <th className="px-5 py-3.5 bg-[#090D1A]">Product ID (SKU)</th>
-            <th className="px-5 py-3.5 bg-[#090D1A]">Item Name</th>
-            <th className="px-5 py-3.5 bg-[#090D1A]">Category</th>
-            <th className="px-5 py-3.5 bg-[#090D1A]">Portion</th>
-            <th className="px-5 py-3.5 bg-[#090D1A]">Price</th>
-            <th className="px-5 py-3.5 text-right bg-[#090D1A]">Actions</th>
+          <tr className="border-b border-slate-200 text-[10px] text-slate-500 font-bold uppercase tracking-wider bg-slate-50 sticky top-0 z-10 shadow-sm">
+            <th className="px-5 py-3.5 bg-slate-50">Product ID (SKU)</th>
+            <th className="px-5 py-3.5 bg-slate-50">Item Name</th>
+            <th className="px-5 py-3.5 bg-slate-50">Category</th>
+            <th className="px-5 py-3.5 bg-slate-50">Portion</th>
+            <th className="px-5 py-3.5 bg-slate-50">Price</th>
+            <th className="px-5 py-3.5 text-right bg-slate-50">Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#222E4E] text-xs">
+        <tbody className="divide-y divide-slate-200 text-xs">
           {items.map(item => (
-            <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
-              <td className="px-5 py-3 font-mono text-xs font-black text-orange-400">{item.sku || "N/A"}</td>
-              <td className="px-5 py-3 font-bold text-slate-200">{item.title}</td>
-              <td className="px-5 py-3 text-slate-400">{item.category}</td>
-              <td className="px-5 py-3 text-slate-500">{item.portion}</td>
-              <td className="px-5 py-3 font-bold text-[#FF6B35]">LKR {item.price.toLocaleString()}</td>
+            <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+              <td className="px-5 py-3 font-mono text-xs font-bold text-amber-700">{item.sku || "N/A"}</td>
+              <td className="px-5 py-3 font-bold text-slate-900">{item.title}</td>
+              <td className="px-5 py-3 text-slate-600">{item.category}</td>
+              <td className="px-5 py-3 text-slate-600">{item.portion}</td>
+              <td className="px-5 py-3 font-bold text-[#EA580C]">LKR {item.price.toLocaleString()}</td>
               <td className="px-5 py-3 text-right space-x-2">
                 <button
                   type="button"
                   onClick={() => onEdit(item)}
-                  className="text-orange-400 hover:text-orange-300 font-bold text-[10px] uppercase cursor-pointer"
+                  className="text-sky-700 hover:text-sky-900 font-bold text-[10px] uppercase cursor-pointer"
                 >
                   Edit
                 </button>
                 <button
                   type="button"
                   onClick={() => onDelete(item.id)}
-                  className="text-red-400 hover:text-red-300 font-bold text-[10px] uppercase cursor-pointer"
+                  className="text-rose-700 hover:text-rose-900 font-bold text-[10px] uppercase cursor-pointer"
                 >
                   Delete
                 </button>
@@ -843,6 +840,7 @@ export default function PosPage() {
   const [justAddedId, setJustAddedId] = useState<number | null>(null);
   const [orderTypeModalIndex, setOrderTypeModalIndex] = useState(1); // Default Take Away
   const [showShortcutsLegend, setShowShortcutsLegend] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const posGridRef = useRef<HTMLDivElement | null>(null);
 
   const triggerCartPulse = useCallback((id: number) => {
@@ -1663,7 +1661,7 @@ export default function PosPage() {
               setIsAdminUnlocked(false);
               triggerToast("Data locked", "info");
             }}
-            className="text-slate-500 hover:text-slate-300 transition-colors p-0.5 cursor-pointer flex items-center justify-center"
+            className="text-slate-500 hover:text-slate-700 transition-colors p-0.5 cursor-pointer flex items-center justify-center"
             title="Lock sensitive data"
           >
             <Eye size={12} />
@@ -1682,7 +1680,7 @@ export default function PosPage() {
           setPinInput("");
           setPinError("");
         }}
-        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800/40 hover:bg-slate-700/60 transition-colors cursor-pointer border border-[#222E4E]/40 ${textClass}`}
+        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer border border-slate-200 ${textClass}`}
         title="Click to enter PIN to unlock data"
       >
         <span className="font-mono tracking-widest text-slate-500 text-xs">••••</span>
@@ -3295,7 +3293,7 @@ export default function PosPage() {
   });
 
   return (
-    <div className="h-screen w-screen bg-[#060B18] p-3 text-[#F2F4F8] font-sans antialiased selection:bg-[#F26F21] selection:text-white flex overflow-hidden relative">
+    <div className="h-screen w-screen bg-white text-slate-900 font-sans antialiased selection:bg-sky-500 selection:text-white flex overflow-hidden relative">
       
       <style dangerouslySetInnerHTML={{__html: `
         html, body {
@@ -3314,90 +3312,157 @@ export default function PosPage() {
       `}} />
 
       {/* Non-blocking Toast Stack */}
-      <div className="fixed top-9 right-9 z-50 flex flex-col gap-3 max-w-sm w-full">
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-3 max-w-sm w-full">
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`px-4 py-3.5 rounded-xl shadow-2xl flex items-center justify-between gap-3 border transition-all duration-300 ${
+            className={`px-4 py-3.5 rounded-xl shadow-lg flex items-center justify-between gap-3 border transition-all duration-300 ${
               toast.type === "success" 
-                ? "bg-emerald-950/80 border-emerald-500/25 text-emerald-200" 
+                ? "bg-emerald-50 border-emerald-200 text-emerald-900" 
                 : toast.type === "error" 
-                  ? "bg-red-950/80 border-red-500/25 text-red-200" 
-                  : "bg-slate-900/90 border-slate-800 text-slate-200"
+                  ? "bg-rose-50 border-rose-200 text-rose-900" 
+                  : "bg-slate-900 border-slate-800 text-white"
             }`}
           >
             <span className="text-xs font-bold">{toast.message}</span>
-            <button onClick={() => removeToast(toast.id)} className="text-slate-400 hover:text-white">
+            <button onClick={() => removeToast(toast.id)} className={toast.type === "info" ? "text-slate-300 hover:text-white cursor-pointer" : "text-slate-500 hover:text-slate-900 cursor-pointer"}>
               <X size={14} />
             </button>
           </div>
         ))}
       </div>
 
-      {/* Inner Minimal Console Container */}
-      <div className="flex-1 h-full flex bg-[#0A0B0F] rounded-2xl border border-white/[0.07] overflow-hidden">
+      {/* Full-Bleed Console Container (No Outer Borders) */}
+      <div className="flex-1 h-full flex bg-white overflow-hidden">
         
-        {/* Left Minimal Navigation Rail */}
-        <aside className="w-[72px] bg-[#0D0F14] border-r border-white/[0.07] flex flex-col justify-between items-center py-6 hidden md:flex shrink-0">
-          <div className="flex flex-col items-center gap-7 w-full">
-            <div className="w-10 h-10 rounded-xl border border-white/[0.08] bg-[#161922] flex items-center justify-center p-1.5 overflow-hidden cursor-pointer">
-              <Image 
-                src="/Round Logo.png" 
-                alt="t-cloud eats logo" 
-                width={32} 
-                height={32} 
-                className="w-auto h-auto max-w-full max-h-full object-contain"
-                priority
-              />
+        {/* Left Crisp White ERP Sidebar (Reference Style) */}
+        <aside className={`hidden md:flex flex-col justify-between bg-white border-r border-slate-200 shrink-0 transition-all duration-200 ${sidebarCollapsed ? "w-[72px] p-2.5" : "w-[232px] p-4"}`}>
+          <div className="space-y-6 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            {/* Brand Lockup + Collapse Toggle */}
+            <div className={`flex items-center ${sidebarCollapsed ? "flex-col gap-2.5" : "justify-between gap-2 px-1"}`}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center p-1 shrink-0">
+                  <Image
+                    src="/Round Logo.png"
+                    alt="T-Cloud Eats"
+                    width={28}
+                    height={28}
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+                {!sidebarCollapsed && (
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900 leading-tight truncate">T-CLOUD EATS</p>
+                    <p className="text-[11px] text-slate-500 truncate">ERP Solution</p>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSidebarCollapsed((c) => !c)}
+                className="w-7 h-7 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 flex items-center justify-center shrink-0 cursor-pointer"
+                title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+              >
+                <ChevronLeft size={14} className={sidebarCollapsed ? "rotate-180 transition-transform" : "transition-transform"} />
+              </button>
             </div>
 
-            <nav className="flex flex-col gap-1 w-full px-2 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            {/* MAIN Group */}
+            <div className="space-y-1">
+              {!sidebarCollapsed && (
+                <p className="px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  Main
+                </p>
+              )}
               {([
-                { key: "new_order",              icon: <ShoppingBag size={17} />,  label: "POS" },
-                { key: "order_history",          icon: <History size={17} />,      label: "Orders" },
-                { key: "reports",                icon: <BarChart3 size={17} />,    label: "Tally" },
-                { key: "menu_management",        icon: <FolderKanban size={17} />, label: "Menu" },
-                { key: "inventory",              icon: <Boxes size={17} />,        label: "Stock" },
-                { key: "finance_reports",        icon: <Landmark size={17} />,     label: "Finance" },
-                { key: "finance_ledger",         icon: <BookOpen size={17} />,     label: "Ledger" },
-                { key: "finance_assets_payroll", icon: <HardDrive size={17} />,    label: "Assets" },
-                { key: "settings",               icon: <SettingsIcon size={17} />, label: "Settings" },
-              ] as { key: UnifiedTab; icon: React.ReactNode; label: string }[]).map(({ key, icon, label }) => (
-                <button
-                  key={key}
-                  onClick={() => handleSidebarClick(key)}
-                  className={`relative w-full flex flex-col items-center justify-center gap-1 py-2.5 rounded-lg transition-colors cursor-pointer ${
-                    activeSidebar === key
-                      ? "bg-white/[0.08] text-white"
-                      : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.03]"
-                  }`}
-                >
-                  <span style={{ color: activeSidebar === key ? "#F26F21" : undefined }}>{icon}</span>
-                  <span className="text-[10px] font-medium tracking-wide">{label}</span>
-                </button>
-              ))}
-            </nav>
+                { key: "new_order",              icon: <ShoppingBag size={17} />,  label: "POS Billing" },
+                { key: "order_history",          icon: <History size={17} />,      label: "Orders & E-Bills" },
+                { key: "reports",                icon: <BarChart3 size={17} />,    label: "Shift Tally" },
+                { key: "menu_management",        icon: <FolderKanban size={17} />, label: "Menu & Customers" },
+                { key: "inventory",              icon: <Boxes size={17} />,        label: "Stock & Recipes" },
+                { key: "finance_reports",        icon: <Landmark size={17} />,     label: "Finance & Reports" },
+                { key: "finance_ledger",         icon: <BookOpen size={17} />,     label: "General Ledger" },
+                { key: "finance_assets_payroll", icon: <HardDrive size={17} />,    label: "Assets & Payroll" },
+              ] as { key: UnifiedTab; icon: React.ReactNode; label: string }[]).map(({ key, icon, label }) => {
+                const isActive = activeSidebar === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleSidebarClick(key)}
+                    title={sidebarCollapsed ? label : undefined}
+                    className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer ${
+                      isActive
+                        ? "bg-sky-500 text-white shadow-xs"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={isActive ? "text-white shrink-0" : "text-slate-500 shrink-0"}>{icon}</span>
+                      {!sidebarCollapsed && <span className="truncate">{label}</span>}
+                    </div>
+                    {!sidebarCollapsed && (
+                      <ChevronRight size={13} className={isActive ? "text-white/90 shrink-0" : "text-slate-500 shrink-0"} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* OTHERS Group */}
+            <div className="space-y-1 pt-2 border-t border-slate-100">
+              {!sidebarCollapsed && (
+                <p className="px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  Others
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => handleSidebarClick("settings")}
+                title={sidebarCollapsed ? "Settings & Tax" : undefined}
+                className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer ${
+                  activeSidebar === "settings"
+                    ? "bg-sky-500 text-white shadow-xs"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <SettingsIcon size={17} className={activeSidebar === "settings" ? "text-white shrink-0" : "text-slate-500 shrink-0"} />
+                  {!sidebarCollapsed && <span className="truncate">Settings &amp; Tax</span>}
+                </div>
+                {!sidebarCollapsed && (
+                  <ChevronRight size={13} className={activeSidebar === "settings" ? "text-white/90 shrink-0" : "text-slate-500 shrink-0"} />
+                )}
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3 items-center w-full px-2">
+          {/* Bottom Owner Profile + Logout */}
+          <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+            {!sidebarCollapsed && (
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-900 truncate">Owner Mode</p>
+                <p className="text-[11px] text-slate-500 truncate">T-Cloud Eats (Pvt) Ltd</p>
+              </div>
+            )}
             <button
               onClick={() => router.push("/login")}
-              className="w-10 h-10 flex flex-col items-center justify-center rounded-lg transition-colors cursor-pointer gap-0.5 text-zinc-500 hover:text-rose-400"
-              title="Logout"
+              className="p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer shrink-0"
+              title="Sign Out"
             >
               <LogOut size={16} />
-              <span className="text-[9px] font-medium">Exit</span>
             </button>
           </div>
         </aside>
 
         {/* Main Content Pane */}
-        <main className="flex-1 h-full overflow-hidden flex flex-col pb-16 md:pb-0 bg-[#0A0B0F]">
+        <main className="flex-1 h-full overflow-hidden flex flex-col pb-16 md:pb-0 bg-[#F8FAFC]">
           
           {/* Header */}
-          <header className="px-6 py-3.5 border-b border-white/[0.07] bg-[#0A0B0F] flex items-center justify-between gap-4 shrink-0">
+          <header className="px-6 py-3.5 border-b border-slate-200 bg-white flex items-center justify-between gap-4 shrink-0">
             <div className="flex items-center gap-3">
-              <h1 className="text-sm font-semibold text-white">
+              <h1 className="text-sm font-semibold text-slate-900">
                 {activeSidebar === "new_order" && "POS Billing"}
                 {activeSidebar === "order_history" && "Orders & E-Bills"}
                 {activeSidebar === "reports" && "Shift Tally & Cash"}
@@ -3408,7 +3473,7 @@ export default function PosPage() {
                 {activeSidebar === "finance_assets_payroll" && "Fixed Assets & Payroll"}
                 {activeSidebar === "settings" && "System & Tax Settings"}
               </h1>
-              <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+              <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-medium">
                 <ShieldCheck size={12} /> Owner Mode
               </span>
             </div>
@@ -3417,92 +3482,28 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => setShowQuickSearch(true)}
-                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111318] border border-white/[0.08] hover:border-white/20 text-xs text-zinc-400 hover:text-white transition cursor-pointer"
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-slate-100 text-xs text-slate-700 hover:text-slate-900 transition cursor-pointer"
                 title="Quick Search (Ctrl+K)"
               >
                 <Search size={13} />
                 <span>Quick Search</span>
-                <kbd className="px-1.5 py-0.5 rounded bg-[#0A0B0F] border border-white/[0.08] text-[10px] font-mono text-zinc-500">Ctrl K</kbd>
+                <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-600">Ctrl K</kbd>
               </button>
               {activeSidebar === "new_order" && (
                 <div className="relative w-64">
                   <Search
-                    className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 transition-colors duration-200"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-slate-500 transition-colors duration-200"
                     size={14}
-                    style={{ color: "#4B5E82" }}
                   />
                   <input
                     type="text"
                     placeholder="Search dishes..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 text-xs text-white outline-none rounded-xl transition-all duration-300"
-                    style={{
-                      background: "#0E1628",
-                      border: "1px solid #1E2D4E",
-                      color: "#F2F4F8",
-                    }}
-                    onFocus={e => {
-                      e.target.style.borderColor = "rgba(242,111,33,0.5)";
-                      e.target.previousElementSibling && ((e.target.previousElementSibling as HTMLElement).style.color = "#F26F21");
-                    }}
-                    onBlur={e => {
-                      e.target.style.borderColor = "#1E2D4E";
-                      e.target.previousElementSibling && ((e.target.previousElementSibling as HTMLElement).style.color = "#4B5E82");
-                    }}
+                    className="w-full pl-9 pr-4 py-2 text-xs text-slate-900 placeholder:text-slate-500 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-500 outline-none rounded-xl transition-all duration-200"
                   />
                 </div>
               )}
-
-              {/* Live Clock */}
-              <LiveClock />
-
-              {/* Connection Status Indicator */}
-              <div 
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold tracking-wider uppercase transition-all duration-300 ${
-                  isOnline 
-                    ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400" 
-                    : "bg-red-500/5 border-red-500/10 text-red-400"
-                }`}
-                title={isOnline ? "System Online" : "System Offline - Offline Mode Active"}
-              >
-                {isOnline ? (
-                  <>
-                    <Wifi size={12} className="animate-pulse" />
-                    <span className="hidden sm:inline">Online</span>
-                  </>
-                ) : (
-                  <>
-                    <WifiOff size={12} className="animate-bounce" />
-                    <span className="hidden sm:inline">Offline</span>
-                  </>
-                )}
-              </div>
-
-              {/* Refresh */}
-              <button
-                onClick={async () => {
-                  if (isDatabaseSyncing) return;
-                  setIsDatabaseSyncing(true);
-                  // Reset cache time to force cache override
-                  localStorage.setItem("t-cloud-eats-cache-time", Date.now().toString());
-                  try {
-                    await loadOrdersAndCMS();
-                    triggerToast("POS synced with Database successfully", "success");
-                  } catch (err) {
-                    console.error("Sync error:", err);
-                    triggerToast("Sync failed. Check connection.", "error");
-                  } finally {
-                    setIsDatabaseSyncing(false);
-                  }
-                }}
-                disabled={isDatabaseSyncing}
-                className="w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
-                style={{ background: "#0E1628", border: "1px solid #1E2D4E", color: "#4B5E82" }}
-                title="Force Sync with Cloud Database"
-              >
-                <RotateCw size={14} className={isDatabaseSyncing ? "animate-spin text-amber-500" : "hover:text-slate-200 transition-colors"} />
-              </button>
 
               {/* Notification Button */}
               <div className="relative">
@@ -3514,17 +3515,16 @@ export default function PosPage() {
                       saveNotifications(readList);
                     }
                   }}
-                  className="w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer relative"
-                  style={{ 
-                    background: "#0E1628", 
-                    border: "1px solid #1E2D4E", 
-                    color: showNotifications ? "#F26F21" : "#4B5E82" 
-                  }}
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer relative border ${
+                    showNotifications
+                      ? "bg-sky-50 border-sky-200 text-sky-600"
+                      : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
                   title="Notifications"
                 >
-                  <Bell size={14} className={unreadCount > 0 ? "animate-pulse text-amber-400" : ""} />
+                  <Bell size={14} className={unreadCount > 0 ? "animate-pulse text-amber-600" : ""} />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-[8px] font-bold text-white rounded-full flex items-center justify-center border border-[#060B18]">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[9px] font-bold text-white rounded-full flex items-center justify-center border border-white">
                       {unreadCount}
                     </span>
                   )}
@@ -3534,15 +3534,15 @@ export default function PosPage() {
                 {showNotifications && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-                    <div className="absolute right-0 mt-2 w-80 bg-[#111625]/95 border border-[#222E4E] rounded-xl shadow-2xl p-4 space-y-3 z-50 backdrop-blur-md">
-                      <div className="flex items-center justify-between pb-2 border-b border-[#222E4E]">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">Live Kitchen Alerts</span>
+                    <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-xl p-4 space-y-3 z-50">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-700">Live Kitchen Alerts</span>
                         <button 
                           onClick={() => {
                             setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
                             setUnreadCount(0);
                           }}
-                          className="text-[9px] font-bold text-[#F26F21] hover:underline"
+                          className="text-[10px] font-bold text-sky-600 hover:underline cursor-pointer"
                         >
                           Mark all read
                         </button>
@@ -3552,7 +3552,7 @@ export default function PosPage() {
                           <div className="text-center py-6 text-[10px] text-slate-500">No recent notifications.</div>
                         ) : (
                           notificationsList.map(n => (
-                            <div key={n.id} className={`p-2 rounded-lg text-[10px] space-y-1 transition-colors ${n.read ? "bg-white/[0.02] text-slate-400" : "bg-white/[0.05] text-slate-200 border-l-2 border-[#F26F21]"}`}>
+                            <div key={n.id} className={`p-2 rounded-lg text-[10px] space-y-1 transition-colors ${n.read ? "bg-slate-50 text-slate-600" : "bg-sky-50/70 text-slate-900 border-l-2 border-sky-500"}`}>
                               <p className="leading-snug text-left">{n.text}</p>
                               <span className="text-[8px] text-slate-500 font-mono block text-left">{n.time}</span>
                             </div>
@@ -3567,8 +3567,7 @@ export default function PosPage() {
               {/* Fullscreen */}
               <button
                 onClick={toggleFullscreen}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
-                style={{ background: "#0E1628", border: "1px solid #1E2D4E", color: "#94A3B8" }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900"
               >
                 <Maximize2 size={13} />
                 <span>{isFullscreen ? "Exit FS" : "Full Screen"}</span>
@@ -3645,7 +3644,7 @@ export default function PosPage() {
                       setCmsSearchQuery("");
                       setShowCMSModal(true);
                     }}
-                    className="min-h-[44px] px-4 rounded-xl bg-[#111318] border border-[#1F2430] hover:border-[#F26F21]/50 text-white text-xs font-medium cursor-pointer"
+                    className="min-h-[44px] px-4 rounded-xl bg-white border border-slate-200 hover:border-[#F26F21]/50 text-white text-xs font-medium cursor-pointer"
                   >
                     Open Customer CMS Directory ({customers.length})
                   </button>
@@ -3686,20 +3685,20 @@ export default function PosPage() {
 
             {activeSidebar === "settings" && (
               <div className="space-y-6">
-                <div className="bg-[#111318] border border-[#1F2430] rounded-xl p-5 space-y-4">
-                  <h3 className="text-sm font-semibold text-white">POS &amp; Printer Configuration</h3>
+                <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+                  <h3 className="text-sm font-semibold text-slate-900">POS &amp; Printer Configuration</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     <div>
-                      <label className="block text-zinc-400 mb-1">Printer Connection</label>
-                      <select className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none">
+                      <label className="block text-slate-500 mb-1">Printer Connection</label>
+                      <select className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none">
                         <option>PRINTER-USB-01 (Default 80mm Receipt)</option>
                         <option>PRINTER-WIFI-02 (Kitchen Display)</option>
                         <option>Virtual PDF Printer</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-zinc-400 mb-1">Kitchen Print Mode</label>
-                      <select className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none">
+                      <label className="block text-slate-500 mb-1">Kitchen Print Mode</label>
+                      <select className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none">
                         <option>Auto-print on checkout</option>
                         <option>Manual confirmation</option>
                       </select>
@@ -3753,15 +3752,15 @@ export default function PosPage() {
         </main>
 
         {/* Right Cart Panel */}
-        <aside className="w-[340px] flex flex-col h-full shrink-0" style={{ background: "#080E1C", borderLeft: "1px solid #14203A" }}>
+        <aside className="w-[340px] flex flex-col h-full shrink-0" style={{ background: "#FFFFFF", borderLeft: "1px solid #E2E8F0" }}>
           <div className="flex flex-col h-full">
             
             {/* Ticket Header */}
-            <div className="px-4 py-3.5 flex flex-col gap-2.5 shrink-0" style={{ borderBottom: "1px solid #14203A" }}>
+            <div className="px-4 py-3.5 flex flex-col gap-2.5 shrink-0" style={{ borderBottom: "1px solid #E2E8F0" }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShoppingBag size={15} style={{ color: "#F26F21" }} />
-                  <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: "#CBD5E1" }}>Active Ticket</span>
+                  <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: "#0F172A" }}>Active Ticket</span>
                 </div>
                 <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded" 
                   style={{ 
@@ -3778,7 +3777,7 @@ export default function PosPage() {
               </div>
 
               {/* Today's Invoice Number Switcher Dropdown */}
-              <label className="flex items-center justify-between text-[11px] text-slate-400 font-black bg-[#090D1A] py-3.5 px-4 rounded-xl border border-[#1E2D4E] hover:border-[#F26F21]/40 transition-all cursor-pointer w-full shadow-sm hover:scale-[1.01] active:scale-[0.99]">
+              <label className="flex items-center justify-between text-[11px] text-slate-500 font-black bg-slate-50 py-3.5 px-4 rounded-xl border border-slate-200 hover:border-[#F26F21]/40 transition-all cursor-pointer w-full shadow-sm hover:scale-[1.01] active:scale-[0.99]">
                 <span className="tracking-wider uppercase text-slate-500 text-[10px]">INVOICE NO:</span>
                 <select
                   value={selectedInvoiceId || "active"}
@@ -3821,7 +3820,7 @@ export default function PosPage() {
                       key={p.id}
                       type="button"
                       onClick={() => handleRecallParkedOrder(p.id)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 hover:bg-amber-500/20 text-xs font-medium cursor-pointer"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 text-xs font-medium cursor-pointer"
                       title={`Recall ${p.label} (${p.cart.length} items)`}
                     >
                       <PlayCircle size={12} />
@@ -3849,23 +3848,23 @@ export default function PosPage() {
                     className={`rounded-xl p-3 flex gap-2 items-start cursor-pointer transition ${
                       isCartFocused ? "ring-2 ring-emerald-400/80" : ""
                     }`}
-                    style={{ background: "#0E1628", border: "1px solid #1A2640" }}
+                    style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="font-semibold text-[11px] leading-snug" style={{ color: "#CBD5E1" }}>
+                        <h4 className="font-semibold text-[11px] leading-snug" style={{ color: "#0F172A" }}>
                           {item.menuItem ? item.menuItem.title : (item as any).title}
                         </h4>
                         {selectedInvoiceId && item.isNew && (
-                          <span className="text-[7px] font-black uppercase bg-emerald-500/10 text-emerald-400 px-1 py-0.5 rounded border border-emerald-500/25">New</span>
+                          <span className="text-[7px] font-black uppercase bg-emerald-500/10 text-emerald-600 px-1 py-0.5 rounded border border-emerald-500/25">New</span>
                         )}
                         {item.isFree && (
-                          <span className="text-[7px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                          <span className="text-[7px] font-black uppercase bg-emerald-500/20 text-emerald-600 border border-emerald-500/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                             🎁 FREE ITEM
                           </span>
                         )}
                         {item.customItemPrice !== undefined && !item.isFree && (
-                          <span className="text-[7px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded">
+                          <span className="text-[7px] font-black uppercase bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded">
                             Price: Rs {item.customItemPrice.toLocaleString()}
                           </span>
                         )}
@@ -3875,10 +3874,10 @@ export default function PosPage() {
                       {commentEditingItemId !== item.menuItem.id && (item.comment || (item.addonPrice !== undefined && item.addonPrice !== 0) || item.isFree) && (
                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                           {item.comment && (
-                            <span className="text-[9px] italic text-amber-400">💬 {item.comment}</span>
+                            <span className="text-[9px] italic text-amber-700">💬 {item.comment}</span>
                           )}
                           {item.addonPrice !== undefined && item.addonPrice !== 0 ? (
-                            <span className="text-[8px] font-black uppercase text-amber-500 bg-amber-500/10 px-1 border border-amber-500/20 rounded">
+                            <span className="text-[8px] font-black uppercase text-amber-800 bg-amber-50 px-1 border border-amber-200 rounded">
                               {item.addonPrice > 0 ? `+ Rs ${item.addonPrice.toLocaleString()}` : `- Rs ${Math.abs(item.addonPrice).toLocaleString()}`}
                             </span>
                           ) : null}
@@ -3887,50 +3886,50 @@ export default function PosPage() {
 
                       {/* Inline comment, addon & price editor */}
                       {commentEditingItemId === item.menuItem.id && (
-                        <div className="flex flex-col gap-1.5 mt-1.5 p-2.5 rounded-xl border border-[#FBBF24]/30 bg-[#0A101F]/90">
+                        <div className="flex flex-col gap-1.5 mt-1.5 p-2.5 rounded-xl border border-amber-300 bg-amber-50/70">
                           <div className="flex flex-col gap-1.5">
                             <input
                               id={`desc-edit-${item.menuItem.id}`}
                               type="text"
                               placeholder="Addon Note (e.g. Extra Cheese)"
                               defaultValue={item.comment || ""}
-                              className="w-full text-[10px] px-2 py-1.5 rounded-lg border outline-none bg-[#0E1628] border-slate-700 text-slate-200"
+                              className="w-full text-[10px] px-2 py-1.5 rounded-lg border outline-none bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                               onKeyDown={(e) => {
                                 if (e.key === "Escape") setCommentEditingItemId(null);
                               }}
                             />
                             <div className="grid grid-cols-2 gap-1.5">
                               <div>
-                                <label className="text-[8px] font-bold text-slate-400 block mb-0.5">Addon Price (+/- LKR)</label>
+                                <label className="text-[8px] font-bold text-slate-500 block mb-0.5">Addon Price (+/- LKR)</label>
                                 <input
                                   id={`price-edit-${item.menuItem.id}`}
                                   type="number"
                                   placeholder="0"
                                   defaultValue={item.addonPrice || ""}
-                                  className="w-full text-[10px] px-2 py-1 rounded-lg border outline-none bg-[#0E1628] border-slate-700 text-slate-200 font-mono"
+                                  className="w-full text-[10px] px-2 py-1 rounded-lg border outline-none bg-slate-50 border-slate-700 text-slate-800 font-mono"
                                 />
                               </div>
                               <div>
-                                <label className="text-[8px] font-bold text-slate-400 block mb-0.5">Unit Price / Override (LKR)</label>
+                                <label className="text-[8px] font-bold text-slate-500 block mb-0.5">Unit Price / Override (LKR)</label>
                                 <input
                                   id={`unit-price-edit-${item.menuItem.id}`}
                                   type="number"
                                   placeholder={String(item.menuItem?.price || "")}
                                   defaultValue={item.customItemPrice !== undefined ? item.customItemPrice : ""}
-                                  className="w-full text-[10px] px-2 py-1 rounded-lg border outline-none bg-[#0E1628] border-slate-700 text-slate-200 font-mono"
+                                  className="w-full text-[10px] px-2 py-1 rounded-lg border outline-none bg-slate-50 border-slate-700 text-slate-800 font-mono"
                                 />
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex justify-between items-center pt-1 border-t border-[#1A2640]">
+                          <div className="flex justify-between items-center pt-1 border-t border-slate-200">
                             <button
                               type="button"
                               onClick={() => toggleFreeItem(item.menuItem.id, item.isNew)}
                               className={`text-[8px] font-black uppercase px-2 py-1 rounded-lg transition-colors cursor-pointer border ${
                                 item.isFree
                                   ? "bg-emerald-500 text-white border-emerald-400"
-                                  : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                                  : "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20"
                               }`}
                             >
                               {item.isFree ? "✓ 100% Free Item" : "🎁 Make 100% Free"}
@@ -3940,7 +3939,7 @@ export default function PosPage() {
                               <button
                                 type="button"
                                 onClick={() => setCommentEditingItemId(null)}
-                                className="text-[9px] font-black uppercase text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-white/5 cursor-pointer bg-transparent border-none"
+                                className="text-[9px] font-black uppercase text-slate-600 hover:text-slate-900 px-2 py-1 rounded hover:bg-slate-200/60 cursor-pointer bg-transparent border-none"
                               >
                                 Cancel
                               </button>
@@ -3998,7 +3997,7 @@ export default function PosPage() {
                             className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded transition-all cursor-pointer border ${
                               item.isFree
                                 ? "bg-emerald-500 text-white border-emerald-400"
-                                : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/30"
+                                : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/30"
                             }`}
                             title={item.isFree ? "Remove free status" : "Make this item 100% Free"}
                           >
@@ -4022,21 +4021,19 @@ export default function PosPage() {
                         )}
                       </div>
                       {!isItemEditable ? (
-                        <span className="text-[9px] font-mono font-black text-slate-600 bg-slate-950/40 px-1.5 py-0.5 rounded">QTY: {item.quantity}</span>
+                        <span className="text-[9px] font-mono font-black text-slate-700 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">QTY: {item.quantity}</span>
                       ) : (
-                        <div className="flex items-center gap-1 rounded-lg overflow-hidden" style={{ border: "1px solid #1E2D4E" }}>
+                        <div className="flex items-center gap-1 rounded-lg overflow-hidden border border-slate-200 bg-white">
                           <button
                             onClick={() => updateQuantity(item.menuItem.id, -1)}
-                            className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
-                            style={{ background: "#14203A", color: "#6B7BA4" }}
+                            className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors bg-slate-100 hover:bg-slate-200 text-slate-700"
                           >
                             <Minus size={9} />
                           </button>
-                          <span className="text-[11px] font-black font-mono w-5 text-center" style={{ color: "#F2F4F8" }}>{item.quantity}</span>
+                          <span className="text-[11px] font-black font-mono w-5 text-center text-slate-900">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.menuItem.id, 1)}
-                            className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors"
-                            style={{ background: "rgba(242,111,33,0.15)", color: "#F26F21" }}
+                            className="w-6 h-6 flex items-center justify-center cursor-pointer transition-colors bg-sky-50 hover:bg-sky-100 text-sky-600"
                           >
                             <Plus size={9} />
                           </button>
@@ -4048,40 +4045,40 @@ export default function PosPage() {
               })}
 
               {displayedItems.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 text-center" style={{ opacity: 0.35 }}>
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#0E1628", border: "1px solid #1E2D4E" }}>
-                    <ShoppingBag size={22} style={{ color: "#4B5E82" }} />
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 bg-slate-100 border border-slate-200">
+                    <ShoppingBag size={22} className="text-slate-400" />
                   </div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#4B5E82" }}>Ticket Empty</p>
-                  <p className="text-[10px] mt-1" style={{ color: "#2A3A5A" }}>Tap a menu item to add</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Ticket Empty</p>
+                  <p className="text-[10px] mt-1 text-slate-400">Tap a menu item to add</p>
                 </div>
               )}
             </div>
 
             {/* Totals & Pay Button */}
-            <div className="p-4 shrink-0 space-y-3" style={{ borderTop: "1px solid #14203A", background: "#060B18" }}>
-              <div className="rounded-xl p-3.5 space-y-2.5" style={{ background: "#0E1628", border: "1px solid #1A2640" }}>
-                <div className="flex justify-between items-center text-[10px]" style={{ color: "#8E9BB5" }}>
+            <div className="p-4 shrink-0 space-y-3 border-t border-slate-200 bg-slate-50">
+              <div className="rounded-xl p-3.5 space-y-2.5 bg-white border border-slate-200">
+                <div className="flex justify-between items-center text-[10px] text-slate-600">
                   <span>Subtotal</span>
                   <span className="font-mono">Rs {displayedSubtotal.toLocaleString()}</span>
                 </div>
                 
                 {/* Discount Inputs */}
-                <div className="space-y-1.5 pt-1.5 border-t border-[#14203A]">
+                <div className="space-y-1.5 pt-1.5 border-t border-slate-200">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-black uppercase text-slate-400">Discount</span>
-                    <div className="flex items-center gap-1 bg-[#060B18] border border-[#1E2D4E] p-0.5 rounded-lg">
+                    <span className="text-[9px] font-black uppercase text-slate-600">Discount</span>
+                    <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 p-0.5 rounded-lg">
                       <button
                         type="button"
                         onClick={() => setDiscountType("percentage")}
-                        className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md transition-colors cursor-pointer border-none bg-transparent ${discountType === "percentage" ? "bg-[#FF6B35] text-white" : "text-slate-400 hover:text-white"}`}
+                        className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md transition-colors cursor-pointer border-none ${discountType === "percentage" ? "bg-sky-500 text-white" : "bg-transparent text-slate-600 hover:text-slate-900"}`}
                       >
                         %
                       </button>
                       <button
                         type="button"
                         onClick={() => setDiscountType("fixed")}
-                        className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md transition-colors cursor-pointer border-none bg-transparent ${discountType === "fixed" ? "bg-[#FF6B35] text-white" : "text-slate-400 hover:text-white"}`}
+                        className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md transition-colors cursor-pointer border-none ${discountType === "fixed" ? "bg-sky-500 text-white" : "bg-transparent text-slate-600 hover:text-slate-900"}`}
                       >
                         LKR
                       </button>
@@ -4094,15 +4091,14 @@ export default function PosPage() {
                       placeholder={discountType === "percentage" ? "Enter % (e.g. 10)" : "Enter LKR (e.g. 500)"}
                       value={discountValue || ""}
                       onChange={(e) => setDiscountValue(Math.max(0, parseFloat(e.target.value) || 0))}
-                      className="w-full text-[10px] px-2 py-1.5 rounded-lg border outline-none text-slate-200"
-                      style={{ background: "#060B18", borderColor: "#1E2D4E" }}
+                      className="w-full text-[10px] px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-sky-500 outline-none text-slate-900 placeholder:text-slate-400"
                     />
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center pt-2 border-t border-[#14203A]">
-                  <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: "#F2F4F8" }}>Total</span>
-                  <span className="text-xl font-black font-mono" style={{ color: "#F26F21" }}>Rs {displayedTotal.toLocaleString()}</span>
+                <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-900">Total</span>
+                  <span className="text-xl font-black font-mono text-sky-600">Rs {displayedTotal.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -4144,14 +4140,14 @@ export default function PosPage() {
                           setShowReceiptModal(true);
                         }
                       }}
-                      className="font-black p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95"
+                      className="font-black p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 active:scale-95 cursor-pointer"
                       title="Reprint Receipt"
                     >
                       <Printer size={13} />
                     </button>
                     <button
                       onClick={() => setSelectedInvoiceId(null)}
-                      className="font-black p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 active:scale-95"
+                      className="font-black p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 active:scale-95 cursor-pointer"
                       title="Close Ticket"
                     >
                       <X size={13} />
@@ -4164,7 +4160,7 @@ export default function PosPage() {
                     type="button"
                     onClick={handleParkCurrentOrder}
                     disabled={cart.length === 0}
-                    className="min-h-[44px] px-3.5 rounded-xl bg-[#111318] border border-white/[0.08] hover:border-amber-500/40 text-zinc-300 hover:text-amber-300 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition"
+                    className="min-h-[44px] px-3.5 rounded-xl bg-white border border-slate-200 hover:border-amber-300 hover:bg-amber-50 text-slate-700 hover:text-amber-800 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition"
                     title="Hold / Park Order"
                   >
                     <PauseCircle size={15} />
@@ -4173,11 +4169,11 @@ export default function PosPage() {
                   <button
                     onClick={handlePlaceOrderClick}
                     disabled={cart.length === 0}
-                    className="flex-1 min-h-[44px] font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider active:scale-95"
-                    style={{
-                      background: cart.length === 0 ? "#111318" : "linear-gradient(135deg, #F26F21, #FF6B35)",
-                      color: cart.length === 0 ? "#52525B" : "white",
-                    }}
+                    className={`flex-1 min-h-[44px] font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer disabled:cursor-not-allowed uppercase tracking-wider active:scale-95 ${
+                      cart.length === 0
+                        ? "bg-slate-200 text-slate-500"
+                        : "bg-sky-500 hover:bg-sky-600 text-white shadow-sm"
+                    }`}
                   >
                     <Check size={15} />
                     <span>Place Order (F2)</span>
@@ -4186,28 +4182,28 @@ export default function PosPage() {
               )}
 
               {/* Subtle ? Keyboard Shortcuts Legend Pill */}
-              <div className="relative pt-1 flex items-center justify-between text-[11px] text-zinc-500">
-                <span>Zone: <strong className="text-zinc-300">{focusZone}</strong> (Tab)</span>
+              <div className="relative pt-1 flex items-center justify-between text-[11px] text-slate-500">
+                <span>Zone: <strong className="text-slate-700">{focusZone}</strong> (Tab)</span>
                 <button
                   type="button"
                   onClick={() => setShowShortcutsLegend((p) => !p)}
-                  className="px-2 py-0.5 rounded-md bg-[#111318] border border-white/[0.08] text-zinc-400 hover:text-white cursor-pointer"
+                  className="px-2 py-0.5 rounded-md bg-white border border-white/[0.08] text-slate-500 hover:text-white cursor-pointer"
                   title="Keyboard Shortcuts"
                 >
                   ? Keys
                 </button>
                 {showShortcutsLegend && (
-                  <div className="absolute bottom-8 right-0 w-72 bg-[#111318] border border-white/[0.1] rounded-xl p-3.5 shadow-2xl z-50 text-xs space-y-1.5 text-zinc-300">
+                  <div className="absolute bottom-8 right-0 w-72 bg-white border border-white/[0.1] rounded-xl p-3.5 shadow-2xl z-50 text-xs space-y-1.5 text-slate-700">
                     <p className="font-semibold text-white pb-1 border-b border-white/[0.06]">POS Keyboard Shortcuts</p>
-                    <div className="flex justify-between"><span>Grid Nav</span><span className="font-mono text-zinc-400">Arrows</span></div>
-                    <div className="flex justify-between"><span>Add / Qty</span><span className="font-mono text-zinc-400">Enter / + / -</span></div>
-                    <div className="flex justify-between"><span>Categories</span><span className="font-mono text-zinc-400">[ / ]</span></div>
-                    <div className="flex justify-between"><span>Grid ↔ Cart</span><span className="font-mono text-zinc-400">Tab</span></div>
-                    <div className="flex justify-between"><span>Orders Log</span><span className="font-mono text-zinc-400">F4 / Alt+O</span></div>
-                    <div className="flex justify-between"><span>Checkout</span><span className="font-mono text-zinc-400">F2 / Ctrl+Enter</span></div>
-                    <div className="flex justify-between"><span>Park / Recall</span><span className="font-mono text-zinc-400">F8 / F9</span></div>
-                    <div className="flex justify-between"><span>Quick Search</span><span className="font-mono text-zinc-400">/ or Ctrl+K</span></div>
-                    <div className="flex justify-between"><span>Print Receipt</span><span className="font-mono text-zinc-400">Ctrl+P</span></div>
+                    <div className="flex justify-between"><span>Grid Nav</span><span className="font-mono text-slate-500">Arrows</span></div>
+                    <div className="flex justify-between"><span>Add / Qty</span><span className="font-mono text-slate-500">Enter / + / -</span></div>
+                    <div className="flex justify-between"><span>Categories</span><span className="font-mono text-slate-500">[ / ]</span></div>
+                    <div className="flex justify-between"><span>Grid ↔ Cart</span><span className="font-mono text-slate-500">Tab</span></div>
+                    <div className="flex justify-between"><span>Orders Log</span><span className="font-mono text-slate-500">F4 / Alt+O</span></div>
+                    <div className="flex justify-between"><span>Checkout</span><span className="font-mono text-slate-500">F2 / Ctrl+Enter</span></div>
+                    <div className="flex justify-between"><span>Park / Recall</span><span className="font-mono text-slate-500">F8 / F9</span></div>
+                    <div className="flex justify-between"><span>Quick Search</span><span className="font-mono text-slate-500">/ or Ctrl+K</span></div>
+                    <div className="flex justify-between"><span>Print Receipt</span><span className="font-mono text-slate-500">Ctrl+P</span></div>
                   </div>
                 )}
               </div>
@@ -4219,29 +4215,29 @@ export default function PosPage() {
 
       {/* Unsettled Shift Tally Blocker Modal */}
       {showUnsettledTallyModal && unclosedPastShiftInfo && (
-        <div className="fixed inset-0 bg-[#050814]/85 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-[#111625] border border-amber-500/50 rounded-3xl p-6 max-w-md w-full text-center space-y-5 shadow-2xl relative">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mx-auto text-amber-400">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white border border-amber-500/50 rounded-3xl p-6 max-w-md w-full text-center space-y-5 shadow-2xl relative">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-600">
               <AlertTriangle size={28} />
             </div>
             
             <div className="space-y-1.5">
-              <h3 className="text-base font-black text-white uppercase tracking-wider">
+              <h3 className="text-base font-black text-slate-900 uppercase tracking-wider">
                 Previous Shift Tally Unsettled
               </h3>
-              <p className="text-xs text-slate-300">
-                You cannot place new orders today until the shift on <strong className="text-amber-400 font-mono">{unclosedPastShiftInfo.formattedDate}</strong> is balanced, submitted, and locked.
+              <p className="text-xs text-slate-700">
+                You cannot place new orders today until the shift on <strong className="text-amber-700 font-mono">{unclosedPastShiftInfo.formattedDate}</strong> is balanced, submitted, and locked.
               </p>
             </div>
 
-            <div className="bg-[#090D1A] border border-[#1E2D4E] rounded-xl p-3.5 text-left text-xs space-y-1.5 text-slate-400">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-left text-xs space-y-1.5 text-slate-600">
               <div className="flex justify-between">
                 <span>Unsettled Shift Date:</span>
-                <span className="font-mono font-bold text-amber-400">{unclosedPastShiftInfo.formattedDate}</span>
+                <span className="font-mono font-bold text-amber-700">{unclosedPastShiftInfo.formattedDate}</span>
               </div>
               <div className="flex justify-between">
                 <span>Status:</span>
-                <span className="font-bold text-rose-400 uppercase text-[10px]">Tally Not Submitted</span>
+                <span className="font-bold text-rose-700 uppercase text-[10px]">Tally Not Submitted</span>
               </div>
             </div>
 
@@ -4255,7 +4251,7 @@ export default function PosPage() {
                   setShowCustomerModal(false);
                   setShowOrderTypeModal(false);
                 }}
-                className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl uppercase tracking-wider text-xs cursor-pointer transition-all shadow-lg active:scale-95 flex items-center justify-center gap-1.5"
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-black py-3 rounded-xl uppercase tracking-wider text-xs cursor-pointer transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
               >
                 <span>Settle Previous Shift Now</span>
                 <span>→</span>
@@ -4263,7 +4259,7 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => setShowUnsettledTallyModal(false)}
-                className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase tracking-wider text-xs cursor-pointer border border-slate-700 transition-all"
+                className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold uppercase tracking-wider text-xs cursor-pointer border border-slate-200 transition-all"
               >
                 Dismiss
               </button>
@@ -4274,13 +4270,13 @@ export default function PosPage() {
 
       {/* PIN Modal */}
       {showPinModal && (
-        <div className="fixed inset-0 bg-[#050814]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#111625] border border-[#222E4E] rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
             <div className="space-y-1">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
                 {pinPurpose === "delete_customer" ? "Admin Authorization" : "Enter PIN"}
               </h3>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-slate-500">
                 {pinPurpose === "delete_customer"
                   ? "Enter manager passcode (1234) to delete customer profile"
                   : pinPurpose === "menu"
@@ -4290,12 +4286,12 @@ export default function PosPage() {
             </div>
             <div className="flex justify-center gap-2">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className={`w-8 h-8 rounded border flex items-center justify-center font-mono ${pinInput.length > i ? "border-[#FF6B35] bg-[#FF6B35]/10 text-white" : "border-[#222E4E]"}`}>
+                <div key={i} className={`w-8 h-8 rounded border flex items-center justify-center font-mono ${pinInput.length > i ? "border-sky-500 bg-sky-50 text-sky-700" : "border-slate-200 text-slate-400"}`}>
                   {pinInput.length > i ? "•" : ""}
                 </div>
               ))}
             </div>
-            {pinError && <p className="text-red-400 text-xs font-bold">{pinError}</p>}
+            {pinError && <p className="text-rose-600 text-xs font-bold">{pinError}</p>}
             <div className="grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
               {["1", "2", "3", "4", "5", "6", "7", "8", "9", "Clear", "0", "Close"].map(val => (
                 <button
@@ -4309,7 +4305,7 @@ export default function PosPage() {
                     }
                     else handlePinKeyPress(val);
                   }}
-                  className="bg-[#090D1A] border border-[#222E4E] text-white py-2 rounded font-bold text-xs cursor-pointer hover:bg-[#FF6B35]/20 hover:border-[#FF6B35]/50 transition-all"
+                  className="bg-slate-50 border border-slate-200 text-slate-800 py-2 rounded font-bold text-xs cursor-pointer hover:bg-sky-50 hover:border-sky-300 transition-all"
                 >
                   {val}
                 </button>
@@ -4356,83 +4352,83 @@ export default function PosPage() {
 
       {/* Order Type Selection Modal (Pops up when clicking Place Order) */}
       {showOrderTypeModal && (
-        <div className="fixed inset-0 bg-[#050814]/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-[#111625] border border-[#222E4E] rounded-3xl p-6 max-w-sm w-full text-center space-y-5 shadow-2xl relative">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-sm w-full text-center space-y-5 shadow-2xl relative">
             <button
               onClick={() => setShowOrderTypeModal(false)}
-              className="absolute top-4 right-4 text-slate-500 hover:text-white cursor-pointer"
+              className="absolute top-4 right-4 text-slate-500 hover:text-slate-900 cursor-pointer"
             >
               <X size={18} />
             </button>
 
             <div className="space-y-1">
               <span className="text-[9px] font-black uppercase text-[#FF6B35] tracking-widest block">Order Fulfillment</span>
-              <h3 className="text-sm font-black uppercase tracking-wider text-white">Delivery or Takeaway?</h3>
-              <p className="text-[10px] text-slate-400">Select order type to proceed to customer details</p>
+              <h3 className="text-sm font-bold text-slate-900">Delivery or Takeaway?</h3>
+              <p className="text-[10px] text-slate-500">Select order type to proceed to customer details</p>
             </div>
 
             <div className="grid grid-cols-1 gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={() => handleSelectOrderType("Delivery")}
-                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#090D1A] hover:bg-[#3B82F6]/10 border transition-all cursor-pointer text-left group active:scale-95 ${
-                  orderTypeModalIndex === 0 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-[#222E4E] hover:border-[#3B82F6]/50"
+                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-[#3B82F6]/10 border transition-all cursor-pointer text-left group active:scale-95 ${
+                  orderTypeModalIndex === 0 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-[#3B82F6]/50"
                 }`}
               >
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform shrink-0">
                   <Truck size={20} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">Direct Delivery</h4>
-                  <p className="text-[9px] text-slate-400 mt-0.5">Home delivery with customer address</p>
+                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-400 transition-colors">Direct Delivery</h4>
+                  <p className="text-[9px] text-slate-500 mt-0.5">Home delivery with customer address</p>
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleSelectOrderType("Take Away")}
-                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#090D1A] hover:bg-[#F26F21]/10 border transition-all cursor-pointer text-left group active:scale-95 ${
-                  orderTypeModalIndex === 1 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-[#222E4E] hover:border-[#F26F21]/50"
+                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-[#F26F21]/10 border transition-all cursor-pointer text-left group active:scale-95 ${
+                  orderTypeModalIndex === 1 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-[#F26F21]/50"
                 }`}
               >
                 <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform shrink-0">
                   <ShoppingBag size={20} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors">Takeaway / Pickup</h4>
-                  <p className="text-[9px] text-slate-400 mt-0.5">Customer collects order at counter</p>
+                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-orange-400 transition-colors">Takeaway / Pickup</h4>
+                  <p className="text-[9px] text-slate-500 mt-0.5">Customer collects order at counter</p>
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleSelectOrderType("3rd Party")}
-                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#090D1A] hover:bg-[#8B5CF6]/10 border transition-all cursor-pointer text-left group active:scale-95 ${
-                  orderTypeModalIndex === 2 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-[#222E4E] hover:border-[#8B5CF6]/50"
+                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-[#8B5CF6]/10 border transition-all cursor-pointer text-left group active:scale-95 ${
+                  orderTypeModalIndex === 2 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-[#8B5CF6]/50"
                 }`}
               >
                 <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform shrink-0">
                   <Smartphone size={20} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">3rd Party Delivery</h4>
-                  <p className="text-[9px] text-slate-400 mt-0.5">Uber Eats / PickMe Food rider pickup</p>
+                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-purple-400 transition-colors">3rd Party Delivery</h4>
+                  <p className="text-[9px] text-slate-500 mt-0.5">Uber Eats / PickMe Food rider pickup</p>
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleSelectOrderType("Dine In")}
-                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#090D1A] hover:bg-emerald-500/10 border transition-all cursor-pointer text-left group active:scale-95 ${
-                  orderTypeModalIndex === 3 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-[#222E4E] hover:border-emerald-500/50"
+                className={`flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 hover:bg-emerald-500/10 border transition-all cursor-pointer text-left group active:scale-95 ${
+                  orderTypeModalIndex === 3 ? "ring-2 ring-emerald-400/80 border-emerald-400/60" : "border-slate-200 hover:border-emerald-500/50"
                 }`}
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform shrink-0">
                   <Utensils size={20} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">Dine In</h4>
-                  <p className="text-[9px] text-slate-400 mt-0.5">Customer eats inside the restaurant</p>
+                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">Dine In</h4>
+                  <p className="text-[9px] text-slate-500 mt-0.5">Customer eats inside the restaurant</p>
                 </div>
               </button>
             </div>
@@ -4442,29 +4438,29 @@ export default function PosPage() {
 
       {/* Customer Details Modal */}
       {showCustomerModal && (
-        <div className="fixed inset-0 bg-[#050814]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#111625] border border-[#222E4E] rounded-3xl p-6 max-w-md w-full space-y-6 shadow-2xl relative" style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-6 shadow-2xl relative" style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
             <button
               onClick={() => setShowCustomerModal(false)}
-              className="absolute top-4 right-4 text-slate-500 hover:text-white cursor-pointer"
+              className="absolute top-4 right-4 text-slate-500 hover:text-slate-900 cursor-pointer"
             >
               <X size={18} />
             </button>
 
             <div className="text-center space-y-1.5">
-              <h3 className="text-sm font-black uppercase tracking-wider text-slate-100">Customer Details</h3>
+              <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Customer Details</h3>
               <p className="text-[10px] text-slate-500">Search customer by phone or create new profile</p>
             </div>
 
             {/* Order Type Pill Selector inside Customer Modal */}
-            <div className="flex bg-[#090D1A] p-1 rounded-xl border border-[#222E4E] gap-0.5">
+            <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-200 gap-0.5">
               <button
                 type="button"
                 onClick={() => setOrderType("Direct")}
                 className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
                   orderType === "Direct"
                     ? "bg-[#3B82F6] text-white shadow" 
-                    : "text-slate-400 hover:text-slate-200"
+                    : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 🚚 Delivery
@@ -4475,7 +4471,7 @@ export default function PosPage() {
                 className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
                   orderType === "POS"
                     ? "bg-[#F26F21] text-white shadow" 
-                    : "text-slate-400 hover:text-slate-200"
+                    : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 🛍️ Takeaway
@@ -4486,7 +4482,7 @@ export default function PosPage() {
                 className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
                   orderType === "3rd Party" 
                     ? "bg-[#8B5CF6] text-white shadow" 
-                    : "text-slate-400 hover:text-slate-200"
+                    : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 🛵 3rd Party
@@ -4497,7 +4493,7 @@ export default function PosPage() {
                 className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer text-center ${
                   orderType === "Dine In" 
                     ? "bg-emerald-500 text-white shadow" 
-                    : "text-slate-400 hover:text-slate-200"
+                    : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 🍽️ Dine In
@@ -4516,7 +4512,7 @@ export default function PosPage() {
                       setCustomerCountryCode(newCc);
                       handlePhoneChange(customerPhone, newCc);
                     }}
-                    className="bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none cursor-pointer focus:border-[#FF6B35]/60"
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 outline-none cursor-pointer focus:border-[#FF6B35]/60"
                   >
                     <option value="+94">+94 (SL)</option>
                     <option value="+1">+1 (US)</option>
@@ -4530,7 +4526,7 @@ export default function PosPage() {
                     placeholder="771234567"
                     value={customerPhone}
                     onChange={(e) => handlePhoneChange(e.target.value)}
-                    className="flex-1 bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60"
                     required
                   />
                 </div>
@@ -4549,7 +4545,7 @@ export default function PosPage() {
                   }}
                   onFocus={() => setShowNameSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowNameSuggestions(false), 200)}
-                  className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60"
                   required
                 />
 
@@ -4564,7 +4560,7 @@ export default function PosPage() {
                     if (filtered.length === 0) return null;
 
                     return (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-[#111625] border border-[#222E4E] rounded-xl overflow-hidden shadow-2xl z-50 divide-y divide-[#1A2640] max-h-[180px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xl z-50 divide-y divide-[#1A2640] max-h-[180px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
                         {filtered.map(c => (
                           <button
                             key={c.phone}
@@ -4598,7 +4594,7 @@ export default function PosPage() {
                               <span className="font-extrabold text-[11px] text-white">{c.name}</span>
                               <span className="text-[9px] font-mono font-bold text-[#FF9F1C]">{c.phone}</span>
                             </div>
-                            <span className="text-[9px] text-slate-400 truncate w-full">{c.address}</span>
+                            <span className="text-[9px] text-slate-500 truncate w-full">{c.address}</span>
                           </button>
                         ))}
                       </div>
@@ -4658,7 +4654,7 @@ export default function PosPage() {
                         className={`flex items-center gap-1.5 text-[9px] font-extrabold px-3 py-1 rounded-full border transition-all cursor-pointer ${
                           isSavedActive
                             ? "bg-[#FF6B35]/15 text-[#FF6B35] border-[#FF6B35]/30"
-                            : "bg-[#090D1A] text-slate-400 border-[#222E4E] hover:border-slate-700 hover:text-slate-300"
+                            : "bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-700 hover:text-slate-700"
                         }`}
                       >
                         <span className={`w-2 h-2 rounded-full border flex items-center justify-center ${
@@ -4681,7 +4677,7 @@ export default function PosPage() {
                         className={`flex items-center gap-1.5 text-[9px] font-extrabold px-3 py-1 rounded-full border transition-all cursor-pointer ${
                           !isSavedActive
                             ? "bg-[#FF6B35]/15 text-[#FF6B35] border-[#FF6B35]/30"
-                            : "bg-[#090D1A] text-slate-400 border-[#222E4E] hover:border-slate-700 hover:text-slate-300"
+                            : "bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-700 hover:text-slate-700"
                         }`}
                       >
                         <span className={`w-2 h-2 rounded-full border flex items-center justify-center ${
@@ -4704,7 +4700,7 @@ export default function PosPage() {
                         setAddrHomeNo(e.target.value);
                         setActiveAddressTab("new");
                       }}
-                      className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60"
                     />
                   </div>
                   <div className="w-2/3">
@@ -4716,7 +4712,7 @@ export default function PosPage() {
                         setAddrStreet(e.target.value);
                         setActiveAddressTab("new");
                       }}
-                      className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60"
                     />
                   </div>
                 </div>
@@ -4732,7 +4728,7 @@ export default function PosPage() {
                         setAddrPostalCode(POSTAL_CODES[area] || "");
                         setActiveAddressTab("new");
                       }}
-                      className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#FF6B35]/60 cursor-pointer"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60 cursor-pointer"
                     >
                       <option value="">Select Postal Area...</option>
                       {Object.keys(POSTAL_CODES).sort().map(area => (
@@ -4746,27 +4742,27 @@ export default function PosPage() {
                       placeholder="Post Code"
                       value={addrPostalCode}
                       readOnly
-                      className="w-full bg-[#090D1A]/50 border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-slate-400 outline-none cursor-not-allowed"
+                      className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-500 outline-none cursor-not-allowed"
                     />
                   </div>
                 </div>
 
                 {/* Combined Preview */}
-                <div className="bg-[#050814]/40 border border-[#1A2640] p-2 rounded-xl text-[9px] text-slate-400 font-mono flex items-center justify-between">
+                <div className="bg-slate-100 border border-slate-200 p-2 rounded-xl text-[9px] text-slate-600 font-mono flex items-center justify-between">
                   <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider">Preview:</span>
-                  <span className="truncate flex-1 text-right pl-2 text-slate-300">{customerAddress || "(empty address)"}</span>
+                  <span className="truncate flex-1 text-right pl-2 text-slate-800">{customerAddress || "(empty address)"}</span>
                 </div>
               </div>
             </div>
 
             {/* Delivery Charges Input Box (Shown when orderType is Direct/Delivery) */}
             {orderType === "Direct" && (
-              <div className="space-y-1.5 bg-[#090D1A] p-3.5 rounded-2xl border border-blue-500/30">
+              <div className="space-y-1.5 bg-slate-50 p-3.5 rounded-2xl border border-blue-200">
                 <div className="flex justify-between items-center">
-                  <label className="block text-[9px] font-black text-blue-400 uppercase tracking-widest">
+                  <label className="block text-[9px] font-black text-blue-700 uppercase tracking-widest">
                     🚚 Delivery Charges (LKR)
                   </label>
-                  <span className="text-[9px] font-bold text-slate-300 font-mono">
+                  <span className="text-[9px] font-bold text-slate-700 font-mono">
                     {deliveryFee > 0 ? `+ LKR ${deliveryFee.toLocaleString()}` : "Free Delivery"}
                   </span>
                 </div>
@@ -4776,7 +4772,7 @@ export default function PosPage() {
                   placeholder="0 (Free Delivery)"
                   value={deliveryFee || ""}
                   onChange={(e) => setDeliveryFee(Math.max(0, parseFloat(e.target.value) || 0))}
-                  className="w-full bg-[#111625] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-blue-500 font-mono"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-blue-500 font-mono"
                 />
               </div>
             )}
@@ -4785,7 +4781,7 @@ export default function PosPage() {
               <button
                 onClick={handleConfirmPlaceOrder}
                 disabled={isPlacingOrder}
-                className="flex-1 bg-[#FF6B35] hover:bg-[#F26F21] disabled:opacity-50 text-white font-bold py-3 rounded-xl cursor-pointer disabled:cursor-not-allowed text-xs uppercase tracking-wider flex items-center justify-center gap-2"
+                className="flex-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl cursor-pointer disabled:cursor-not-allowed text-xs uppercase tracking-wider flex items-center justify-center gap-2"
               >
                 {isPlacingOrder ? (
                   <>
@@ -4799,7 +4795,7 @@ export default function PosPage() {
               <button
                 onClick={() => setShowCustomerModal(false)}
                 disabled={isPlacingOrder}
-                className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-700"
+                className="bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-200"
               >
                 Cancel
               </button>
@@ -4810,8 +4806,8 @@ export default function PosPage() {
 
       {/* Inventory Item Form Modal */}
       {showInventoryModal && (
-        <div className="fixed inset-0 bg-[#050814]/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-[#111625] border border-[#222E4E] rounded-3xl p-6 max-w-md w-full space-y-6 shadow-2xl relative" style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-6 shadow-2xl relative" style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
             <button
               onClick={() => setShowInventoryModal(false)}
               className="absolute top-4 right-4 text-slate-500 hover:text-white cursor-pointer"
@@ -4820,7 +4816,7 @@ export default function PosPage() {
             </button>
 
             <div className="text-center space-y-1">
-              <h3 className="text-sm font-black uppercase tracking-wider text-slate-100">
+              <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">
                 {editingInventoryItem ? "Edit Inventory Item" : "Add Inventory Item"}
               </h3>
               <p className="text-[10px] text-slate-500">Record and track kitchen stock levels</p>
@@ -4835,7 +4831,7 @@ export default function PosPage() {
                   placeholder="e.g. Cheese Block"
                   value={invName}
                   onChange={(e) => setInvName(e.target.value)}
-                  className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60"
                   required
                 />
               </div>
@@ -4849,7 +4845,7 @@ export default function PosPage() {
                     placeholder="e.g. SKU-12345"
                     value={invSku}
                     onChange={(e) => setInvSku(e.target.value)}
-                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60"
                     required
                   />
                 </div>
@@ -4858,7 +4854,7 @@ export default function PosPage() {
                   <select
                     value={invCategory}
                     onChange={(e) => setInvCategory(e.target.value)}
-                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none cursor-pointer focus:border-[#FF6B35]/60"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 outline-none cursor-pointer focus:border-[#FF6B35]/60"
                   >
                     <option value="Produce">Produce</option>
                     <option value="Meat">Meat</option>
@@ -4878,7 +4874,7 @@ export default function PosPage() {
                   <select
                     value={invUnit}
                     onChange={(e) => setInvUnit(e.target.value)}
-                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-2 py-3 text-xs text-white outline-none cursor-pointer focus:border-[#FF6B35]/60"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs text-slate-900 outline-none cursor-pointer focus:border-[#FF6B35]/60"
                   >
                     <option value="lbs">Pounds (lbs)</option>
                     <option value="oz">Ounces (oz)</option>
@@ -4896,7 +4892,7 @@ export default function PosPage() {
                     placeholder="Min Stock"
                     value={invParLevel || ""}
                     onChange={(e) => setInvParLevel(Number(e.target.value))}
-                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60 font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60 font-mono"
                     required
                   />
                 </div>
@@ -4908,7 +4904,7 @@ export default function PosPage() {
                     placeholder="Current Stock"
                     value={invQuantity || ""}
                     onChange={(e) => setInvQuantity(Number(e.target.value))}
-                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60 font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60 font-mono"
                     required
                   />
                 </div>
@@ -4924,7 +4920,7 @@ export default function PosPage() {
                     placeholder="Cost per unit"
                     value={invUnitCost || ""}
                     onChange={(e) => setInvUnitCost(Number(e.target.value))}
-                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60 font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60 font-mono"
                     required
                   />
                 </div>
@@ -4935,7 +4931,7 @@ export default function PosPage() {
                     placeholder="Supplier Co."
                     value={invSupplier}
                     onChange={(e) => setInvSupplier(e.target.value)}
-                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60"
                   />
                 </div>
               </div>
@@ -4948,7 +4944,7 @@ export default function PosPage() {
                     type="date"
                     value={invExpirationDate}
                     onChange={(e) => setInvExpirationDate(e.target.value)}
-                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-[#FF6B35]/60 cursor-pointer font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#FF6B35]/60 cursor-pointer font-mono"
                     style={{ colorScheme: "dark" }}
                   />
                 </div>
@@ -4957,7 +4953,7 @@ export default function PosPage() {
                   <select
                     value={invStorageLocation}
                     onChange={(e) => setInvStorageLocation(e.target.value as any)}
-                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-3 text-xs text-white outline-none cursor-pointer focus:border-[#FF6B35]/60"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 outline-none cursor-pointer focus:border-[#FF6B35]/60"
                   >
                     <option value="Cooler">Cooler</option>
                     <option value="Freezer">Freezer</option>
@@ -4976,7 +4972,7 @@ export default function PosPage() {
               </button>
               <button
                 onClick={() => setShowInventoryModal(false)}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-700 active:scale-95"
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-200 active:scale-95"
               >
                 Cancel
               </button>
@@ -5004,8 +5000,8 @@ export default function PosPage() {
 
       {/* Custom / Special Order Product Modal */}
       {showCustomItemModal && (
-        <div className="fixed inset-0 bg-[#050814]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-[#111625] border border-[#222E4E] rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl relative" style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl relative" style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
             <button
               type="button"
               onClick={() => setShowCustomItemModal(false)}
@@ -5019,14 +5015,14 @@ export default function PosPage() {
                 <Plus size={20} className="text-[#F26F21]" />
               </div>
               <div>
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-100">Add Custom Product</h3>
+                <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Add Custom Product</h3>
                 <p className="text-[10px] text-slate-500">First-time item, special request or open price product</p>
               </div>
             </div>
 
             <form onSubmit={(e) => { e.preventDefault(); handleAddCustomItemToCart(); }} className="space-y-4 pt-1">
               <div className="space-y-1.5">
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                   Product Name / Title <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -5034,7 +5030,7 @@ export default function PosPage() {
                   placeholder="e.g. Special Seafood Kottu / First Time Dish"
                   value={customTitle}
                   onChange={(e) => setCustomTitle(e.target.value)}
-                  className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-[#F26F21]"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-[#F26F21]"
                   autoFocus
                   required
                 />
@@ -5042,7 +5038,7 @@ export default function PosPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                     Price (LKR) <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -5050,7 +5046,7 @@ export default function PosPage() {
                     placeholder="e.g. 1500"
                     value={customPrice}
                     onChange={(e) => setCustomPrice(e.target.value)}
-                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white font-mono outline-none focus:border-[#F26F21]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 font-mono outline-none focus:border-[#F26F21]"
                     min="0"
                     step="any"
                     required
@@ -5058,13 +5054,13 @@ export default function PosPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                     Category
                   </label>
                   <select
                     value={customCategory}
                     onChange={(e) => setCustomCategory(e.target.value)}
-                    className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#F26F21] cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 outline-none focus:border-[#F26F21] cursor-pointer"
                   >
                     <option value="Special Orders">Special Orders</option>
                     {CATEGORIES.filter(c => c !== "All Categories").map(cat => (
@@ -5075,7 +5071,7 @@ export default function PosPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                   Portion / Size
                 </label>
                 <input
@@ -5083,7 +5079,7 @@ export default function PosPage() {
                   placeholder="e.g. Large Portion, Regular, Portion 1"
                   value={customPortion}
                   onChange={(e) => setCustomPortion(e.target.value)}
-                  className="w-full bg-[#090D1A] border border-[#222E4E] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-[#F26F21]"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-[#F26F21]"
                 />
               </div>
 
@@ -5097,7 +5093,7 @@ export default function PosPage() {
                 <button
                   type="button"
                   onClick={() => setShowCustomItemModal(false)}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-700 transition-all"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-5 py-3 rounded-xl cursor-pointer text-xs uppercase tracking-wider border border-slate-200 transition-all"
                 >
                   Cancel
                 </button>

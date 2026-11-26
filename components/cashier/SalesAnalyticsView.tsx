@@ -74,7 +74,7 @@ export default function SalesAnalyticsView({
     <div className="space-y-6">
       {/* Range Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex flex-wrap p-1 rounded-xl bg-[#111318] gap-1">
+        <div className="inline-flex flex-wrap p-1 rounded-xl bg-white gap-1">
           {[
             { id: "7_days", label: "Last 7 Days" },
             { id: "this_month", label: "This Month" },
@@ -86,7 +86,7 @@ export default function SalesAnalyticsView({
               type="button"
               onClick={() => setRange(r.id as any)}
               className={`min-h-[40px] px-3.5 rounded-lg text-xs font-medium cursor-pointer transition ${
-                range === r.id ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
+                range === r.id ? "bg-sky-500 text-white text-white" : "text-slate-500 hover:text-slate-900"
               }`}
             >
               {r.label}
@@ -100,23 +100,23 @@ export default function SalesAnalyticsView({
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="min-h-[40px] bg-[#111318] rounded-lg px-3 text-white outline-none"
-              style={{ colorScheme: "dark" }}
+              className="min-h-[40px] bg-white rounded-lg px-3 text-slate-900 outline-none"
+              
             />
-            <span className="text-zinc-500">to</span>
+            <span className="text-slate-500">to</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="min-h-[40px] bg-[#111318] rounded-lg px-3 text-white outline-none"
-              style={{ colorScheme: "dark" }}
+              className="min-h-[40px] bg-white rounded-lg px-3 text-slate-900 outline-none"
+              
             />
           </div>
         )}
       </div>
 
       {mergeBanner && (
-        <div className="bg-emerald-500/10 text-emerald-300 px-4 py-3 rounded-xl text-xs flex justify-between items-center">
+        <div className="bg-emerald-500/10 text-emerald-700 px-4 py-3 rounded-xl text-xs flex justify-between items-center">
           <span>{mergeBanner}</span>
           <button onClick={() => setMergeBanner("")} className="underline cursor-pointer">
             Dismiss
@@ -125,20 +125,20 @@ export default function SalesAnalyticsView({
       )}
 
       {/* Sunday - Saturday Breakdown */}
-      <div className="bg-[#111318] rounded-2xl p-6 space-y-5">
+      <div className="bg-white rounded-2xl p-6 space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-slate-900">
               Everyday Sales (Sunday – Saturday)
             </h3>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               1:00 AM business-day cutoff • {data?.meta?.startDate} to {data?.meta?.endDate}
             </p>
           </div>
         </div>
 
         {loading && !data ? (
-          <p className="text-xs text-zinc-500 py-6">Loading weekday breakdown...</p>
+          <p className="text-xs text-slate-500 py-6">Loading weekday breakdown...</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
             {weekdayRows.map((wb: any) => (
@@ -146,20 +146,20 @@ export default function SalesAnalyticsView({
                 key={wb.dayIndex}
                 className={`rounded-xl p-4 space-y-1.5 ${
                   wb.isPeak
-                    ? "bg-[#F26F21]/15 border border-[#F26F21]/40"
-                    : "bg-[#0A0B0F]"
+                    ? "bg-sky-500/15 border border-[#F26F21]/40"
+                    : "bg-slate-50"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-white">{wb.shortName}</span>
+                  <span className="text-xs font-semibold text-slate-900">{wb.shortName}</span>
                   {wb.isPeak && (
-                    <span className="text-[11px] text-[#F26F21] font-medium">Peak</span>
+                    <span className="text-[11px] text-sky-600 font-medium">Peak</span>
                   )}
                 </div>
-                <p className="text-sm font-semibold font-mono tabular-nums text-white">
+                <p className="text-sm font-semibold font-mono tabular-nums text-slate-900">
                   {formatLKR2(wb.netRevenue)}
                 </p>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-slate-500">
                   {wb.orderCount} orders • Avg {formatLKR2(wb.avgOrderValue)}
                 </p>
               </div>
@@ -169,9 +169,9 @@ export default function SalesAnalyticsView({
 
         {/* Daily Date Rows */}
         {dailyRows.length > 0 && (
-          <div className="overflow-x-auto pt-2 border-t border-white/[0.06]">
+          <div className="overflow-x-auto pt-2 border-t border-slate-200">
             <table className="w-full text-xs text-left">
-              <thead className="text-zinc-500">
+              <thead className="text-slate-500">
                 <tr>
                   <th className="py-2.5 font-medium">Business Date</th>
                   <th className="py-2.5 font-medium text-right">Orders</th>
@@ -180,22 +180,22 @@ export default function SalesAnalyticsView({
                   <th className="py-2.5 font-medium text-right">Avg Order</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody className="divide-y divide-slate-200">
                 {dailyRows.slice(0, 14).map((r: any) => (
-                  <tr key={r.dateStr} className="hover:bg-white/[0.02]">
-                    <td className="py-2.5 font-mono text-zinc-200">
+                  <tr key={r.dateStr} className="hover:bg-slate-50">
+                    <td className="py-2.5 font-mono text-slate-800">
                       {r.dateStr} ({r.shortName})
                     </td>
-                    <td className="py-2.5 text-right font-mono tabular-nums text-zinc-300">
+                    <td className="py-2.5 text-right font-mono tabular-nums text-slate-700">
                       {r.orderCount}
                     </td>
-                    <td className="py-2.5 text-right font-mono tabular-nums text-zinc-300">
+                    <td className="py-2.5 text-right font-mono tabular-nums text-slate-700">
                       {formatLKR2(r.grossSales)}
                     </td>
-                    <td className="py-2.5 text-right font-mono tabular-nums font-medium text-emerald-400">
+                    <td className="py-2.5 text-right font-mono tabular-nums font-medium text-emerald-600">
                       {formatLKR2(r.netRevenue)}
                     </td>
-                    <td className="py-2.5 text-right font-mono tabular-nums text-zinc-400">
+                    <td className="py-2.5 text-right font-mono tabular-nums text-slate-500">
                       {formatLKR2(r.avgOrderValue)}
                     </td>
                   </tr>
@@ -207,13 +207,13 @@ export default function SalesAnalyticsView({
       </div>
 
       {/* Dish-by-Dish Sales Counter */}
-      <div className="bg-[#111318] rounded-2xl p-6 space-y-5">
+      <div className="bg-white rounded-2xl p-6 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-slate-900">
               Dish-by-Dish Sales Counter ({data?.meta?.totalUnitsSold || 0} portions sold)
             </h3>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Click any dish row to view Sunday–Saturday unit distribution
             </p>
           </div>
@@ -222,14 +222,14 @@ export default function SalesAnalyticsView({
             <button
               type="button"
               onClick={() => setShowMergeModal(true)}
-              className="min-h-[40px] px-3.5 rounded-xl bg-[#F26F21] hover:bg-[#e06117] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[40px] px-3.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
             >
               <Merge size={14} /> Merge Dishes
             </button>
             <button
               type="button"
               onClick={handleExportCsv}
-              className="min-h-[40px] px-3.5 rounded-xl bg-[#0A0B0F] text-zinc-300 hover:text-white text-xs font-medium flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[40px] px-3.5 rounded-xl bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
             >
               <Download size={14} /> CSV
             </button>
@@ -238,19 +238,19 @@ export default function SalesAnalyticsView({
 
         <div className="flex flex-wrap gap-3">
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               placeholder="Search dish..."
               value={dishSearch}
               onChange={(e) => setDishSearch(e.target.value)}
-              className="min-h-[42px] w-full bg-[#0A0B0F] rounded-xl pl-9 pr-3 text-xs text-white outline-none"
+              className="min-h-[42px] w-full bg-slate-50 rounded-xl pl-9 pr-3 text-xs text-slate-900 outline-none"
             />
           </div>
           <select
             value={dishCategory}
             onChange={(e) => setDishCategory(e.target.value)}
-            className="min-h-[42px] bg-[#0A0B0F] rounded-xl px-3.5 text-xs text-white outline-none"
+            className="min-h-[42px] bg-slate-50 rounded-xl px-3.5 text-xs text-slate-900 outline-none"
           >
             <option value="ALL">All Categories</option>
             {categories.map((c) => (
@@ -263,7 +263,7 @@ export default function SalesAnalyticsView({
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead className="text-zinc-500 border-b border-white/[0.06]">
+            <thead className="text-slate-500 border-b border-slate-200">
               <tr>
                 <th className="py-2.5 font-medium">Dish Name</th>
                 <th className="py-2.5 font-medium">Category</th>
@@ -272,35 +272,35 @@ export default function SalesAnalyticsView({
                 <th className="py-2.5 font-medium text-right">Share %</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.05]">
+            <tbody className="divide-y divide-slate-200">
               {filteredDishes.map((d: any) => {
                 const isExp = expandedDish === d.title;
                 return (
                   <React.Fragment key={d.title}>
                     <tr
                       onClick={() => setExpandedDish(isExp ? null : d.title)}
-                      className="hover:bg-white/[0.02] cursor-pointer"
+                      className="hover:bg-slate-50 cursor-pointer"
                     >
-                      <td className="py-3 font-medium text-white">{d.title}</td>
-                      <td className="py-3 text-zinc-400">{d.category}</td>
-                      <td className="py-3 text-right font-mono tabular-nums font-semibold text-[#F26F21]">
+                      <td className="py-3 font-medium text-slate-900">{d.title}</td>
+                      <td className="py-3 text-slate-500">{d.category}</td>
+                      <td className="py-3 text-right font-mono tabular-nums font-semibold text-sky-600">
                         {d.qtySold}
                       </td>
-                      <td className="py-3 text-right font-mono tabular-nums text-emerald-400">
+                      <td className="py-3 text-right font-mono tabular-nums text-emerald-600">
                         {formatLKR2(d.revenue)}
                       </td>
-                      <td className="py-3 text-right font-mono tabular-nums text-zinc-400">
+                      <td className="py-3 text-right font-mono tabular-nums text-slate-500">
                         {d.sharePct.toFixed(1)}%
                       </td>
                     </tr>
                     {isExp && (
-                      <tr className="bg-[#0A0B0F]">
+                      <tr className="bg-slate-50">
                         <td colSpan={5} className="p-3">
                           <div className="grid grid-cols-7 gap-2 text-center">
                             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, idx) => (
-                              <div key={day} className="rounded-lg bg-[#111318] py-2">
-                                <p className="text-[11px] text-zinc-500">{day}</p>
-                                <p className="font-mono font-semibold text-white mt-0.5">
+                              <div key={day} className="rounded-lg bg-white py-2">
+                                <p className="text-[11px] text-slate-500">{day}</p>
+                                <p className="font-mono font-semibold text-slate-900 mt-0.5">
                                   {d.weekdayUnits?.[idx] || 0}
                                 </p>
                               </div>

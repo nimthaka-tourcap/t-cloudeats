@@ -75,10 +75,10 @@ export default function UnifiedStockView({
         selectedItem?.category === "Kitchen Smallwares"
           ? "6400"
           : selectedItem?.category === "Cleaning & Hygiene"
-          ? "6500"
-          : selectedItem?.category === "Packaging"
-          ? "1150"
-          : "1140";
+            ? "6500"
+            : selectedItem?.category === "Packaging"
+              ? "1150"
+              : "1140";
 
       const payload: any = {
         action: opMode,
@@ -227,9 +227,8 @@ export default function UnifiedStockView({
               key={t.id}
               type="button"
               onClick={() => setTab(t.id as any)}
-              className={`min-h-[40px] px-3.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${
-                tab === t.id ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
-              }`}
+              className={`min-h-[40px] px-3.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${tab === t.id ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
+                }`}
             >
               {t.icon}
               <span>{t.label}</span>
@@ -276,8 +275,8 @@ export default function UnifiedStockView({
                 onClick={() => setStockCategoryFilter(f.id as any)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition ${
                   stockCategoryFilter === f.id
-                    ? "bg-[#1C1F26] text-white border border-white/10"
-                    : "bg-[#111318] text-zinc-400 hover:text-white border border-[#1F2430]"
+                    ? "bg-sky-500 text-white"
+                    : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
                 }`}
               >
                 {f.label}
@@ -285,68 +284,68 @@ export default function UnifiedStockView({
             ))}
           </div>
           <div className="bg-[#111318] border border-[#1F2430] rounded-xl overflow-x-auto">
-          {loading && invList.length === 0 ? (
-            <div className="p-8 text-center text-xs text-zinc-500">Loading inventory...</div>
-          ) : (
-            <table className="w-full text-xs text-left">
-              <thead className="text-zinc-400 border-b border-[#1F2430] bg-[#0A0B0F]">
-                <tr>
-                  <th className="px-4 py-3 font-medium">SKU</th>
-                  <th className="px-4 py-3 font-medium">Ingredient</th>
-                  <th className="px-4 py-3 font-medium">Category</th>
-                  <th className="px-4 py-3 font-medium">Location</th>
-                  <th className="px-4 py-3 font-medium text-right">On Hand</th>
-                  <th className="px-4 py-3 font-medium">Unit</th>
-                  <th className="px-4 py-3 font-medium text-right">Unit Cost</th>
-                  <th className="px-4 py-3 font-medium text-right">Stock Value</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1F2430]">
-                {filteredStockList.map((item) => (
-                  <tr key={item.id} className="hover:bg-white/[0.02]">
-                    <td className="px-4 py-3 font-mono text-zinc-500">{item.sku}</td>
-                    <td className="px-4 py-3 text-white font-medium">{item.name}</td>
-                    <td className="px-4 py-3 text-zinc-400">{item.category}</td>
-                    <td className="px-4 py-3 text-zinc-400">{item.storage_location}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-emerald-400">
-                      {Number(item.quantity).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-400">{item.unit}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-zinc-300">
-                      {formatLKR2(item.unit_cost)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-white">
-                      {formatLKR2(Number(item.quantity) * Number(item.unit_cost))}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setError("");
-                            setEditingIng({ ...item });
-                          }}
-                          className="min-h-[36px] px-2.5 rounded-lg bg-[#0A0B0F] border border-[#1F2430] text-zinc-300 hover:text-white flex items-center gap-1 cursor-pointer"
-                          title="Edit Ingredient"
-                        >
-                          <Pencil size={13} /> Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteIngredient(item.id, item.name)}
-                          className="min-h-[36px] px-2.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white cursor-pointer transition"
-                          title="Delete Ingredient"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </td>
+            {loading && invList.length === 0 ? (
+              <div className="p-8 text-center text-xs text-zinc-500">Loading inventory...</div>
+            ) : (
+              <table className="w-full text-xs text-left">
+                <thead className="text-zinc-400 border-b border-[#1F2430] bg-[#0A0B0F]">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">SKU</th>
+                    <th className="px-4 py-3 font-medium">Ingredient</th>
+                    <th className="px-4 py-3 font-medium">Category</th>
+                    <th className="px-4 py-3 font-medium">Location</th>
+                    <th className="px-4 py-3 font-medium text-right">On Hand</th>
+                    <th className="px-4 py-3 font-medium">Unit</th>
+                    <th className="px-4 py-3 font-medium text-right">Unit Cost</th>
+                    <th className="px-4 py-3 font-medium text-right">Stock Value</th>
+                    <th className="px-4 py-3 font-medium text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody className="divide-y divide-[#1F2430]">
+                  {filteredStockList.map((item) => (
+                    <tr key={item.id} className="hover:bg-white/[0.02]">
+                      <td className="px-4 py-3 font-mono text-zinc-500">{item.sku}</td>
+                      <td className="px-4 py-3 text-white font-medium">{item.name}</td>
+                      <td className="px-4 py-3 text-zinc-400">{item.category}</td>
+                      <td className="px-4 py-3 text-zinc-400">{item.storage_location}</td>
+                      <td className="px-4 py-3 text-right font-mono tabular-nums text-emerald-400">
+                        {Number(item.quantity).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400">{item.unit}</td>
+                      <td className="px-4 py-3 text-right font-mono tabular-nums text-zinc-300">
+                        {formatLKR2(item.unit_cost)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono tabular-nums text-white">
+                        {formatLKR2(Number(item.quantity) * Number(item.unit_cost))}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setError("");
+                              setEditingIng({ ...item });
+                            }}
+                            className="min-h-[36px] px-2.5 rounded-lg bg-[#0A0B0F] border border-[#1F2430] text-zinc-300 hover:text-white flex items-center gap-1 cursor-pointer"
+                            title="Edit Ingredient"
+                          >
+                            <Pencil size={13} /> Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteIngredient(item.id, item.name)}
+                            className="min-h-[36px] px-2.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white cursor-pointer transition"
+                            title="Delete Ingredient"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
@@ -397,11 +396,11 @@ export default function UnifiedStockView({
                         setIngredients(
                           (r.ingredients || []).length > 0
                             ? r.ingredients.map((i: any) => ({
-                                inventory_id: i.inventory_id || "",
-                                ingredient_name: i.ingredient_name,
-                                recipe_qty: String(i.recipe_qty),
-                                recipe_unit: i.recipe_unit,
-                              }))
+                              inventory_id: i.inventory_id || "",
+                              ingredient_name: i.ingredient_name,
+                              recipe_qty: String(i.recipe_qty),
+                              recipe_unit: i.recipe_unit,
+                            }))
                             : [{ inventory_id: "", ingredient_name: "", recipe_qty: "100", recipe_unit: "g" }]
                         );
                         setShowRecipeDrawer(true);
@@ -493,9 +492,8 @@ export default function UnifiedStockView({
                     <td className="px-4 py-3 text-zinc-200">{m.movement_type}</td>
                     <td className="px-4 py-3 font-mono text-zinc-400">{m.inventory_id}</td>
                     <td
-                      className={`px-4 py-3 text-right font-mono tabular-nums ${
-                        Number(m.quantity_delta) < 0 ? "text-rose-400" : "text-emerald-400"
-                      }`}
+                      className={`px-4 py-3 text-right font-mono tabular-nums ${Number(m.quantity_delta) < 0 ? "text-rose-400" : "text-emerald-400"
+                        }`}
                     >
                       {Number(m.quantity_delta) > 0 ? "+" : ""}
                       {Number(m.quantity_delta).toFixed(3)} {m.unit}
@@ -528,8 +526,8 @@ export default function UnifiedStockView({
                   {opMode === "PURCHASE"
                     ? "Record Purchase (GRN)"
                     : opMode === "STOCK_TAKE"
-                    ? "Weekly Physical Stock-Take"
-                    : "Log Kitchen Waste"}
+                      ? "Weekly Physical Stock-Take"
+                      : "Log Kitchen Waste"}
                 </h4>
                 <button
                   type="button"

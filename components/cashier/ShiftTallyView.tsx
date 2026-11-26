@@ -109,12 +109,12 @@ export default function ShiftTallyView({
 
   return (
     <div className="space-y-6">
-      <div className="inline-flex p-1 rounded-xl bg-[#111318] gap-1">
+      <div className="inline-flex p-1 rounded-xl bg-white gap-1">
         <button
           type="button"
           onClick={() => setTallySubTab("TALLY")}
           className={`min-h-[40px] px-4 rounded-lg text-xs font-medium cursor-pointer transition ${
-            tallySubTab === "TALLY" ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
+            tallySubTab === "TALLY" ? "bg-sky-500 text-white text-white" : "text-slate-500 hover:text-slate-900"
           }`}
         >
           Shift Tally &amp; Cash
@@ -123,7 +123,7 @@ export default function ShiftTallyView({
           type="button"
           onClick={() => setTallySubTab("ANALYTICS")}
           className={`min-h-[40px] px-4 rounded-lg text-xs font-medium cursor-pointer transition ${
-            tallySubTab === "ANALYTICS" ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
+            tallySubTab === "ANALYTICS" ? "bg-sky-500 text-white text-white" : "text-slate-500 hover:text-slate-900"
           }`}
         >
           Sales &amp; Dish Performance
@@ -135,13 +135,13 @@ export default function ShiftTallyView({
       ) : (
         <>
       {/* Shift Tally Card */}
-      <div className="bg-[#111318] border border-[#1F2430] rounded-xl p-5 space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1F2430] pb-4">
+      <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
           <div>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-slate-900">
               Daily Shift Tally &amp; Cash Drawer
             </h3>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-slate-500">
               {todaysOrders.length} orders • Shift Date: {selectedLogDate}
             </p>
           </div>
@@ -150,14 +150,14 @@ export default function ShiftTallyView({
               type="date"
               value={selectedLogDate}
               onChange={(e) => setSelectedLogDate(e.target.value)}
-              className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3 text-sm text-white font-mono outline-none"
-              style={{ colorScheme: "dark" }}
+              className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 font-mono outline-none"
+              
             />
             {tallySubmitted && (
               <button
                 type="button"
                 onClick={onUnlockTally}
-                className="min-h-[44px] px-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
+                className="min-h-[44px] px-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
               >
                 <Unlock size={14} /> Unlock
               </button>
@@ -167,12 +167,12 @@ export default function ShiftTallyView({
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Col 1: Drawer Inputs */}
-          <div className="lg:col-span-4 bg-[#0A0B0F] border border-[#1F2430] rounded-xl p-4 space-y-3">
-            <p className="text-xs font-medium text-zinc-400">Cash &amp; Bank Inputs</p>
+          <div className="lg:col-span-4 bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+            <p className="text-xs font-medium text-slate-500">Cash &amp; Bank Inputs</p>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-zinc-400 mb-1">Opening Float (LKR)</label>
+                <label className="block text-slate-500 mb-1">Opening Float (LKR)</label>
                 <input
                   type="number"
                   disabled={tallySubmitted}
@@ -183,12 +183,12 @@ export default function ShiftTallyView({
                     onSaveShiftTally(val, bankTransfer, actualCash, operationalExpenses);
                   }}
                   placeholder="0.00"
-                  className="min-h-[44px] w-full bg-[#111318] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white font-mono text-right outline-none focus:border-[#F26F21] disabled:opacity-40"
+                  className="min-h-[44px] w-full bg-white border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 font-mono text-right outline-none focus:border-[#F26F21] disabled:opacity-40"
                 />
               </div>
 
               <div>
-                <label className="block text-zinc-400 mb-1">Actual Cash Counted (LKR)</label>
+                <label className="block text-slate-500 mb-1">Actual Cash Counted (LKR)</label>
                 <input
                   type="number"
                   disabled={tallySubmitted}
@@ -199,12 +199,12 @@ export default function ShiftTallyView({
                     onSaveShiftTally(openingBalance, bankTransfer, val, operationalExpenses);
                   }}
                   placeholder="0.00"
-                  className="min-h-[44px] w-full bg-[#111318] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white font-mono text-right outline-none focus:border-[#F26F21] disabled:opacity-40"
+                  className="min-h-[44px] w-full bg-white border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 font-mono text-right outline-none focus:border-[#F26F21] disabled:opacity-40"
                 />
               </div>
 
               <div>
-                <label className="block text-zinc-400 mb-1">Bank Transfer Actual (LKR)</label>
+                <label className="block text-slate-500 mb-1">Bank Transfer Actual (LKR)</label>
                 <input
                   type="number"
                   disabled={tallySubmitted}
@@ -215,18 +215,18 @@ export default function ShiftTallyView({
                     onSaveShiftTally(openingBalance, val, actualCash, operationalExpenses);
                   }}
                   placeholder="0.00"
-                  className="min-h-[44px] w-full bg-[#111318] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white font-mono text-right outline-none focus:border-[#F26F21] disabled:opacity-40"
+                  className="min-h-[44px] w-full bg-white border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 font-mono text-right outline-none focus:border-[#F26F21] disabled:opacity-40"
                 />
               </div>
 
               <div className="pt-1">
                 {todaysCreditOrders.length > 0 ? (
-                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex justify-between text-xs text-rose-300">
+                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex justify-between text-xs text-rose-700">
                     <span>Unpaid Credit ({todaysCreditOrders.length} bills)</span>
                     <span className="font-mono tabular-nums">-{formatLKR2(todaysCreditAmount)}</span>
                   </div>
                 ) : (
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex justify-between text-xs text-emerald-400">
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex justify-between text-xs text-emerald-600">
                     <span>Unpaid Credit Orders</span>
                     <span className="font-mono">{formatLKR2(0)}</span>
                   </div>
@@ -236,32 +236,32 @@ export default function ShiftTallyView({
           </div>
 
           {/* Col 2: Daily Operational Expenses */}
-          <div className="lg:col-span-4 bg-[#0A0B0F] border border-[#1F2430] rounded-xl p-4 flex flex-col justify-between gap-3">
+          <div className="lg:col-span-4 bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between gap-3">
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-zinc-400">Daily Expenses</p>
-                <span className="text-xs font-mono tabular-nums text-rose-400">
+                <p className="text-xs font-medium text-slate-500">Daily Expenses</p>
+                <span className="text-xs font-mono tabular-nums text-rose-600">
                   -{formatLKR2(totalExp)}
                 </span>
               </div>
 
               {operationalExpenses.length === 0 ? (
-                <p className="text-xs text-zinc-500 py-3">No expenses logged for this shift.</p>
+                <p className="text-xs text-slate-500 py-3">No expenses logged for this shift.</p>
               ) : (
                 <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                   {operationalExpenses.map((exp) => (
                     <div
                       key={exp.id}
-                      className="flex items-center justify-between bg-[#111318] border border-[#1F2430] rounded-lg px-3 py-2 text-xs"
+                      className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs"
                     >
                       <div className="min-w-0 pr-2">
-                        <p className="text-white font-medium truncate">{exp.category}</p>
+                        <p className="text-slate-900 font-medium truncate">{exp.category}</p>
                         {exp.description && (
-                          <p className="text-zinc-500 truncate">{exp.description}</p>
+                          <p className="text-slate-500 truncate">{exp.description}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-mono tabular-nums text-rose-400">
+                        <span className="font-mono tabular-nums text-rose-600">
                           {formatLKR2(exp.amount)}
                         </span>
                         <button
@@ -273,7 +273,7 @@ export default function ShiftTallyView({
                             setNewExpenseAmt(String(exp.amount));
                             onRemoveExpense(exp.id);
                           }}
-                          className="text-zinc-500 hover:text-white disabled:opacity-30 cursor-pointer"
+                          className="text-slate-500 hover:text-slate-900 disabled:opacity-30 cursor-pointer"
                           title="Edit Expense"
                         >
                           <Pencil size={13} />
@@ -282,7 +282,7 @@ export default function ShiftTallyView({
                           type="button"
                           disabled={tallySubmitted}
                           onClick={() => onRemoveExpense(exp.id)}
-                          className="text-zinc-500 hover:text-rose-400 disabled:opacity-30 cursor-pointer"
+                          className="text-slate-500 hover:text-rose-600 disabled:opacity-30 cursor-pointer"
                           title="Delete Expense"
                         >
                           <Trash2 size={14} />
@@ -294,12 +294,12 @@ export default function ShiftTallyView({
               )}
             </div>
 
-            <form onSubmit={onAddExpense} className="space-y-2 pt-2 border-t border-[#1F2430]">
+            <form onSubmit={onAddExpense} className="space-y-2 pt-2 border-t border-slate-200">
               <select
                 disabled={tallySubmitted}
                 value={newExpenseCategory}
                 onChange={(e) => setNewExpenseCategory(e.target.value)}
-                className="min-h-[40px] w-full bg-[#111318] border border-[#1F2430] rounded-lg px-3 text-xs text-white outline-none disabled:opacity-40"
+                className="min-h-[40px] w-full bg-white border border-slate-200 rounded-lg px-3 text-xs text-slate-900 outline-none disabled:opacity-40"
               >
                 {expenseCategories.map((cat) => (
                   <option key={cat} value={cat}>
@@ -313,7 +313,7 @@ export default function ShiftTallyView({
                 placeholder="Detail (e.g. Bill #)"
                 value={newExpenseDesc}
                 onChange={(e) => setNewExpenseDesc(e.target.value)}
-                className="min-h-[40px] w-full bg-[#111318] border border-[#1F2430] rounded-lg px-3 text-xs text-white outline-none disabled:opacity-40"
+                className="min-h-[40px] w-full bg-white border border-slate-200 rounded-lg px-3 text-xs text-slate-900 outline-none disabled:opacity-40"
               />
               <div className="flex gap-2">
                 <input
@@ -322,12 +322,12 @@ export default function ShiftTallyView({
                   placeholder="Amount (LKR)"
                   value={newExpenseAmt}
                   onChange={(e) => setNewExpenseAmt(e.target.value)}
-                  className="min-h-[40px] flex-1 bg-[#111318] border border-[#1F2430] rounded-lg px-3 text-xs text-white font-mono text-right outline-none disabled:opacity-40"
+                  className="min-h-[40px] flex-1 bg-white border border-slate-200 rounded-lg px-3 text-xs text-slate-900 font-mono text-right outline-none disabled:opacity-40"
                 />
                 <button
                   type="submit"
                   disabled={tallySubmitted}
-                  className="min-h-[40px] px-4 rounded-lg bg-[#F26F21] hover:bg-[#e06117] text-white text-xs font-medium flex items-center gap-1 cursor-pointer disabled:opacity-40"
+                  className="min-h-[40px] px-4 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium flex items-center gap-1 cursor-pointer disabled:opacity-40"
                 >
                   <Plus size={14} /> Add
                 </button>
@@ -336,32 +336,32 @@ export default function ShiftTallyView({
           </div>
 
           {/* Col 3: Reconciliation Summary */}
-          <div className="lg:col-span-4 bg-[#0A0B0F] border border-[#1F2430] rounded-xl p-4 flex flex-col justify-between gap-4">
+          <div className="lg:col-span-4 bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between gap-4">
             <div className="space-y-2 text-xs">
-              <p className="text-xs font-medium text-zinc-400">Reconciliation</p>
-              <div className="flex justify-between text-zinc-300">
+              <p className="text-xs font-medium text-slate-500">Reconciliation</p>
+              <div className="flex justify-between text-slate-700">
                 <span>Total Shift Sales</span>
                 <span className="font-mono tabular-nums">{formatLKR2(shiftRevenue)}</span>
               </div>
-              <div className="flex justify-between text-zinc-300">
+              <div className="flex justify-between text-slate-700">
                 <span>Opening Float</span>
                 <span className="font-mono tabular-nums">+{formatLKR2(openingBalance)}</span>
               </div>
-              <div className="flex justify-between text-zinc-300">
+              <div className="flex justify-between text-slate-700">
                 <span>Expected Cash Rev</span>
                 <span className="font-mono tabular-nums">+{formatLKR2(expectedCashRevenue)}</span>
               </div>
-              <div className="flex justify-between text-rose-400">
+              <div className="flex justify-between text-rose-600">
                 <span>Operational Costs</span>
                 <span className="font-mono tabular-nums">-{formatLKR2(totalExp)}</span>
               </div>
-              <div className="flex justify-between pt-2 border-t border-[#1F2430] font-semibold text-white">
+              <div className="flex justify-between pt-2 border-t border-slate-200 font-semibold text-slate-900">
                 <span>Expected Closing</span>
-                <span className="font-mono tabular-nums text-amber-400">
+                <span className="font-mono tabular-nums text-amber-600">
                   {formatLKR2(expectedClosingCash)}
                 </span>
               </div>
-              <div className="flex justify-between font-semibold text-white">
+              <div className="flex justify-between font-semibold text-slate-900">
                 <span>Actual Counted</span>
                 <span className="font-mono tabular-nums">{formatLKR2(actualCash)}</span>
               </div>
@@ -369,10 +369,10 @@ export default function ShiftTallyView({
               <div
                 className={`mt-2 py-2 px-3 rounded-lg text-center font-medium ${
                   discrepancy === 0
-                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                     : discrepancy > 0
-                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                    : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                    ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                    : "bg-rose-500/10 text-rose-600 border border-rose-500/20"
                 }`}
               >
                 {discrepancy === 0
@@ -383,10 +383,10 @@ export default function ShiftTallyView({
               </div>
             </div>
 
-            <div className="space-y-2 pt-2 border-t border-[#1F2430]">
+            <div className="space-y-2 pt-2 border-t border-slate-200">
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-400">Total Shift Assets (Cash + Bank)</span>
-                <span className="font-mono tabular-nums font-semibold text-white">
+                <span className="text-slate-500">Total Shift Assets (Cash + Bank)</span>
+                <span className="font-mono tabular-nums font-semibold text-slate-900">
                   {formatLKR2(totalClosingBalance)}
                 </span>
               </div>
@@ -399,7 +399,7 @@ export default function ShiftTallyView({
                   Submit &amp; Lock Shift Tally
                 </button>
               ) : (
-                <div className="w-full min-h-[44px] rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium flex items-center justify-center gap-1.5">
+                <div className="w-full min-h-[44px] rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-medium flex items-center justify-center gap-1.5">
                   <Lock size={14} /> Shift Tally Locked
                 </div>
               )}
@@ -410,8 +410,8 @@ export default function ShiftTallyView({
 
       {/* Period Filter & Channel Breakdown */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-white">Period Performance</h3>
-        <div className="inline-flex flex-wrap p-1 rounded-xl bg-[#111318] border border-[#1F2430] gap-1">
+        <h3 className="text-sm font-semibold text-slate-900">Period Performance</h3>
+        <div className="inline-flex flex-wrap p-1 rounded-xl bg-white border border-slate-200 gap-1">
           {[
             { id: "7_days", label: "7 Days" },
             { id: "14_days", label: "14 Days" },
@@ -426,8 +426,8 @@ export default function ShiftTallyView({
               onClick={() => setReportFilter(pill.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition ${
                 reportFilter === pill.id
-                  ? "bg-[#F26F21] text-white"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-sky-500 text-white"
+                  : "text-slate-500 hover:text-slate-900"
               }`}
             >
               {pill.label}
@@ -437,24 +437,24 @@ export default function ShiftTallyView({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#111318] border border-[#1F2430] rounded-xl p-4">
-          <p className="text-xs text-zinc-400">Period Revenue</p>
+        <div className="bg-white border border-slate-200 rounded-xl p-4">
+          <p className="text-xs text-slate-500">Period Revenue</p>
           <div className="mt-1">
             {renderAdminMetric(
               formatLKR2(filteredReportOrders.reduce((s, o) => s + o.total, 0)),
-              "text-lg font-semibold text-emerald-400 font-mono tabular-nums"
+              "text-lg font-semibold text-emerald-600 font-mono tabular-nums"
             )}
           </div>
         </div>
-        <div className="bg-[#111318] border border-[#1F2430] rounded-xl p-4">
-          <p className="text-xs text-zinc-400">Settled Orders</p>
-          <p className="text-lg font-semibold text-white font-mono tabular-nums mt-1">
+        <div className="bg-white border border-slate-200 rounded-xl p-4">
+          <p className="text-xs text-slate-500">Settled Orders</p>
+          <p className="text-lg font-semibold text-slate-900 font-mono tabular-nums mt-1">
             {filteredReportOrders.length}
           </p>
         </div>
-        <div className="bg-[#111318] border border-[#1F2430] rounded-xl p-4">
-          <p className="text-xs text-zinc-400">POS / Direct / 3rd Party / Dine In</p>
-          <p className="text-sm font-mono text-zinc-200 mt-1.5">
+        <div className="bg-white border border-slate-200 rounded-xl p-4">
+          <p className="text-xs text-slate-500">POS / Direct / 3rd Party / Dine In</p>
+          <p className="text-sm font-mono text-slate-800 mt-1.5">
             {posOrders.length} / {directOrders.length} / {thirdPartyOrders.length} /{" "}
             {dineInOrders.length}
           </p>
@@ -462,15 +462,15 @@ export default function ShiftTallyView({
         <button
           type="button"
           onClick={onOpenCms}
-          className="bg-[#111318] border border-[#1F2430] hover:border-[#F26F21]/50 rounded-xl p-4 text-left transition cursor-pointer flex items-center justify-between"
+          className="bg-white border border-slate-200 hover:border-[#F26F21]/50 rounded-xl p-4 text-left transition cursor-pointer flex items-center justify-between"
         >
           <div>
-            <p className="text-xs text-zinc-400">Customer CMS</p>
-            <p className="text-lg font-semibold text-white font-mono tabular-nums mt-1">
+            <p className="text-xs text-slate-500">Customer CMS</p>
+            <p className="text-lg font-semibold text-slate-900 font-mono tabular-nums mt-1">
               {customersCount} Profiles
             </p>
           </div>
-          <Users size={18} className="text-[#F26F21]" />
+          <Users size={18} className="text-sky-600" />
         </button>
       </div>
         </>

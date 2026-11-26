@@ -99,9 +99,9 @@ export default function UnifiedFinanceSection({ section }: UnifiedFinanceSection
   return (
     <div className="space-y-5">
       {/* Top Finance Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#111318] border border-[#1F2430] rounded-xl px-4 py-3">
-        <div className="flex items-center gap-3 text-xs text-zinc-400">
-          <span className="inline-flex items-center gap-1.5 text-white font-medium">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3">
+        <div className="flex items-center gap-3 text-xs text-slate-500">
+          <span className="inline-flex items-center gap-1.5 text-slate-900 font-medium">
             <span
               className={`w-2 h-2 rounded-full ${
                 isBalanced ? "bg-emerald-400" : "bg-rose-400"
@@ -119,11 +119,11 @@ export default function UnifiedFinanceSection({ section }: UnifiedFinanceSection
           <button
             type="button"
             onClick={() => window.print()}
-            className="min-h-[40px] px-3 rounded-lg bg-[#0A0B0F] border border-[#1F2430] text-zinc-300 hover:text-white text-xs font-medium flex items-center gap-1.5 cursor-pointer"
+            className="min-h-[40px] px-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
           >
             <Printer size={14} /> Print
           </button>
-          <div className="min-h-[40px] px-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium flex items-center gap-2">
+          <div className="min-h-[40px] px-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-medium flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             <span>
               {syncing
@@ -137,7 +137,7 @@ export default function UnifiedFinanceSection({ section }: UnifiedFinanceSection
               onClick={handlePosSync}
               disabled={syncing}
               title="Re-check POS Sync"
-              className="text-emerald-300 hover:text-white cursor-pointer disabled:opacity-50"
+              className="text-emerald-700 hover:text-slate-900 cursor-pointer disabled:opacity-50"
             >
               <RefreshCw size={12} className={syncing ? "animate-spin" : ""} />
             </button>
@@ -146,7 +146,7 @@ export default function UnifiedFinanceSection({ section }: UnifiedFinanceSection
       </div>
 
       {syncMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-4 py-2.5 rounded-xl text-xs flex items-center justify-between">
+        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 px-4 py-2.5 rounded-xl text-xs flex items-center justify-between">
           <span>{syncMsg}</span>
           <button onClick={() => setSyncMsg("")} className="underline cursor-pointer">
             Dismiss
@@ -156,12 +156,12 @@ export default function UnifiedFinanceSection({ section }: UnifiedFinanceSection
 
       {section === "REPORTS" && (
         <div className="space-y-5">
-          <div className="inline-flex p-1 rounded-xl bg-[#111318] gap-1">
+          <div className="inline-flex p-1 rounded-xl bg-white gap-1">
             <button
               type="button"
               onClick={() => setReportSubTab("SLFRS")}
               className={`min-h-[40px] px-4 rounded-lg text-xs font-medium cursor-pointer transition ${
-                reportSubTab === "SLFRS" ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
+                reportSubTab === "SLFRS" ? "bg-sky-500 text-white text-white" : "text-slate-500 hover:text-slate-900"
               }`}
             >
               SLFRS Financial Statements
@@ -170,7 +170,7 @@ export default function UnifiedFinanceSection({ section }: UnifiedFinanceSection
               type="button"
               onClick={() => setReportSubTab("ANALYTICS")}
               className={`min-h-[40px] px-4 rounded-lg text-xs font-medium cursor-pointer transition ${
-                reportSubTab === "ANALYTICS" ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
+                reportSubTab === "ANALYTICS" ? "bg-sky-500 text-white text-white" : "text-slate-500 hover:text-slate-900"
               }`}
             >
               Sales &amp; Dish Performance
@@ -198,12 +198,12 @@ export default function UnifiedFinanceSection({ section }: UnifiedFinanceSection
 
       {section === "ASSETS_PAYROLL" && (
         <div className="space-y-5">
-          <div className="inline-flex p-1 rounded-xl bg-[#111318] border border-[#1F2430] gap-1">
+          <div className="inline-flex p-1 rounded-xl bg-white border border-slate-200 gap-1">
             <button
               type="button"
               onClick={() => setSubAssetTab("ASSETS")}
               className={`min-h-[40px] px-4 rounded-lg text-xs font-medium cursor-pointer transition ${
-                subAssetTab === "ASSETS" ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
+                subAssetTab === "ASSETS" ? "bg-sky-500 text-white text-white" : "text-slate-500 hover:text-slate-900"
               }`}
             >
               Fixed Assets &amp; Depreciation (CapEx)
@@ -212,7 +212,7 @@ export default function UnifiedFinanceSection({ section }: UnifiedFinanceSection
               type="button"
               onClick={() => setSubAssetTab("PAYROLL")}
               className={`min-h-[40px] px-4 rounded-lg text-xs font-medium cursor-pointer transition ${
-                subAssetTab === "PAYROLL" ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
+                subAssetTab === "PAYROLL" ? "bg-sky-500 text-white text-white" : "text-slate-500 hover:text-slate-900"
               }`}
             >
               Payroll (EPF/ETF/APIT) &amp; Aggregators

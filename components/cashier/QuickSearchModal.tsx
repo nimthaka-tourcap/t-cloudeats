@@ -105,33 +105,33 @@ export default function QuickSearchModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl bg-[#111318] border border-[#1F2430] rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1F2430]">
-          <Search size={16} className="text-zinc-400 shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200">
+          <Search size={16} className="text-slate-500 shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search menu items, INV-YYMMDD-XXX, or customer phone..."
-            className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-500 outline-none"
+            className="flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-500 outline-none"
           />
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-white cursor-pointer"
+            className="p-1 rounded-lg text-slate-500 hover:text-slate-900 cursor-pointer"
           >
             <X size={16} />
           </button>
         </div>
 
-        <div className="max-h-[65vh] overflow-y-auto divide-y divide-[#1F2430]">
+        <div className="max-h-[65vh] overflow-y-auto divide-y divide-slate-200">
           {/* Menu Matches */}
           {results.menu.length > 0 && (
             <div className="p-3 space-y-1">
-              <p className="px-2 text-xs font-medium text-zinc-500">Menu Items (Click to Add to Cart)</p>
+              <p className="px-2 text-xs font-medium text-slate-500">Menu Items (Click to Add to Cart)</p>
               {results.menu.map((item) => (
                 <button
                   key={item.id}
@@ -140,16 +140,16 @@ export default function QuickSearchModal({
                     onSelectMenuItem(item);
                     onClose();
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/[0.05] text-left transition cursor-pointer"
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 text-left transition cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <ShoppingBag size={14} className="text-[#F26F21] shrink-0" />
+                    <ShoppingBag size={14} className="text-sky-600 shrink-0" />
                     <div className="truncate">
-                      <span className="text-sm font-medium text-white">{item.title}</span>
-                      <span className="text-xs text-zinc-500 ml-2">{item.category}</span>
+                      <span className="text-sm font-medium text-slate-900">{item.title}</span>
+                      <span className="text-xs text-slate-500 ml-2">{item.category}</span>
                     </div>
                   </div>
-                  <span className="text-xs font-mono tabular-nums text-zinc-300 shrink-0">
+                  <span className="text-xs font-mono tabular-nums text-slate-700 shrink-0">
                     {formatLKR(item.price)}
                   </span>
                 </button>
@@ -160,7 +160,7 @@ export default function QuickSearchModal({
           {/* Order Matches */}
           {results.orders.length > 0 && (
             <div className="p-3 space-y-1">
-              <p className="px-2 text-xs font-medium text-zinc-500">Orders</p>
+              <p className="px-2 text-xs font-medium text-slate-500">Orders</p>
               {results.orders.map((ord) => (
                 <button
                   key={ord.id}
@@ -169,18 +169,18 @@ export default function QuickSearchModal({
                     onSelectOrder(ord);
                     onClose();
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/[0.05] text-left transition cursor-pointer"
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 text-left transition cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <FileText size={14} className="text-sky-400 shrink-0" />
+                    <FileText size={14} className="text-sky-600 shrink-0" />
                     <div className="truncate">
-                      <span className="text-sm font-mono text-white">{ord.id}</span>
-                      <span className="text-xs text-zinc-400 ml-2">
+                      <span className="text-sm font-mono text-slate-900">{ord.id}</span>
+                      <span className="text-xs text-slate-500 ml-2">
                         {ord.customer?.name || "Customer"}
                       </span>
                     </div>
                   </div>
-                  <span className="text-xs font-mono tabular-nums text-emerald-400 shrink-0">
+                  <span className="text-xs font-mono tabular-nums text-emerald-600 shrink-0">
                     {formatLKR(ord.total)}
                   </span>
                 </button>
@@ -191,7 +191,7 @@ export default function QuickSearchModal({
           {/* Customer Matches */}
           {results.customers.length > 0 && (
             <div className="p-3 space-y-1">
-              <p className="px-2 text-xs font-medium text-zinc-500">Customers</p>
+              <p className="px-2 text-xs font-medium text-slate-500">Customers</p>
               {results.customers.map((c) => (
                 <button
                   key={c.phone}
@@ -200,13 +200,13 @@ export default function QuickSearchModal({
                     onSelectCustomer(c);
                     onClose();
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/[0.05] text-left transition cursor-pointer"
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 text-left transition cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <User size={14} className="text-emerald-400 shrink-0" />
+                    <User size={14} className="text-emerald-600 shrink-0" />
                     <div className="truncate">
-                      <span className="text-sm font-medium text-white">{c.name}</span>
-                      <span className="text-xs font-mono text-zinc-400 ml-2">{c.phone}</span>
+                      <span className="text-sm font-medium text-slate-900">{c.name}</span>
+                      <span className="text-xs font-mono text-slate-500 ml-2">{c.phone}</span>
                     </div>
                   </div>
                 </button>

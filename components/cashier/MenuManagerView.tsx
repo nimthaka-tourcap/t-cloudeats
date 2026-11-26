@@ -83,7 +83,7 @@ export default function MenuManagerView({
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold text-white">
+          <h3 className="text-sm font-semibold text-slate-900">
             Menu Database ({menuItems.length})
           </h3>
           <input
@@ -91,7 +91,7 @@ export default function MenuManagerView({
             placeholder="Filter menu..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="min-h-[44px] bg-[#111318] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none focus:border-[#F26F21]"
+            className="min-h-[44px] bg-white border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none focus:border-[#F26F21]"
           />
         </div>
 
@@ -99,7 +99,7 @@ export default function MenuManagerView({
           <button
             type="button"
             onClick={() => setShowMergeModal(true)}
-            className="min-h-[44px] px-4 rounded-xl bg-[#111318] border border-white/[0.08] hover:bg-white/[0.05] text-zinc-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
+            className="min-h-[44px] px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
           >
             <Merge size={14} /> Merge Dishes
           </button>
@@ -107,7 +107,7 @@ export default function MenuManagerView({
             type="button"
             onClick={handleGoogleImport}
             disabled={syncingGoogle}
-            className="min-h-[44px] px-4 rounded-xl bg-[#111318] border border-[#1F2430] hover:bg-white/[0.05] text-zinc-200 text-xs font-medium flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="min-h-[44px] px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-medium flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <RefreshCw size={14} className={syncingGoogle ? "animate-spin" : ""} />
             <span>Sync Google</span>
@@ -119,7 +119,7 @@ export default function MenuManagerView({
                 setEditingItem(null);
                 setIsAddingItem(true);
               }}
-              className="min-h-[44px] px-4 rounded-xl bg-[#F26F21] hover:bg-[#e06117] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[44px] px-4 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
             >
               <Plus size={15} /> New Menu Item
             </button>
@@ -131,14 +131,14 @@ export default function MenuManagerView({
       {isAddingItem && (
         <form
           onSubmit={onAddItem}
-          className="bg-[#111318] border border-[#F26F21]/40 rounded-xl p-5 space-y-4"
+          className="bg-white border border-[#F26F21]/40 rounded-xl p-5 space-y-4"
         >
-          <div className="flex items-center justify-between border-b border-[#1F2430] pb-3">
-            <h4 className="text-sm font-semibold text-white">Add Menu Item</h4>
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h4 className="text-sm font-semibold text-slate-900">Add Menu Item</h4>
             <button
               type="button"
               onClick={() => setIsAddingItem(false)}
-              className="text-zinc-400 hover:text-white cursor-pointer"
+              className="text-slate-500 hover:text-slate-900 cursor-pointer"
             >
               <X size={16} />
             </button>
@@ -149,7 +149,7 @@ export default function MenuManagerView({
               placeholder="SKU (e.g. FR-01)"
               value={newItemData.sku || ""}
               onChange={(e) => setNewItemData((prev) => ({ ...prev, sku: e.target.value }))}
-              className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none focus:border-[#F26F21]"
+              className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none focus:border-[#F26F21]"
               required
             />
             <input
@@ -157,7 +157,7 @@ export default function MenuManagerView({
               placeholder="Dish Title"
               value={newItemData.title}
               onChange={(e) => setNewItemData((prev) => ({ ...prev, title: e.target.value }))}
-              className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none focus:border-[#F26F21]"
+              className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none focus:border-[#F26F21]"
               required
             />
             <input
@@ -167,7 +167,7 @@ export default function MenuManagerView({
               onChange={(e) =>
                 setNewItemData((prev) => ({ ...prev, price: Number(e.target.value) }))
               }
-              className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white font-mono outline-none focus:border-[#F26F21]"
+              className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 font-mono outline-none focus:border-[#F26F21]"
               required
             />
             <select
@@ -175,7 +175,7 @@ export default function MenuManagerView({
               onChange={(e) =>
                 setNewItemData((prev) => ({ ...prev, category: e.target.value }))
               }
-              className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none"
+              className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none"
             >
               {categories
                 .filter((c) => c !== "All Categories")
@@ -190,7 +190,7 @@ export default function MenuManagerView({
               onChange={(e) =>
                 setNewItemData((prev) => ({ ...prev, portion: e.target.value }))
               }
-              className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none"
+              className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none"
             >
               <option value="Large Portion">Large Portion</option>
               <option value="Regular Portion">Regular Portion</option>
@@ -199,7 +199,7 @@ export default function MenuManagerView({
               <option value="1000 ml">1000 ml</option>
               <option value="1050 ml">1050 ml</option>
             </select>
-            <div className="relative min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-zinc-400 flex items-center justify-between">
+            <div className="relative min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-500 flex items-center justify-between">
               <span className="truncate">
                 {newItemData.image ? "Photo Loaded" : "Upload Photo"}
               </span>
@@ -215,13 +215,13 @@ export default function MenuManagerView({
             <button
               type="button"
               onClick={() => setIsAddingItem(false)}
-              className="min-h-[44px] px-4 rounded-xl bg-[#0A0B0F] border border-[#1F2430] text-zinc-300 text-xs font-medium cursor-pointer"
+              className="min-h-[44px] px-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="min-h-[44px] px-5 rounded-xl bg-[#F26F21] text-white text-xs font-semibold cursor-pointer"
+              className="min-h-[44px] px-5 rounded-xl bg-sky-500 text-white text-xs font-semibold cursor-pointer"
             >
               Save Item
             </button>
@@ -233,14 +233,14 @@ export default function MenuManagerView({
       {editingItem && (
         <form
           onSubmit={onEditItem}
-          className="bg-[#111318] border border-sky-500/40 rounded-xl p-5 space-y-4"
+          className="bg-white border border-sky-500/40 rounded-xl p-5 space-y-4"
         >
-          <div className="flex items-center justify-between border-b border-[#1F2430] pb-3">
-            <h4 className="text-sm font-semibold text-white">Edit Menu Item</h4>
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h4 className="text-sm font-semibold text-slate-900">Edit Menu Item</h4>
             <button
               type="button"
               onClick={() => setEditingItem(null)}
-              className="text-zinc-400 hover:text-white cursor-pointer"
+              className="text-slate-500 hover:text-slate-900 cursor-pointer"
             >
               <X size={16} />
             </button>
@@ -253,7 +253,7 @@ export default function MenuManagerView({
               onChange={(e) =>
                 setEditingItem((prev) => (prev ? { ...prev, sku: e.target.value } : null))
               }
-              className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none"
+              className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none"
               required
             />
             <input
@@ -263,7 +263,7 @@ export default function MenuManagerView({
               onChange={(e) =>
                 setEditingItem((prev) => (prev ? { ...prev, title: e.target.value } : null))
               }
-              className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none"
+              className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none"
               required
             />
             <input
@@ -275,7 +275,7 @@ export default function MenuManagerView({
                   prev ? { ...prev, price: Number(e.target.value) } : null
                 )
               }
-              className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white font-mono outline-none"
+              className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 font-mono outline-none"
               required
             />
             <select
@@ -283,7 +283,7 @@ export default function MenuManagerView({
               onChange={(e) =>
                 setEditingItem((prev) => (prev ? { ...prev, category: e.target.value } : null))
               }
-              className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none"
+              className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none"
             >
               {categories
                 .filter((c) => c !== "All Categories")
@@ -298,7 +298,7 @@ export default function MenuManagerView({
               onChange={(e) =>
                 setEditingItem((prev) => (prev ? { ...prev, portion: e.target.value } : null))
               }
-              className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none"
+              className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none"
             >
               <option value="Large Portion">Large Portion</option>
               <option value="Regular Portion">Regular Portion</option>
@@ -307,7 +307,7 @@ export default function MenuManagerView({
               <option value="1000 ml">1000 ml</option>
               <option value="1050 ml">1050 ml</option>
             </select>
-            <div className="relative min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-zinc-400 flex items-center justify-between">
+            <div className="relative min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-500 flex items-center justify-between">
               <span className="truncate">
                 {editingItem.image ? "Photo Loaded" : "Change Photo"}
               </span>
@@ -323,13 +323,13 @@ export default function MenuManagerView({
             <button
               type="button"
               onClick={() => setEditingItem(null)}
-              className="min-h-[44px] px-4 rounded-xl bg-[#0A0B0F] border border-[#1F2430] text-zinc-300 text-xs font-medium cursor-pointer"
+              className="min-h-[44px] px-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="min-h-[44px] px-5 rounded-xl bg-[#F26F21] text-white text-xs font-semibold cursor-pointer"
+              className="min-h-[44px] px-5 rounded-xl bg-sky-500 text-white text-xs font-semibold cursor-pointer"
             >
               Update Item
             </button>
@@ -338,10 +338,10 @@ export default function MenuManagerView({
       )}
 
       {/* Menu Table */}
-      <div className="bg-[#111318] border border-[#1F2430] rounded-xl overflow-x-auto">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="border-b border-[#1F2430] text-zinc-400 bg-[#0A0B0F]">
+            <tr className="border-b border-slate-200 text-slate-500 bg-slate-50">
               <th className="px-4 py-3 font-medium">SKU</th>
               <th className="px-4 py-3 font-medium">Dish Title</th>
               <th className="px-4 py-3 font-medium">Category</th>
@@ -350,14 +350,14 @@ export default function MenuManagerView({
               <th className="px-4 py-3 font-medium text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#1F2430]">
+          <tbody className="divide-y divide-slate-200">
             {filtered.map((item) => (
-              <tr key={item.id} className="hover:bg-white/[0.02]">
-                <td className="px-4 py-3 font-mono text-zinc-400">{item.sku || "—"}</td>
-                <td className="px-4 py-3 text-white font-medium">{item.title}</td>
-                <td className="px-4 py-3 text-zinc-400">{item.category}</td>
-                <td className="px-4 py-3 text-zinc-400">{item.portion}</td>
-                <td className="px-4 py-3 text-right font-mono tabular-nums text-white">
+              <tr key={item.id} className="hover:bg-slate-50">
+                <td className="px-4 py-3 font-mono text-slate-500">{item.sku || "—"}</td>
+                <td className="px-4 py-3 text-slate-900 font-medium">{item.title}</td>
+                <td className="px-4 py-3 text-slate-500">{item.category}</td>
+                <td className="px-4 py-3 text-slate-500">{item.portion}</td>
+                <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-900">
                   {formatLKR2(item.price)}
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -365,7 +365,7 @@ export default function MenuManagerView({
                     <button
                       type="button"
                       onClick={() => handleDuplicate(item)}
-                      className="min-h-[36px] px-2.5 rounded-lg bg-[#0A0B0F] border border-[#1F2430] text-zinc-300 hover:text-white cursor-pointer"
+                      className="min-h-[36px] px-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 cursor-pointer"
                       title="Duplicate Item"
                     >
                       <Copy size={13} />
@@ -376,7 +376,7 @@ export default function MenuManagerView({
                         setIsAddingItem(false);
                         setEditingItem(item);
                       }}
-                      className="min-h-[36px] px-2.5 rounded-lg bg-[#0A0B0F] border border-[#1F2430] text-zinc-300 hover:text-white cursor-pointer"
+                      className="min-h-[36px] px-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 cursor-pointer"
                       title="Edit Item"
                     >
                       <Pencil size={13} />
@@ -388,7 +388,7 @@ export default function MenuManagerView({
                           onDeleteItem(item.id);
                         }
                       }}
-                      className="min-h-[36px] px-2.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white cursor-pointer transition"
+                      className="min-h-[36px] px-2.5 rounded-lg bg-rose-500/10 text-rose-600 hover:bg-rose-500 hover:text-slate-900 cursor-pointer transition"
                       title="Delete Item"
                     >
                       <Trash2 size={13} />

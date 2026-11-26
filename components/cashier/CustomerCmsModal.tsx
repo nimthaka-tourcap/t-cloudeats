@@ -55,14 +55,14 @@ export default function CustomerCmsModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-[#111318] border border-[#1F2430] rounded-2xl w-full max-w-4xl h-[82vh] flex flex-col overflow-hidden shadow-2xl">
+      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-4xl h-[82vh] flex flex-col overflow-hidden shadow-2xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#1F2430] flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between shrink-0">
           <div>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-slate-900">
               {editingCustomer ? "Edit Customer Profile" : `Customer Directory (${customers.length})`}
             </h3>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-slate-500">
               {editingCustomer
                 ? "Update contact details, birthday, or merge by phone"
                 : "Manage profiles, credit balances, and order history"}
@@ -74,7 +74,7 @@ export default function CustomerCmsModal({
               setEditingCustomer(null);
               onClose();
             }}
-            className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.05] cursor-pointer"
+            className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -87,12 +87,12 @@ export default function CustomerCmsModal({
               placeholder="Search by name, phone, or address..."
               value={cmsSearchQuery}
               onChange={(e) => setCmsSearchQuery(e.target.value)}
-              className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-4 text-sm text-white outline-none focus:border-[#F26F21]"
+              className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm text-slate-900 outline-none focus:border-[#F26F21]"
             />
 
-            <div className="flex-1 overflow-y-auto divide-y divide-[#1F2430] border border-[#1F2430] rounded-xl bg-[#0A0B0F]">
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-200 border border-slate-200 rounded-xl bg-slate-50">
               {filtered.length === 0 ? (
-                <div className="p-10 text-center text-sm text-zinc-500">
+                <div className="p-10 text-center text-sm text-slate-500">
                   No customers match your search.
                 </div>
               ) : (
@@ -114,14 +114,14 @@ export default function CustomerCmsModal({
                   return (
                     <div
                       key={c.phone}
-                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-white/[0.02]"
+                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50"
                     >
                       <div className="min-w-0 space-y-0.5">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-white">{c.name}</p>
-                          <span className="text-xs font-mono text-[#F26F21]">{c.phone}</span>
+                          <p className="text-sm font-semibold text-slate-900">{c.name}</p>
+                          <span className="text-xs font-mono text-sky-600">{c.phone}</span>
                           {c.birthday && (
-                            <span className="text-xs px-2 py-0.5 rounded bg-purple-500/10 text-purple-300">
+                            <span className="text-xs px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
                               🎂{" "}
                               {new Date(c.birthday).toLocaleDateString("en-US", {
                                 month: "short",
@@ -130,7 +130,7 @@ export default function CustomerCmsModal({
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-zinc-400 truncate">
+                        <p className="text-xs text-slate-500 truncate">
                           {c.address || "No address saved"} • {custOrders.length} orders
                         </p>
                       </div>
@@ -139,8 +139,8 @@ export default function CustomerCmsModal({
                         <span
                           className={`px-2.5 py-1 rounded-lg text-xs font-mono tabular-nums font-medium ${
                             totalDue > 0
-                              ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                              : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                              ? "bg-rose-500/10 text-rose-600 border border-rose-500/20"
+                              : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                           }`}
                         >
                           {totalDue > 0 ? `Due: ${formatLKR2(totalDue)}` : "Settled"}
@@ -150,14 +150,14 @@ export default function CustomerCmsModal({
                           onClick={() =>
                             setEditingCustomer({ ...c, originalPhone: c.phone })
                           }
-                          className="min-h-[40px] px-3.5 rounded-xl bg-[#111318] border border-[#1F2430] hover:border-white/20 text-xs font-medium text-white cursor-pointer"
+                          className="min-h-[40px] px-3.5 rounded-xl bg-white border border-slate-200 hover:border-white/20 text-xs font-medium text-slate-900 cursor-pointer"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
                           onClick={() => onDeleteCustomer(c.phone)}
-                          className="min-h-[40px] px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white cursor-pointer transition"
+                          className="min-h-[40px] px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-slate-900 cursor-pointer transition"
                           title="Delete Customer (PIN Required)"
                         >
                           <Trash2 size={14} />
@@ -173,7 +173,7 @@ export default function CustomerCmsModal({
           <form onSubmit={onSaveCustomerEdit} className="p-6 space-y-4 overflow-y-auto flex-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-xs text-zinc-400">Customer Name</label>
+                <label className="block text-xs text-slate-500">Customer Name</label>
                 <input
                   type="text"
                   required
@@ -183,11 +183,11 @@ export default function CustomerCmsModal({
                       prev ? { ...prev, name: e.target.value } : null
                     )
                   }
-                  className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none focus:border-[#F26F21]"
+                  className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none focus:border-[#F26F21]"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs text-zinc-400">Phone Number</label>
+                <label className="block text-xs text-slate-500">Phone Number</label>
                 <input
                   type="text"
                   required
@@ -197,13 +197,13 @@ export default function CustomerCmsModal({
                       prev ? { ...prev, phone: e.target.value } : null
                     )
                   }
-                  className="min-h-[44px] w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white font-mono outline-none focus:border-[#F26F21]"
+                  className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 font-mono outline-none focus:border-[#F26F21]"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs text-zinc-400">Delivery Address</label>
+              <label className="block text-xs text-slate-500">Delivery Address</label>
               <textarea
                 rows={3}
                 value={editingCustomer.address}
@@ -212,12 +212,12 @@ export default function CustomerCmsModal({
                     prev ? { ...prev, address: e.target.value } : null
                   )
                 }
-                className="w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl p-3.5 text-sm text-white outline-none focus:border-[#F26F21]"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-900 outline-none focus:border-[#F26F21]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs text-zinc-400">Birthday</label>
+              <label className="block text-xs text-slate-500">Birthday</label>
               <input
                 type="date"
                 value={editingCustomer.birthday ? editingCustomer.birthday.slice(0, 10) : ""}
@@ -226,16 +226,16 @@ export default function CustomerCmsModal({
                     prev ? { ...prev, birthday: e.target.value } : null
                   )
                 }
-                className="min-h-[44px] bg-[#0A0B0F] border border-[#1F2430] rounded-xl px-3.5 text-sm text-white outline-none"
-                style={{ colorScheme: "dark" }}
+                className="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 outline-none"
+                
               />
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-[#1F2430]">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => onDeleteCustomer(editingCustomer.phone)}
-                className="min-h-[44px] px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white text-xs font-medium cursor-pointer transition"
+                className="min-h-[44px] px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-slate-900 text-xs font-medium cursor-pointer transition"
               >
                 Delete Profile
               </button>
@@ -243,13 +243,13 @@ export default function CustomerCmsModal({
                 <button
                   type="button"
                   onClick={() => setEditingCustomer(null)}
-                  className="min-h-[44px] px-4 rounded-xl bg-[#0A0B0F] border border-[#1F2430] text-zinc-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
+                  className="min-h-[44px] px-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft size={14} /> Back
                 </button>
                 <button
                   type="submit"
-                  className="min-h-[44px] px-5 rounded-xl bg-[#F26F21] text-white text-xs font-semibold cursor-pointer"
+                  className="min-h-[44px] px-5 rounded-xl bg-sky-500 text-white text-xs font-semibold cursor-pointer"
                 >
                   Save Changes
                 </button>

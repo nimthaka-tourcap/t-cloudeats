@@ -254,32 +254,32 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
     <div className="space-y-6 overflow-y-auto pb-12 pr-1 max-h-full" style={{ scrollbarWidth: "thin" }}>
       
       {/* Top Banner Navigation */}
-      <div className="bg-[#111318] border border-[#1F2430] p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xl">
+      <div className="bg-white border border-slate-200 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xl">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-[#F26F21]/15 border border-[#F26F21]/30 flex items-center justify-center text-[#F26F21]">
+          <div className="w-9 h-9 rounded-xl bg-sky-500/15 border border-[#F26F21]/30 flex items-center justify-center text-sky-600">
             <Utensils size={18} />
           </div>
           <div>
-            <h2 className="text-sm font-black text-white tracking-wide flex items-center gap-2">
+            <h2 className="text-sm font-black text-slate-900 tracking-wide flex items-center gap-2">
               FOOD COSTING & RECIPE ANALYTICS
-              <span className="bg-[#F26F21]/20 text-[#F26F21] text-[9px] px-2 py-0.5 rounded-full font-mono font-bold">
+              <span className="bg-sky-500/20 text-sky-600 text-[9px] px-2 py-0.5 rounded-full font-mono font-bold">
                 PRO
               </span>
             </h2>
-            <p className="text-[10px] text-slate-400 font-medium">
+            <p className="text-[10px] text-slate-500 font-medium">
               Margin intelligence, Uber 33% profitability & commercial recipe breakdown
             </p>
           </div>
         </div>
 
         {/* Sub Navigation Tabs */}
-        <div className="flex items-center bg-[#0A0B0F] border border-[#1F2430] p-1 rounded-xl">
+        <div className="flex items-center bg-slate-50 border border-slate-200 p-1 rounded-xl">
           <button
             onClick={() => setActiveTab("matrix")}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === "matrix"
-                ? "bg-[#F26F21] text-white shadow-lg shadow-[#F26F21]/25"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-sky-500 text-white shadow-lg shadow-[#F26F21]/25"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <Percent size={13} />
@@ -290,8 +290,8 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
             onClick={() => setActiveTab("recipe")}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === "recipe"
-                ? "bg-[#F26F21] text-white shadow-lg shadow-[#F26F21]/25"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-sky-500 text-white shadow-lg shadow-[#F26F21]/25"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <ChefHat size={13} />
@@ -302,8 +302,8 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
             onClick={() => setActiveTab("market")}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === "market"
-                ? "bg-[#F26F21] text-white shadow-lg shadow-[#F26F21]/25"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-sky-500 text-white shadow-lg shadow-[#F26F21]/25"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <ClipboardList size={13} />
@@ -319,45 +319,45 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
         <div className="space-y-6">
           {/* KPI Dashboard Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-[#111318] border border-[#1F2430] p-4 rounded-2xl flex flex-col gap-1">
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col gap-1">
               <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Avg Menu Food Cost %</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-black text-white font-mono">{matrixKPIs.avgFoodCostPct}%</span>
-                <span className="text-[10px] text-emerald-400 font-bold">Target: &lt;40%</span>
+                <span className="text-xl font-black text-slate-900 font-mono">{matrixKPIs.avgFoodCostPct}%</span>
+                <span className="text-[10px] text-emerald-600 font-bold">Target: &lt;40%</span>
               </div>
               <span className="text-[9px] text-slate-500">Across all 34 menu items</span>
             </div>
 
-            <div className="bg-[#111318] border border-[#1F2430] p-4 rounded-2xl flex flex-col gap-1">
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col gap-1">
               <span className="text-[9px] font-black uppercase text-emerald-500 tracking-wider">Avg In-House Margin</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-black text-emerald-400 font-mono">+{matrixKPIs.avgInHouseProfitPct}%</span>
-                <span className="text-[10px] text-slate-400 font-medium">Net Profit</span>
+                <span className="text-xl font-black text-emerald-600 font-mono">+{matrixKPIs.avgInHouseProfitPct}%</span>
+                <span className="text-[10px] text-slate-500 font-medium">Net Profit</span>
               </div>
               <span className="text-[9px] text-slate-500">Dine-in / Direct Delivery</span>
             </div>
 
-            <div className="bg-[#111318] border border-[#1F2430] p-4 rounded-2xl flex flex-col gap-1">
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col gap-1">
               <span className="text-[9px] font-black uppercase text-amber-500 tracking-wider">Avg Uber Eats Margin</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-black text-amber-400 font-mono">+{matrixKPIs.avgUberProfitPct}%</span>
-                <span className="text-[10px] text-slate-400 font-medium">After 33% cut</span>
+                <span className="text-xl font-black text-amber-600 font-mono">+{matrixKPIs.avgUberProfitPct}%</span>
+                <span className="text-[10px] text-slate-500 font-medium">After 33% cut</span>
               </div>
               <span className="text-[9px] text-slate-500">Uber marketplace net</span>
             </div>
 
-            <div className="bg-[#111318] border border-[#1F2430] p-4 rounded-2xl flex flex-col gap-1">
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col gap-1">
               <span className="text-[9px] font-black uppercase text-rose-500 tracking-wider">High Cost Watchlist</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-black text-rose-400 font-mono">{matrixKPIs.highCostCount}</span>
-                <span className="text-[10px] text-rose-400 font-bold">Food Cost &gt;45%</span>
+                <span className="text-xl font-black text-rose-600 font-mono">{matrixKPIs.highCostCount}</span>
+                <span className="text-[10px] text-rose-600 font-bold">Food Cost &gt;45%</span>
               </div>
               <span className="text-[9px] text-slate-500">Requires recipe review</span>
             </div>
           </div>
 
           {/* Filter and Control Bar */}
-          <div className="bg-[#111318] border border-[#1F2430] p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-1">
               <div className="relative flex-1 max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={14} />
@@ -366,17 +366,17 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                   placeholder="Search dish name or category..."
                   value={matrixSearch}
                   onChange={(e) => setMatrixSearch(e.target.value)}
-                  className="w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-[#F26F21]/60 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-500 outline-none focus:border-[#F26F21]/60 transition-colors"
                 />
               </div>
 
               {/* Category Filter */}
-              <div className="flex items-center gap-1.5 bg-[#0A0B0F] border border-[#1F2430] px-2.5 py-1.5 rounded-xl">
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl">
                 <span className="text-[9px] font-black text-slate-500 uppercase">Cat:</span>
                 <select
                   value={matrixCategory}
                   onChange={(e) => setMatrixCategory(e.target.value)}
-                  className="bg-transparent text-xs text-slate-300 font-bold outline-none cursor-pointer border-none p-0 focus:ring-0"
+                  className="bg-transparent text-xs text-slate-700 font-bold outline-none cursor-pointer border-none p-0 focus:ring-0"
                 >
                   <option value="All" style={{ background: "#0A0B0F" }}>All Categories</option>
                   <option value="Rice" style={{ background: "#0A0B0F" }}>Fried Rice</option>
@@ -386,12 +386,12 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
               </div>
 
               {/* Portion Filter */}
-              <div className="flex items-center gap-1.5 bg-[#0A0B0F] border border-[#1F2430] px-2.5 py-1.5 rounded-xl">
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl">
                 <span className="text-[9px] font-black text-slate-500 uppercase">Size:</span>
                 <select
                   value={matrixPortion}
                   onChange={(e) => setMatrixPortion(e.target.value)}
-                  className="bg-transparent text-xs text-slate-300 font-bold outline-none cursor-pointer border-none p-0 focus:ring-0"
+                  className="bg-transparent text-xs text-slate-700 font-bold outline-none cursor-pointer border-none p-0 focus:ring-0"
                 >
                   <option value="All" style={{ background: "#0A0B0F" }}>All Sizes</option>
                   <option value="Medium" style={{ background: "#0A0B0F" }}>Medium (M)</option>
@@ -400,12 +400,12 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
               </div>
 
               {/* Cost Margin Filter */}
-              <div className="flex items-center gap-1.5 bg-[#0A0B0F] border border-[#1F2430] px-2.5 py-1.5 rounded-xl">
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl">
                 <span className="text-[9px] font-black text-slate-500 uppercase">Cost:</span>
                 <select
                   value={matrixCostFilter}
                   onChange={(e) => setMatrixCostFilter(e.target.value as any)}
-                  className="bg-transparent text-xs text-slate-300 font-bold outline-none cursor-pointer border-none p-0 focus:ring-0"
+                  className="bg-transparent text-xs text-slate-700 font-bold outline-none cursor-pointer border-none p-0 focus:ring-0"
                 >
                   <option value="All" style={{ background: "#0A0B0F" }}>All Margins</option>
                   <option value="Low" style={{ background: "#0A0B0F" }}>🟢 Low Cost (&lt;35%)</option>
@@ -417,11 +417,11 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
 
             {/* Channel View Toggle & Export */}
             <div className="flex items-center gap-2">
-              <div className="flex items-center bg-[#0A0B0F] border border-[#1F2430] p-1 rounded-xl">
+              <div className="flex items-center bg-slate-100 border border-slate-200 p-1 rounded-xl">
                 <button
                   onClick={() => setChannelView("comparison")}
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all cursor-pointer ${
-                    channelView === "comparison" ? "bg-[#1F2430] text-white" : "text-slate-400"
+                    channelView === "comparison" ? "bg-sky-500 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   Side-by-Side
@@ -429,7 +429,7 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                 <button
                   onClick={() => setChannelView("inhouse")}
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all cursor-pointer ${
-                    channelView === "inhouse" ? "bg-[#1F2430] text-emerald-400" : "text-slate-400"
+                    channelView === "inhouse" ? "bg-emerald-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   In-House
@@ -437,7 +437,7 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                 <button
                   onClick={() => setChannelView("uber")}
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all cursor-pointer ${
-                    channelView === "uber" ? "bg-[#1F2430] text-[#F26F21]" : "text-slate-400"
+                    channelView === "uber" ? "bg-sky-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   Uber (33%)
@@ -446,7 +446,7 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
 
               <button
                 onClick={handleExportCSV}
-                className="bg-[#0A0B0F] hover:bg-[#14203A] text-slate-200 border border-[#1F2430] px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                className="bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
                 title="Export to CSV"
               >
                 <Download size={13} />
@@ -456,11 +456,11 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
           </div>
 
           {/* Matrix Data Table */}
-          <div className="bg-[#111318] border border-[#1F2430] rounded-2xl overflow-hidden shadow-xl">
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-[#1F2430] text-[10px] uppercase tracking-wider text-slate-400 font-black" style={{ background: "#0B1122" }}>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-[10px] uppercase tracking-wider text-slate-600 font-black">
                     <th className="py-3.5 px-4 w-12 text-center">#</th>
                     <th className="py-3.5 px-4">Menu Dish</th>
                     <th className="py-3.5 px-4 text-center">Size</th>
@@ -470,20 +470,20 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                     <th className="py-3.5 px-4 text-right">Total Cost</th>
                     {(channelView === "comparison" || channelView === "inhouse") && (
                       <>
-                        <th className="py-3.5 px-4 text-right text-emerald-400">In-House Profit</th>
-                        <th className="py-3.5 px-4 text-center text-emerald-400">Margin %</th>
+                        <th className="py-3.5 px-4 text-right text-emerald-600">In-House Profit</th>
+                        <th className="py-3.5 px-4 text-center text-emerald-600">Margin %</th>
                       </>
                     )}
                     {(channelView === "comparison" || channelView === "uber") && (
                       <>
-                        <th className="py-3.5 px-4 text-right text-amber-400">Uber 33% Cut</th>
-                        <th className="py-3.5 px-4 text-right text-amber-400">Uber Net</th>
+                        <th className="py-3.5 px-4 text-right text-amber-600">Uber 33% Cut</th>
+                        <th className="py-3.5 px-4 text-right text-amber-600">Uber Net</th>
                       </>
                     )}
                     <th className="py-3.5 px-4 text-center">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1F2430]">
+                <tbody className="divide-y divide-slate-200">
                   {filteredMatrix.length === 0 ? (
                     <tr>
                       <td colSpan={10} className="py-12 text-center text-slate-500 font-bold">
@@ -493,37 +493,37 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                   ) : (
                     filteredMatrix.map(item => {
                       // Cost badge color
-                      let costBadge = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                      let costBadge = "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
                       if (item.foodCostPct > 45) {
-                        costBadge = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+                        costBadge = "bg-rose-500/10 text-rose-600 border-rose-500/20";
                       } else if (item.foodCostPct >= 35) {
-                        costBadge = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                        costBadge = "bg-amber-500/10 text-amber-600 border-amber-500/20";
                       }
 
                       return (
-                        <tr key={item.id} className="hover:bg-[#1A233D]/40 transition-colors group">
+                        <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
                           <td className="py-3 px-4 text-center font-mono text-[10px] text-slate-500">
                             {item.id}
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex flex-col">
-                              <span className="font-bold text-white leading-normal">{item.name}</span>
-                              <span className="text-[10px] text-slate-400">{item.category}</span>
+                              <span className="font-bold text-slate-900 leading-normal">{item.name}</span>
+                              <span className="text-[10px] text-slate-600">{item.category}</span>
                             </div>
                           </td>
                           <td className="py-3 px-4 text-center">
                             <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
                               item.portion === "Large"
-                                ? "bg-purple-500/15 text-purple-300 border border-purple-500/30"
-                                : "bg-blue-500/15 text-blue-300 border border-blue-500/30"
+                                ? "bg-purple-50 text-purple-700 border border-purple-200"
+                                : "bg-sky-50 text-sky-700 border border-sky-200"
                             }`}>
                               {item.portion}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-right font-mono font-bold text-white">
+                          <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
                             Rs {item.sellingPrice.toLocaleString()}
                           </td>
-                          <td className="py-3 px-4 text-right font-mono text-slate-300">
+                          <td className="py-3 px-4 text-right font-mono text-slate-700">
                             Rs {item.foodCost.toLocaleString()}
                           </td>
                           <td className="py-3 px-4 text-center">
@@ -531,16 +531,16 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                               {item.foodCostPct}%
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-right font-mono text-slate-400">
+                          <td className="py-3 px-4 text-right font-mono text-slate-500">
                             Rs {item.totalCost.toLocaleString()}
                           </td>
 
                           {(channelView === "comparison" || channelView === "inhouse") && (
                             <>
-                              <td className="py-3 px-4 text-right font-mono font-black text-emerald-400">
+                              <td className="py-3 px-4 text-right font-mono font-black text-emerald-600">
                                 Rs {item.inHouseNetProfit.toLocaleString()}
                               </td>
-                              <td className="py-3 px-4 text-center font-mono font-bold text-emerald-400/90">
+                              <td className="py-3 px-4 text-center font-mono font-bold text-emerald-600/90">
                                 {item.inHouseNetProfitPct}%
                               </td>
                             </>
@@ -551,7 +551,7 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                               <td className="py-3 px-4 text-right font-mono text-amber-500/80">
                                 -Rs {item.uber33Commission.toLocaleString()}
                               </td>
-                              <td className="py-3 px-4 text-right font-mono font-black text-amber-400">
+                              <td className="py-3 px-4 text-right font-mono font-black text-amber-600">
                                 Rs {item.uberNetProfit.toLocaleString()}
                               </td>
                             </>
@@ -563,7 +563,7 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                                 setRecSellingPrice(item.sellingPrice);
                                 setActiveTab("recipe");
                               }}
-                              className="text-xs bg-[#0A0B0F] hover:bg-[#F26F21] text-slate-300 hover:text-white border border-[#1F2430] hover:border-[#F26F21] px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+                              className="text-xs bg-slate-50 hover:bg-sky-500 text-slate-700 hover:text-white border border-slate-200 hover:border-[#F26F21] px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
                               title="Calculate and inspect recipe breakdown"
                             >
                               Recipe &rarr;
@@ -587,13 +587,13 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
         <div className="space-y-6">
           
           {/* Recipe Selector & Actions Bar */}
-          <div className="bg-[#111318] border border-[#1F2430] p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-xl">
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-xl">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Select Recipe:</span>
+              <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Select Recipe:</span>
               <select
                 value={selectedRecipeId}
                 onChange={(e) => setSelectedRecipeId(e.target.value)}
-                className="bg-[#0A0B0F] text-white font-bold text-xs border border-[#1F2430] rounded-xl px-3 py-2 outline-none cursor-pointer focus:border-[#F26F21]"
+                className="bg-slate-50 text-slate-900 font-bold text-xs border border-slate-200 rounded-xl px-3 py-2 outline-none cursor-pointer focus:border-[#F26F21]"
               >
                 {recipes.map(rec => (
                   <option key={rec.id} value={rec.id} style={{ background: "#0A0B0F" }}>
@@ -604,8 +604,8 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-slate-400 bg-[#0A0B0F] px-3 py-1.5 rounded-xl border border-[#1F2430]">
-                Standard Template: <strong className="text-white">Excel Costing Formula</strong>
+              <span className="text-[10px] text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                Standard Template: <strong className="text-slate-900">Excel Costing Formula</strong>
               </span>
             </div>
           </div>
@@ -615,13 +615,13 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
             
             {/* Left: Ingredients & Recipe Breakdown */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="bg-[#111318] border border-[#1F2430] rounded-2xl p-5 shadow-xl space-y-5">
-                <div className="flex items-center justify-between border-b border-[#1F2430] pb-3">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xl space-y-5">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                   <div>
-                    <h3 className="text-sm font-black text-white">{currentRecipe?.dishName || "Custom Recipe"}</h3>
-                    <p className="text-[10px] text-slate-400">Raw ingredient weights, portion unit rates, and subtotal food cost</p>
+                    <h3 className="text-sm font-black text-slate-900">{currentRecipe?.dishName || "Custom Recipe"}</h3>
+                    <p className="text-[10px] text-slate-500">Raw ingredient weights, portion unit rates, and subtotal food cost</p>
                   </div>
-                  <span className="bg-[#F26F21]/20 text-[#F26F21] text-xs px-2.5 py-1 rounded-lg font-bold font-mono">
+                  <span className="bg-sky-500/20 text-sky-600 text-xs px-2.5 py-1 rounded-lg font-bold font-mono">
                     Portion: {currentRecipe?.portion || "Medium"}
                   </span>
                 </div>
@@ -630,7 +630,7 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="border-b border-[#1F2430] text-[10px] uppercase tracking-wider text-slate-400 font-black">
+                      <tr className="border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-500 font-black">
                         <th className="py-2.5 px-2">Ingredient</th>
                         <th className="py-2.5 px-2 text-center">Qty / Portion</th>
                         <th className="py-2.5 px-2 text-right">Unit Rate</th>
@@ -638,23 +638,23 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                         <th className="py-2.5 px-2 text-center w-8"></th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#1A2640]">
+                    <tbody className="divide-y divide-slate-200">
                       {recIngredients.map(ing => (
-                        <tr key={ing.id} className="hover:bg-[#14203A]/30 transition-colors">
-                          <td className="py-2 px-2 font-bold text-white">{ing.name}</td>
-                          <td className="py-2 px-2 text-center font-mono text-slate-300">
+                        <tr key={ing.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-2 px-2 font-bold text-slate-900">{ing.name}</td>
+                          <td className="py-2 px-2 text-center font-mono text-slate-700">
                             {ing.qty} {ing.unit}
                           </td>
-                          <td className="py-2 px-2 text-right font-mono text-slate-400">
+                          <td className="py-2 px-2 text-right font-mono text-slate-500">
                             Rs {ing.unitRate}
                           </td>
-                          <td className="py-2 px-2 text-right font-mono font-black text-emerald-400">
+                          <td className="py-2 px-2 text-right font-mono font-black text-emerald-600">
                             Rs {ing.cost.toLocaleString()}
                           </td>
                           <td className="py-2 px-2 text-center">
                             <button
                               onClick={() => handleRemoveIngredient(ing.id)}
-                              className="text-slate-500 hover:text-rose-400 p-1 transition-colors cursor-pointer"
+                              className="text-slate-500 hover:text-rose-600 p-1 transition-colors cursor-pointer"
                               title="Delete ingredient"
                             >
                               <Trash2 size={13} />
@@ -667,8 +667,8 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                 </div>
 
                 {/* Add New Ingredient Inputs */}
-                <div className="bg-[#0A0B0F] border border-[#1F2430] p-3 rounded-xl space-y-3">
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-3">
+                  <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
                     Add Ingredient to Recipe
                   </span>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -677,7 +677,7 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                       placeholder="Ingredient Name"
                       value={newIngName}
                       onChange={(e) => setNewIngName(e.target.value)}
-                      className="bg-[#111318] border border-[#1F2430] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#F26F21]"
+                      className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-[#F26F21]"
                     />
                     <div className="flex gap-1">
                       <input
@@ -685,12 +685,12 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                         placeholder="Qty"
                         value={newIngQty}
                         onChange={(e) => setNewIngQty(e.target.value)}
-                        className="w-full bg-[#111318] border border-[#1F2430] rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-[#F26F21]"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-[#F26F21]"
                       />
                       <select
                         value={newIngUnit}
                         onChange={(e) => setNewIngUnit(e.target.value)}
-                        className="bg-[#111318] border border-[#1F2430] rounded-lg px-1 text-[10px] text-slate-300 outline-none"
+                        className="bg-white border border-slate-200 rounded-lg px-1 text-[10px] text-slate-700 outline-none"
                       >
                         <option value="g">g</option>
                         <option value="kg">kg</option>
@@ -706,11 +706,11 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                       placeholder="Rate / Unit"
                       value={newIngRate}
                       onChange={(e) => setNewIngRate(e.target.value)}
-                      className="bg-[#111318] border border-[#1F2430] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#F26F21]"
+                      className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-[#F26F21]"
                     />
                     <button
                       onClick={handleAddIngredient}
-                      className="bg-[#F26F21] hover:bg-[#F26F21]/90 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1"
+                      className="bg-sky-500 hover:bg-sky-500/90 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1"
                     >
                       <Plus size={13} />
                       Add
@@ -719,11 +719,11 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                 </div>
 
                 {/* Overheads & Utility Sliders */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-[#1F2430]">
-                  <div className="bg-[#0A0B0F] border border-[#1F2430] p-3 rounded-xl flex flex-col gap-1.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200">
+                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col gap-1.5">
                     <div className="flex justify-between text-xs">
-                      <span className="text-slate-400 font-bold">Utility & Prep Cost %</span>
-                      <span className="text-amber-400 font-mono font-black">{recUtilityPct}%</span>
+                      <span className="text-slate-500 font-bold">Utility & Prep Cost %</span>
+                      <span className="text-amber-600 font-mono font-black">{recUtilityPct}%</span>
                     </div>
                     <input
                       type="range"
@@ -737,16 +737,16 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                     <span className="text-[9px] text-slate-500">Adds Rs {liveTotals.utilityCost} for gas, power & staff</span>
                   </div>
 
-                  <div className="bg-[#0A0B0F] border border-[#1F2430] p-3 rounded-xl flex flex-col gap-1.5">
+                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col gap-1.5">
                     <div className="flex justify-between text-xs">
-                      <span className="text-slate-400 font-bold">Packaging Cost</span>
-                      <span className="text-white font-mono font-black">Rs {recPackagingCost}</span>
+                      <span className="text-slate-500 font-bold">Packaging Cost</span>
+                      <span className="text-slate-900 font-mono font-black">Rs {recPackagingCost}</span>
                     </div>
                     <input
                       type="number"
                       value={recPackagingCost}
                       onChange={(e) => setRecPackagingCost(Number(e.target.value) || 0)}
-                      className="bg-[#111318] border border-[#1F2430] rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-[#F26F21]"
+                      className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-900 outline-none focus:border-[#F26F21]"
                     />
                     <span className="text-[9px] text-slate-500">Box, sauce cup, foil & carry bag</span>
                   </div>
@@ -758,13 +758,13 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
             <div className="lg:col-span-5 space-y-6">
               
               {/* Selling Price Simulator Slider */}
-              <div className="bg-[#111318] border border-[#1F2430] rounded-2xl p-5 shadow-xl space-y-4">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xl space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase text-slate-400 tracking-wider">
+                  <span className="text-xs font-black uppercase text-slate-500 tracking-wider">
                     Selling Price Simulator
                   </span>
-                  <div className="bg-[#0A0B0F] border border-[#1F2430] px-3 py-1 rounded-xl">
-                    <span className="text-lg font-black text-[#F26F21] font-mono">
+                  <div className="bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl">
+                    <span className="text-lg font-black text-sky-600 font-mono">
                       Rs {recSellingPrice.toLocaleString()}
                     </span>
                   </div>
@@ -781,22 +781,22 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                 />
 
                 {/* Production Cost Breakdown List */}
-                <div className="bg-[#0A0B0F] border border-[#1F2430] p-3.5 rounded-xl space-y-2 text-xs">
-                  <div className="flex justify-between text-slate-300">
+                <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl space-y-2 text-xs">
+                  <div className="flex justify-between text-slate-700">
                     <span>Raw Food Cost:</span>
-                    <span className="font-mono font-bold text-white">Rs {liveTotals.foodCost.toLocaleString()}</span>
+                    <span className="font-mono font-bold text-slate-900">Rs {liveTotals.foodCost.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-slate-300">
+                  <div className="flex justify-between text-slate-700">
                     <span>Utility & Prep ({recUtilityPct}%):</span>
-                    <span className="font-mono text-slate-300">+Rs {liveTotals.utilityCost.toLocaleString()}</span>
+                    <span className="font-mono text-slate-700">+Rs {liveTotals.utilityCost.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-slate-300">
+                  <div className="flex justify-between text-slate-700">
                     <span>Packaging:</span>
-                    <span className="font-mono text-slate-300">+Rs {recPackagingCost.toLocaleString()}</span>
+                    <span className="font-mono text-slate-700">+Rs {recPackagingCost.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between border-t border-[#1F2430] pt-2 font-black text-white">
+                  <div className="flex justify-between border-t border-slate-200 pt-2 font-black text-slate-900">
                     <span>Total Production Cost:</span>
-                    <span className="font-mono text-rose-400">Rs {liveTotals.totalCost.toLocaleString()}</span>
+                    <span className="font-mono text-rose-600">Rs {liveTotals.totalCost.toLocaleString()}</span>
                   </div>
                 </div>
 
@@ -834,7 +834,7 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                       console.error("Failed to sync recipe to DB:", err);
                     }
                   }}
-                  className="w-full py-2.5 rounded-xl bg-[#F26F21] hover:bg-[#e06117] text-white text-xs font-semibold transition cursor-pointer"
+                  className="w-full py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold transition cursor-pointer"
                 >
                   Save &amp; Sync Recipe to Accounting DB
                 </button>
@@ -843,54 +843,54 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
               {/* 3 Channel Profit Cards */}
               <div className="space-y-3">
                 {/* 1. In-House / Dine-In */}
-                <div className="bg-[#0E1B24] border border-emerald-500/30 p-4 rounded-2xl flex items-center justify-between">
+                <div className="bg-emerald-50/70 border border-emerald-200 p-4 rounded-2xl flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">
                       Dine-In / Direct Takeaway (0% Cut)
                     </span>
-                    <h4 className="text-lg font-black text-white font-mono mt-0.5">
+                    <h4 className="text-lg font-black text-slate-900 font-mono mt-0.5">
                       +Rs {liveTotals.inHouseProfit.toLocaleString()}
                     </h4>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-mono font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                    <span className="text-xs font-mono font-black text-emerald-700 bg-white px-2.5 py-1 rounded-lg border border-emerald-200">
                       {liveTotals.inHouseMarginPct}% Margin
                     </span>
                   </div>
                 </div>
 
                 {/* 2. PickMe (22% Commission) */}
-                <div className="bg-[#141A29] border border-blue-500/30 p-4 rounded-2xl flex items-center justify-between">
+                <div className="bg-sky-50/70 border border-sky-200 p-4 rounded-2xl flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-black text-sky-700 uppercase tracking-wider">
                       PickMe Food (22% Comm: -Rs {liveTotals.pickmeCommissionAmount})
                     </span>
-                    <h4 className="text-lg font-black text-white font-mono mt-0.5">
+                    <h4 className="text-lg font-black text-slate-900 font-mono mt-0.5">
                       +Rs {liveTotals.pickmeNetProfit.toLocaleString()}
                     </h4>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-mono font-black text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-500/20">
+                    <span className="text-xs font-mono font-black text-sky-700 bg-white px-2.5 py-1 rounded-lg border border-sky-200">
                       {liveTotals.pickmeMarginPct}% Margin
                     </span>
                   </div>
                 </div>
 
                 {/* 3. Uber Eats (33% Commission) */}
-                <div className="bg-[#1C1414] border border-[#F26F21]/40 p-4 rounded-2xl flex items-center justify-between">
+                <div className="bg-orange-50/70 border border-orange-200 p-4 rounded-2xl flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-black text-[#F26F21] uppercase tracking-wider">
+                    <span className="text-[10px] font-black text-orange-700 uppercase tracking-wider">
                       Uber Eats (33% Comm: -Rs {liveTotals.uberCommissionAmount})
                     </span>
-                    <h4 className="text-lg font-black text-white font-mono mt-0.5">
+                    <h4 className="text-lg font-black text-slate-900 font-mono mt-0.5">
                       +Rs {liveTotals.uberNetProfit.toLocaleString()}
                     </h4>
                   </div>
                   <div className="text-right">
                     <span className={`text-xs font-mono font-black px-2.5 py-1 rounded-lg border ${
                       liveTotals.uberNetProfit > 0
-                        ? "text-[#F26F21] bg-[#F26F21]/10 border-[#F26F21]/30"
-                        : "text-rose-400 bg-rose-500/10 border-rose-500/30"
+                        ? "text-sky-600 bg-sky-500/10 border-[#F26F21]/30"
+                        : "text-rose-600 bg-rose-500/10 border-rose-500/30"
                     }`}>
                       {liveTotals.uberMarginPct}% Margin
                     </span>
@@ -909,7 +909,7 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
       {activeTab === "market" && (
         <div className="space-y-6">
           {/* Header Controls */}
-          <div className="bg-[#111318] border border-[#1F2430] p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
             <div className="flex flex-wrap items-center gap-3 flex-1">
               <div className="relative flex-1 max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={14} />
@@ -918,20 +918,20 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                   placeholder="Search market item..."
                   value={marketSearch}
                   onChange={(e) => setMarketSearch(e.target.value)}
-                  className="w-full bg-[#0A0B0F] border border-[#1F2430] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-[#F26F21]/60 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-500 outline-none focus:border-[#F26F21]/60 transition-colors"
                 />
               </div>
 
               {/* Day Filter */}
-              <div className="flex items-center bg-[#0A0B0F] border border-[#1F2430] p-1 rounded-xl">
+              <div className="flex items-center bg-slate-50 border border-slate-200 p-1 rounded-xl">
                 {(["All", "Mon", "Wed", "Fri"] as const).map(day => (
                   <button
                     key={day}
                     onClick={() => setMarketDayFilter(day)}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       marketDayFilter === day
-                        ? "bg-[#F26F21] text-white shadow-md shadow-[#F26F21]/30"
-                        : "text-slate-400 hover:text-slate-200"
+                        ? "bg-sky-500 text-white shadow-md shadow-[#F26F21]/30"
+                        : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
                     {day === "All" ? "All Days" : `${day} Run`}
@@ -940,12 +940,12 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
               </div>
 
               {/* Category Filter */}
-              <div className="flex items-center gap-1.5 bg-[#0A0B0F] border border-[#1F2430] px-2.5 py-1.5 rounded-xl">
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl">
                 <span className="text-[9px] font-black text-slate-500 uppercase">Category:</span>
                 <select
                   value={marketCategoryFilter}
                   onChange={(e) => setMarketCategoryFilter(e.target.value)}
-                  className="bg-transparent text-xs text-slate-300 font-bold outline-none cursor-pointer border-none p-0 focus:ring-0"
+                  className="bg-transparent text-xs text-slate-700 font-bold outline-none cursor-pointer border-none p-0 focus:ring-0"
                 >
                   <option value="All" style={{ background: "#0A0B0F" }}>All Categories</option>
                   <option value="Vegetables" style={{ background: "#0A0B0F" }}>Vegetables (12)</option>
@@ -963,14 +963,14 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
             <div className="flex items-center gap-2">
               <button
                 onClick={handleCopyMarketList}
-                className="bg-[#0A0B0F] hover:bg-[#14203A] text-emerald-400 border border-[#1F2430] px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <Share2 size={13} />
                 WhatsApp List
               </button>
               <button
                 onClick={() => window.print()}
-                className="bg-[#0A0B0F] hover:bg-[#14203A] text-slate-300 border border-[#1F2430] px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <Printer size={13} />
                 Print
@@ -1003,10 +1003,10 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                   if (itemsInCat.length === 0) return null;
 
                   return (
-                    <div key={cat} className="bg-[#111318] border border-[#1F2430] rounded-2xl p-4 shadow-xl space-y-3">
-                      <div className="flex items-center justify-between border-b border-[#1F2430] pb-2.5">
-                        <span className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
-                          <Layers size={13} className="text-[#F26F21]" />
+                    <div key={cat} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                        <span className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                          <Layers size={13} className="text-sky-600" />
                           {cat}
                         </span>
                         <span className="text-[10px] font-mono text-slate-500 font-bold">
@@ -1018,10 +1018,10 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                         {itemsInCat.map(item => (
                           <div
                             key={item.id}
-                            className="bg-[#0A0B0F] border border-[#1A2640] hover:border-[#2A3B60] p-2.5 rounded-xl flex items-center justify-between gap-3 transition-colors"
+                            className="bg-slate-50 border border-[#1A2640] hover:border-[#2A3B60] p-2.5 rounded-xl flex items-center justify-between gap-3 transition-colors"
                           >
                             <div className="flex items-center gap-2 flex-1">
-                              <span className="text-xs font-bold text-slate-200">{item.name}</span>
+                              <span className="text-xs font-bold text-slate-800">{item.name}</span>
                             </div>
 
                             <div className="flex items-center gap-3">
@@ -1031,9 +1031,9 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                                   type="number"
                                   value={item.estimatedQty || ""}
                                   onChange={(e) => updateMarketQty(item.id, parseFloat(e.target.value) || 0)}
-                                  className="w-14 bg-[#111318] border border-[#1F2430] rounded px-1.5 py-0.5 text-center text-xs font-mono font-bold text-white outline-none"
+                                  className="w-14 bg-white border border-slate-200 rounded px-1.5 py-0.5 text-center text-xs font-mono font-bold text-slate-900 outline-none"
                                 />
-                                <span className="text-[10px] text-slate-400 font-mono">{item.unit}</span>
+                                <span className="text-[10px] text-slate-500 font-mono">{item.unit}</span>
                               </div>
 
                               {/* Mon / Wed / Fri Checkboxes */}
@@ -1046,8 +1046,8 @@ export default function FoodCostingModule({ onAddStockClick }: FoodCostingModule
                                       onClick={() => toggleMarketDay(item.id, day)}
                                       className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase transition-all cursor-pointer border ${
                                         isChecked
-                                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
-                                          : "bg-[#111318] text-slate-500 border-[#1F2430] hover:border-slate-400"
+                                          ? "bg-emerald-500/20 text-emerald-600 border-emerald-500/40"
+                                          : "bg-white text-slate-500 border-slate-200 hover:border-slate-400"
                                       }`}
                                       title={`Toggle ${day} market order`}
                                     >

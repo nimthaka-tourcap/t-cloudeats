@@ -32,6 +32,12 @@
   - Added 2D arrow-key product grid navigation (`PosTerminalView.tsx`, dynamic CSS column calculation, `ring-2 ring-emerald-400/80`, auto-scroll, `Enter` add + pulse, `+/-` qty, `[/]` category cycling).
   - Added `Tab` zone switching (`GRID` <-> `CART`), Cart item navigation (`ArrowUp`/`ArrowDown`, `+/-`, `Backspace`/`Delete`), and `F4` / `Alt+O` Order Logs navigation (`OrderLogsView.tsx` row focus, `Enter` receipt, `Backspace`/`Esc` back to POS).
   - Added cashier hotkeys (`/` or `Ctrl+K` quick search with `Enter` top-match select, `F2` / `Ctrl+Enter` checkout, `F8` / `F9` park & recall, `Ctrl+P` print in `ReceiptPrintModal`, arrow/Enter/Esc/Backspace modal navigation, and `? Keys` legend pill) guarded by `isEditable` input safety checks.
+- [x] **Stage 11 (Crisp White ERP Visual Overhaul):**
+  - Redesigned the entire app (`/login`, `/cashier`, POS terminal, Cart, Modals, Stock/Recipes, Order Logs, Shift Tally, SLFRS Finance, Payroll, Fixed Assets, Settings) to a **Crisp White ERP** theme (`#F8FAFC` / `#F1F5F9` canvas, `#FFFFFF` cards, `1px` `border-slate-200`, `#0F172A` headings, `#0EA5E9` sky-blue active pills & primary CTAs).
+  - Upgraded the left sidebar in `app/cashier/page.tsx` to an expanded, collapsible (`«`) white ERP sidebar with `MAIN` and `OTHERS` navigation groups, right-side chevrons, and bottom Owner Mode profile bar.
+- [x] **Stage 12 (Full-Bleed Edge-to-Edge Shell & Overall Contrast Fix):**
+  - Removed outer padding (`p-2 sm:p-3`), outer `#F1F5F9` frame, and `rounded-2xl border border-slate-200 shadow-sm` wrapper in `app/cashier/page.tsx` so the workspace sits 100% edge-to-edge without left, right, top, or bottom borders.
+  - Fixed remaining dark-on-dark, white-on-white, and low-contrast classes across `app/cashier/page.tsx`, `app/accounting/page.tsx`, `components/cashier/FoodCostingModule.tsx`, `components/cashier/ReceiptPrintModal.tsx`, `components/cashier/CustomerCmsModal.tsx`, `components/cashier/OrderLogsView.tsx`, `components/cashier/UnifiedStockView.tsx`, `components/accounting/InventoryRecipesView.tsx`, `components/accounting/LedgerView.tsx`, and `components/accounting/SettingsCoAView.tsx`.
 
 ## Preservation Checklist Sign-Off
 - `tce_` Table Isolation: Verified — all DB queries target `tce_*` tables only.

@@ -48,9 +48,9 @@ export default function PosTerminalView({
   }, [focusedIndex, isGridFocused]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Minimal Category Filter Strip */}
-      <div className="px-6 py-3 flex items-center gap-2 overflow-x-auto shrink-0 border-b border-white/[0.06] bg-[#0A0B0F]">
+    <div className="flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
+      {/* Clean White Category Filter Strip */}
+      <div className="px-6 py-3 flex items-center gap-2 overflow-x-auto shrink-0 border-b border-slate-200 bg-white">
         {categories.map((cat) => {
           const active = activeCategory === cat;
           return (
@@ -58,10 +58,10 @@ export default function PosTerminalView({
               key={cat}
               type="button"
               onClick={() => setActiveCategory(cat)}
-              className={`min-h-[44px] px-4 rounded-xl text-xs font-medium whitespace-nowrap transition cursor-pointer ${
+              className={`min-h-[40px] px-4 rounded-lg text-xs font-medium whitespace-nowrap transition cursor-pointer ${
                 active
-                  ? "bg-[#F26F21] text-white"
-                  : "bg-[#111318] text-zinc-400 hover:text-white"
+                  ? "bg-sky-500 text-white shadow-xs"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900"
               }`}
             >
               {cat}
@@ -70,17 +70,17 @@ export default function PosTerminalView({
         })}
       </div>
 
-      {/* Clean Menu Grid */}
+      {/* Crisp White Menu Grid */}
       <div className="flex-1 overflow-y-auto p-6">
         {unclosedPastShiftInfo && (
-          <div className="mb-5 bg-amber-500/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="mb-5 bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <AlertTriangle size={20} className="text-amber-400 shrink-0" />
+              <AlertTriangle size={20} className="text-amber-600 shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-amber-300">
+                <p className="text-sm font-semibold text-amber-900">
                   Previous Shift Tally Unsettled
                 </p>
-                <p className="text-xs text-amber-200/80">
+                <p className="text-xs text-amber-700">
                   Shift on <strong className="font-mono">{unclosedPastShiftInfo.formattedDate}</strong> must be closed before taking new orders.
                 </p>
               </div>
@@ -88,7 +88,7 @@ export default function PosTerminalView({
             <button
               type="button"
               onClick={() => onSettlePastShift(unclosedPastShiftInfo.formattedDate)}
-              className="min-h-[44px] px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold cursor-pointer shrink-0"
+              className="min-h-[44px] px-4 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold cursor-pointer shrink-0"
             >
               Settle Shift Tally →
             </button>
@@ -111,19 +111,19 @@ export default function PosTerminalView({
                 }}
                 type="button"
                 onClick={() => onAddToCart(item)}
-                className={`relative group bg-[#111318] hover:bg-[#171A21] rounded-2xl p-5 text-left flex flex-col justify-between gap-4 min-h-[112px] transition cursor-pointer active:scale-[0.98] ${
-                  isFocused ? "ring-2 ring-emerald-400/80 bg-[#171A21]" : ""
-                } ${isPulsing ? "scale-[0.97] ring-2 ring-[#F26F21]" : ""}`}
+                className={`relative group bg-white border border-slate-200 hover:border-sky-400 hover:shadow-sm rounded-xl p-4 text-left flex flex-col justify-between gap-3 min-h-[108px] transition cursor-pointer active:scale-[0.98] ${
+                  isFocused ? "ring-2 ring-sky-500 border-sky-500 bg-sky-50/40" : ""
+                } ${isPulsing ? "scale-[0.97] ring-2 ring-emerald-500" : ""}`}
               >
                 {qtyInCart > 0 && (
-                  <span className="absolute top-3 right-3 min-w-[24px] h-6 px-1.5 rounded-full bg-[#F26F21] text-white text-xs font-semibold font-mono flex items-center justify-center">
+                  <span className="absolute top-3 right-3 min-w-[24px] h-6 px-1.5 rounded-full bg-sky-500 text-white text-xs font-semibold font-mono flex items-center justify-center">
                     {qtyInCart}
                   </span>
                 )}
-                <h3 className="text-sm font-semibold text-white group-hover:text-[#F26F21] transition line-clamp-2 leading-snug pr-6">
+                <h3 className="text-sm font-semibold text-slate-900 group-hover:text-sky-600 transition line-clamp-2 leading-snug pr-6">
                   {item.title}
                 </h3>
-                <span className="text-sm font-semibold font-mono tabular-nums text-zinc-300">
+                <span className="text-sm font-semibold font-mono tabular-nums text-slate-600">
                   {formatLKR(item.price)}
                 </span>
               </button>
@@ -134,12 +134,12 @@ export default function PosTerminalView({
           <button
             type="button"
             onClick={onOpenCustomItem}
-            className="group bg-[#111318] border border-dashed border-white/[0.12] hover:border-[#F26F21] rounded-2xl p-5 text-left flex flex-col justify-between gap-4 min-h-[112px] transition cursor-pointer"
+            className="group bg-white border border-dashed border-slate-300 hover:border-sky-500 rounded-xl p-4 text-left flex flex-col justify-between gap-3 min-h-[108px] transition cursor-pointer"
           >
-            <h3 className="text-sm font-semibold text-zinc-300 group-hover:text-white">
+            <h3 className="text-sm font-semibold text-slate-700 group-hover:text-sky-600">
               + Custom Order
             </h3>
-            <span className="text-xs text-[#F26F21] font-medium flex items-center gap-1">
+            <span className="text-xs text-sky-600 font-medium flex items-center gap-1">
               <Plus size={14} /> Open Price
             </span>
           </button>

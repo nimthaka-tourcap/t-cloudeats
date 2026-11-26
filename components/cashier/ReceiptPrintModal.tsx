@@ -58,10 +58,10 @@ export default function ReceiptPrintModal({
     order.type === "Dine In"
       ? "DINE IN ORDER"
       : order.type === "Take Away" || order.type === "POS"
-      ? "POS / TAKE AWAY"
-      : order.type === "Pick Up" || order.type === "3rd Party"
-      ? "3RD PARTY (UBER / PICKME)"
-      : "DIRECT DELIVERY";
+        ? "POS / TAKE AWAY"
+        : order.type === "Pick Up" || order.type === "3rd Party"
+          ? "3RD PARTY (UBER / PICKME)"
+          : "DIRECT DELIVERY";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
@@ -72,18 +72,16 @@ export default function ReceiptPrintModal({
             <button
               type="button"
               onClick={() => setPrintMode("RECEIPT")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
-                printMode === "RECEIPT" ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${printMode === "RECEIPT" ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
+                }`}
             >
               <Receipt size={14} /> Customer Receipt
             </button>
             <button
               type="button"
               onClick={() => setPrintMode("KOT")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
-                printMode === "KOT" ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${printMode === "KOT" ? "bg-[#1C1F26] text-white" : "text-zinc-400 hover:text-white"
+                }`}
             >
               <ChefHat size={14} /> Kitchen KOT
             </button>
@@ -112,9 +110,8 @@ export default function ReceiptPrintModal({
         {/* Thermal Print Preview Area */}
         <div className="p-5 overflow-y-auto flex-1 bg-[#0A0B0F] flex justify-center">
           <div
-            className={`thermal-print-area ${
-              paperSize === "58mm" ? "thermal-58mm max-w-[260px]" : "max-w-[330px]"
-            } w-full bg-white text-slate-900 rounded-xl p-5 font-mono text-xs space-y-3 shadow-lg`}
+            className={`thermal-print-area ${paperSize === "58mm" ? "thermal-58mm max-w-[260px]" : "max-w-[330px]"
+              } w-full bg-white text-slate-900 rounded-xl p-5 font-mono text-xs space-y-3 shadow-lg`}
           >
             {/* Header */}
             <div className="text-center border-b border-dashed border-slate-300 pb-2.5">
@@ -162,7 +159,7 @@ export default function ReceiptPrintModal({
                   item.isFree ||
                   (item.customItemPrice !== undefined &&
                     item.customItemPrice !==
-                      (item.menuItem ? item.menuItem.price : (item as any).price || 0));
+                    (item.menuItem ? item.menuItem.price : (item as any).price || 0));
 
                 return (
                   <div key={`${idx}-${itemTitle}`}>
@@ -225,9 +222,9 @@ export default function ReceiptPrintModal({
           {/* E-Bill Bar */}
           <div className="bg-[#0A0B0F] border border-[#1F2430] rounded-xl p-3 space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-zinc-400 font-medium">Digital E-Bill</span>
+              <span className="text-slate-600 font-medium">Digital E-Bill</span>
               {isLocalOnly && (
-                <span className="inline-flex items-center gap-1 text-amber-400 text-[11px]">
+                <span className="inline-flex items-center gap-1 text-amber-700 text-[11px] font-medium">
                   <WifiOff size={12} /> Sync Pending
                 </span>
               )}
@@ -237,7 +234,7 @@ export default function ReceiptPrintModal({
                 type="text"
                 readOnly
                 value={billUrl}
-                className="flex-1 bg-[#111318] border border-[#1F2430] rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-400 truncate outline-none"
+                className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-700 truncate outline-none"
               />
               <button
                 type="button"
@@ -248,7 +245,7 @@ export default function ReceiptPrintModal({
                   navigator.clipboard.writeText(billUrl);
                   onToast("E-Bill URL copied!", "success");
                 }}
-                className="px-2.5 py-1.5 rounded-lg bg-[#1C1F26] hover:bg-white/10 text-zinc-200 text-xs font-medium cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium cursor-pointer flex items-center gap-1"
               >
                 <Copy size={12} /> Copy
               </button>
@@ -261,7 +258,7 @@ export default function ReceiptPrintModal({
                   }
                   onOpenBill(`/bills/${order.id}${getBillHash(order.id)}`);
                 }}
-                className="px-2.5 py-1.5 rounded-lg bg-[#1C1F26] hover:bg-white/10 text-zinc-200 text-xs font-medium cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium cursor-pointer flex items-center gap-1"
               >
                 <ExternalLink size={12} /> Open
               </button>
@@ -271,7 +268,7 @@ export default function ReceiptPrintModal({
                   onClick={() =>
                     onToast("WhatsApp sharing activates once synced with the cloud database.", "warning")
                   }
-                  className="px-2.5 py-1.5 rounded-lg bg-zinc-800 text-zinc-500 text-xs font-medium cursor-not-allowed"
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-200 text-slate-500 text-xs font-medium cursor-not-allowed"
                 >
                   WhatsApp
                 </button>
@@ -280,7 +277,7 @@ export default function ReceiptPrintModal({
                   href={`https://wa.me/${order.customer?.phone?.replace(/\D/g, "")}?text=${encodeURIComponent(waMsg)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 text-xs font-medium"
+                  className="px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 text-xs font-medium"
                 >
                   WhatsApp
                 </a>
@@ -292,7 +289,7 @@ export default function ReceiptPrintModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 min-h-[44px] rounded-xl bg-[#0A0B0F] border border-[#1F2430] text-zinc-300 hover:text-white text-xs font-medium cursor-pointer"
+              className="flex-1 min-h-[44px] rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-medium cursor-pointer"
             >
               Close (Esc)
             </button>
