@@ -4027,7 +4027,7 @@ export default function PosPage() {
                       setCmsSearchQuery("");
                       setShowCMSModal(true);
                     }}
-                    className="min-h-[44px] px-4 rounded-xl bg-white border border-slate-200 hover:border-[#F26F21]/50 text-white text-xs font-medium cursor-pointer"
+                    className="min-h-[44px] px-4 rounded-xl bg-white border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-800 text-xs font-semibold shadow-xs transition cursor-pointer"
                   >
                     Open Customer CMS Directory ({customers.length})
                   </button>
@@ -4614,14 +4614,14 @@ export default function PosPage() {
                 <button
                   type="button"
                   onClick={() => setShowShortcutsLegend((p) => !p)}
-                  className="px-2 py-0.5 rounded-md bg-white border border-white/[0.08] text-slate-500 hover:text-white cursor-pointer"
+                  className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition cursor-pointer"
                   title="Keyboard Shortcuts"
                 >
                   ? Keys
                 </button>
                 {showShortcutsLegend && (
-                  <div className="absolute bottom-8 right-0 w-72 bg-white border border-white/[0.1] rounded-xl p-3.5 shadow-2xl z-50 text-xs space-y-1.5 text-slate-700">
-                    <p className="font-semibold text-white pb-1 border-b border-white/[0.06]">POS Keyboard Shortcuts</p>
+                  <div className="absolute bottom-8 right-0 w-72 bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xl z-50 text-xs space-y-1.5 text-slate-700">
+                    <p className="font-bold text-slate-900 pb-1 border-b border-slate-100">POS Keyboard Shortcuts</p>
                     <div className="flex justify-between"><span>Grid Nav</span><span className="font-mono text-slate-500">Arrows</span></div>
                     <div className="flex justify-between"><span>Add / Qty</span><span className="font-mono text-slate-500">Enter / + / -</span></div>
                     <div className="flex justify-between"><span>Categories</span><span className="font-mono text-slate-500">[ / ]</span></div>
@@ -4992,7 +4992,7 @@ export default function PosPage() {
                     if (filtered.length === 0) return null;
 
                     return (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xl z-50 divide-y divide-[#1A2640] max-h-[180px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-300 rounded-xl overflow-hidden shadow-2xl z-50 divide-y divide-slate-100 max-h-[180px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
                         {filtered.map(c => (
                           <button
                             key={c.phone}
@@ -5020,13 +5020,13 @@ export default function PosPage() {
 
                               setShowNameSuggestions(false);
                             }}
-                            className="w-full text-left px-4 py-2 flex flex-col gap-0.5 cursor-pointer hover:bg-[#FF6B35]/10 transition-colors"
+                            className="w-full text-left px-4 py-2 flex flex-col gap-0.5 cursor-pointer hover:bg-slate-50 transition-colors"
                           >
                             <div className="flex justify-between items-center w-full">
-                              <span className="font-extrabold text-[11px] text-white">{c.name}</span>
-                              <span className="text-[9px] font-mono font-bold text-[#FF9F1C]">{c.phone}</span>
+                              <span className="font-extrabold text-[11px] text-slate-900">{c.name}</span>
+                              <span className="text-[9px] font-mono font-bold text-sky-600">{c.phone}</span>
                             </div>
-                            <span className="text-[9px] text-slate-500 truncate w-full">{c.address}</span>
+                            <span className="text-[9px] text-slate-600 truncate w-full">{c.address}</span>
                           </button>
                         ))}
                       </div>

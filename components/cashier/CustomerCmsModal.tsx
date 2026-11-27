@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
-import { X, Trash2, ArrowLeft } from "lucide-react";
-import { CashierOrder } from "@/lib/cashier/types";
+import React, { useMemo } from "react";
+import { X, Trash2, ArrowLeft, MessageSquare, AlertCircle } from "lucide-react";
+import { CashierOrder, getOrderPaymentMode } from "@/lib/cashier/types";
 import { formatLKR2 } from "@/lib/utils/currency";
 
 interface CustomerCmsModalProps {
@@ -46,6 +46,35 @@ export default function CustomerCmsModal({
 }: CustomerCmsModalProps) {
   if (!isOpen) return null;
 
+  // Pre-calculate customer credit summaries using canonical getOrderPaymentMode
+  const customerCreditMap = useMemo(() => {
+    const map = new Map<string, { totalDue: number; unpaidCount: number; totalOrders: number }>();
+    customers.forEach((c) => {
+      const cleanPhone = c.phone.replace(/\D/g, "");
+      const custOrders = orderHistory.filter((o) => {
+        if (o.status === "Voided" || o.status === "Ignored" || !o.customer) return false;
+        const oPhone = (o.customer.phone || "").replace(/\D/g, "");
+        return oPhone === cleanPhone || o.customer.phone === c.phone;
+      });
+      const creditOrders = custOrders.filter((o) => getOrderPaymentMode(o) === "Credit");
+      const due = creditOrders.reduce((sum, o) => sum + o.total, 0);
+      map.set(c.phone, { totalDue: due, unpaidCount: creditOrders.length, totalOrders: custOrders.length });
+    });
+    return map;
+  }, [customers, orderHistory]);
+
+  const totalOutstandingCredit = useMemo(() => {
+    let sum = 0;
+    customerCreditMap.forEach((val) => { sum += val.totalDue; });
+    return sum;
+  }, [customerCreditMap]);
+
+  const customersWithCreditCount = useMemo(() => {
+    let count = 0;
+    customerCreditMap.forEach((val) => { if (val.totalDue > 0) count++; });
+    return count;
+  }, [customerCreditMap]);
+
   const filtered = customers.filter(
     (c) =>
       c.name.toLowerCase().includes(cmsSearchQuery.toLowerCase()) ||
@@ -81,13 +110,24 @@ export default function CustomerCmsModal({
         </div>
 
         {!editingCustomer ? (
-          <div className="flex-1 flex flex-col overflow-hidden p-6 gap-4">
+          <div className="flex-1 flex flex-col overflow-hidden p-6 gap-3.5">
+            {/* Credit Summary Banner */}
+            {totalOutstandingCredit > 0 && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between gap-3 text-xs shrink-0">
+                <div className="flex items-center gap-2 text-rose-700 font-semibold">
+                  <AlertCircle size={16} className="text-rose-600 shrink-0" />
+                  <span>Total Unpaid Credit: <strong className="font-mono text-rose-900 font-bold">{formatLKR2(totalOutstandingCredit)}</strong> across {customersWithCreditCount} customer(s)</span>
+                </div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-rose-600 bg-rose-100 px-2 py-0.5 rounded">Action Required</span>
+              </div>
+            )}
+
             <input
               type="text"
               placeholder="Search by name, phone, or address..."
               value={cmsSearchQuery}
               onChange={(e) => setCmsSearchQuery(e.target.value)}
-              className="min-h-[44px] w-full bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm text-slate-900 outline-none focus:border-[#F26F21]"
+              className="min-h-[44px] w-full bg-white border border-slate-300 rounded-xl px-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-slate-800 transition shadow-2xs"
             />
 
             <div className="flex-1 overflow-y-auto divide-y divide-slate-200 border border-slate-200 rounded-xl bg-slate-50">
@@ -98,28 +138,24 @@ export default function CustomerCmsModal({
               ) : (
                 filtered.map((c) => {
                   const cleanPhone = c.phone.replace(/\D/g, "");
-                  const custOrders = orderHistory.filter((o) => {
-                    if (o.status === "Voided" || o.status === "Ignored" || !o.customer)
-                      return false;
-                    const oPhone = (o.customer.phone || "").replace(/\D/g, "");
-                    return oPhone === cleanPhone || o.customer.phone === c.phone;
-                  });
-                  const unpaid = custOrders.filter(
-                    (o) =>
-                      o.payment_status === "Not Paid" ||
-                      o.customer?.payment_status === "Not Paid"
-                  );
-                  const totalDue = unpaid.reduce((s, o) => s + o.total, 0);
+                  const stats = customerCreditMap.get(c.phone) || { totalDue: 0, unpaidCount: 0, totalOrders: 0 };
+                  const totalDue = stats.totalDue;
+                  const totalOrders = stats.totalOrders;
+
+                  // Format name cleanly in Title Case
+                  const displayName = c.name
+                    ? c.name.toLowerCase().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+                    : "Customer";
 
                   return (
                     <div
                       key={c.phone}
-                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50"
+                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-100/70 transition-colors"
                     >
                       <div className="min-w-0 space-y-0.5">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-slate-900">{c.name}</p>
-                          <span className="text-xs font-mono text-sky-600">{c.phone}</span>
+                          <p className="text-sm font-bold text-slate-900">{displayName}</p>
+                          <span className="text-xs font-mono font-medium text-sky-600">{c.phone}</span>
                           {c.birthday && (
                             <span className="text-xs px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
                               🎂{" "}
@@ -130,34 +166,50 @@ export default function CustomerCmsModal({
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-500 truncate">
-                          {c.address || "No address saved"} • {custOrders.length} orders
+                        <p className="text-xs text-slate-600 truncate">
+                          {c.address || "No address saved"} • {totalOrders} order(s)
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
                         <span
-                          className={`px-2.5 py-1 rounded-lg text-xs font-mono tabular-nums font-medium ${
+                          className={`px-2.5 py-1 rounded-lg text-xs font-mono tabular-nums font-bold ${
                             totalDue > 0
-                              ? "bg-rose-500/10 text-rose-600 border border-rose-500/20"
-                              : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                              ? "bg-rose-50 text-rose-600 border border-rose-200"
+                              : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                           }`}
                         >
-                          {totalDue > 0 ? `Due: ${formatLKR2(totalDue)}` : "Settled"}
+                          {totalDue > 0 ? `Credit Due: ${formatLKR2(totalDue)}` : "Settled"}
                         </span>
+
+                        {totalDue > 0 && (
+                          <a
+                            href={`https://wa.me/${cleanPhone.startsWith("94") ? cleanPhone : "94" + cleanPhone.replace(/^0/, "")}?text=${encodeURIComponent(
+                              `Hello ${displayName}, gentle reminder from t-cloud eats regarding your outstanding credit balance of ${formatLKR2(totalDue)}. Thank you!`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="min-h-[40px] px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                            title="Send WhatsApp payment reminder"
+                          >
+                            <MessageSquare size={13} />
+                            <span>Remind</span>
+                          </a>
+                        )}
+
                         <button
                           type="button"
                           onClick={() =>
                             setEditingCustomer({ ...c, originalPhone: c.phone })
                           }
-                          className="min-h-[40px] px-3.5 rounded-xl bg-white border border-slate-200 hover:border-white/20 text-xs font-medium text-slate-900 cursor-pointer"
+                          className="min-h-[40px] px-3.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-800 transition cursor-pointer shadow-2xs"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
                           onClick={() => onDeleteCustomer(c.phone)}
-                          className="min-h-[40px] px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-slate-900 cursor-pointer transition"
+                          className="min-h-[40px] px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 cursor-pointer transition"
                           title="Delete Customer (PIN Required)"
                         >
                           <Trash2 size={14} />
