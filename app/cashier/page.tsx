@@ -930,10 +930,27 @@ export default function PosPage() {
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [isDatabaseSyncing, setIsDatabaseSyncing] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const isLoadingRef = useRef(false);
   const isSyncingOfflineRef = useRef(false);
   const hasShownInitialSyncToastRef = useRef(false);
   const hasShownOfflineSyncToastRef = useRef(false);
+
+  // Strict Authentication Guard
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const user = localStorage.getItem("t-cloud-eats-user");
+    if (!user || user !== "cashier@t-cloudeats.com") {
+      setIsAuthenticated(false);
+      localStorage.removeItem("t-cloud-eats-user");
+      document.cookie = "tce_auth=; path=/; max-age=0; SameSite=Lax";
+      router.replace("/login");
+      return;
+    }
+    // Refresh cookie for server-side proxy guard
+    document.cookie = `tce_auth=${encodeURIComponent(user)}; path=/; max-age=604800; SameSite=Lax`;
+    setIsAuthenticated(true);
+  }, [router]);
 
   // Load inventory from Supabase (tce_inventory), fallback to localStorage
   useEffect(() => {
@@ -1446,9 +1463,8 @@ export default function PosPage() {
   // Load order history and CMS from database on mount, fallback to localStorage
   useEffect(() => {
     let currentUser = localStorage.getItem("t-cloud-eats-user");
-    if (!currentUser) {
-      currentUser = "cashier@t-cloudeats.com";
-      localStorage.setItem("t-cloud-eats-user", currentUser);
+    if (!currentUser || currentUser !== "cashier@t-cloudeats.com") {
+      return;
     }
 
     const cacheTimeStr = localStorage.getItem("t-cloud-eats-cache-time");
@@ -3642,6 +3658,25 @@ export default function PosPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   });
 
+  const handleSignOut = () => {
+    localStorage.removeItem("t-cloud-eats-user");
+    localStorage.removeItem("t-cloud-eats-orders");
+    localStorage.removeItem("t-cloud-eats-cms");
+    document.cookie = "tce_auth=; path=/; max-age=0; SameSite=Lax";
+    router.replace("/login");
+  };
+
+  if (isAuthenticated !== true) {
+    return (
+      <div className="h-screen w-screen bg-slate-900 flex flex-col items-center justify-center gap-3 select-none">
+        <div className="w-8 h-8 border-2 border-slate-700 border-t-sky-500 rounded-full animate-spin" />
+        <p className="text-xs text-slate-400 font-mono tracking-wider uppercase">
+          Verifying Terminal Session...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="h-screen w-screen bg-white text-slate-900 font-sans antialiased selection:bg-sky-500 selection:text-white flex overflow-hidden relative">
@@ -3801,7 +3836,7 @@ export default function PosPage() {
               </div>
             )}
             <button
-              onClick={() => router.push("/login")}
+              onClick={handleSignOut}
               className="p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer shrink-0"
               title="Sign Out"
             >

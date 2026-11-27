@@ -35,12 +35,19 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
+    // If already logged in, redirect straight to cashier
+    const user = localStorage.getItem("t-cloud-eats-user");
+    if (user === "cashier@t-cloudeats.com") {
+      document.cookie = `tce_auth=${encodeURIComponent(user)}; path=/; max-age=604800; SameSite=Lax`;
+      router.replace("/cashier");
+    }
+
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, []);
+  }, [router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +63,9 @@ export default function LoginPage() {
         }
         localStorage.setItem("t-cloud-eats-user", email);
         localStorage.setItem("t-cloud-eats-cache-time", Date.now().toString());
-        router.push("/cashier");
+        // Set secure auth cookie for server-side proxy guard (7 days)
+        document.cookie = `tce_auth=${encodeURIComponent(email)}; path=/; max-age=604800; SameSite=Lax`;
+        router.replace("/cashier");
       } else {
         setError("Invalid email or password.");
         setIsLoading(false);
