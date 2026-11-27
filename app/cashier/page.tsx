@@ -2130,29 +2130,36 @@ export default function PosPage() {
       birthdayIso = new Date(`2000-${editCustBirthMonth}-${editCustBirthDay}T00:00:00`).toISOString();
     }
 
+    const updatedName = (editingCustomer.name || editCustName || "").trim();
+    const updatedAddress = (editingCustomer.address || editCustAddress || "").trim();
+    const originalPhone = (editingCustomer as any).originalPhone || editingCustomer.phone;
+    const newPhone = editingCustomer.phone;
+
     const updatedCmsCustomer = {
-      phone: editingCustomer.phone,
-      name: editCustName,
-      address: editCustAddress,
-      birthday: birthdayIso,
+      phone: newPhone,
+      name: updatedName,
+      address: updatedAddress,
+      birthday: birthdayIso || editingCustomer.birthday || null,
       address_label: editCustAddressLabel || null
     };
 
-    // Update locally immediately
+    // 1. Update customers list locally
     setCustomers(prev =>
-      prev.map(c => c.phone === editingCustomer.phone ? updatedCmsCustomer : c)
+      prev.map(c => c.phone === originalPhone || c.phone === newPhone ? updatedCmsCustomer : c)
     );
 
-    // Update customer details in all past orders locally
+    // 2. Update customer details in all past orders locally, strictly PRESERVING payment_status and payment_method!
     const updatedHistory = orderHistory.map(o => {
-      if (o.customer && o.customer.phone === editingCustomer.phone) {
+      const oPhone = o.customer?.phone;
+      if (o.customer && (oPhone === originalPhone || oPhone === newPhone)) {
         return {
           ...o,
           customer: {
             ...o.customer,
-            name: editCustName,
-            address: editCustAddress,
-            address_label: editCustAddressLabel || null
+            name: updatedName,
+            address: updatedAddress,
+            phone: newPhone,
+            address_label: editCustAddressLabel || (o.customer as any).address_label || null
           }
         };
       }
@@ -2165,53 +2172,46 @@ export default function PosPage() {
     setEditingCustomer(null);
     setIsUpdatingCust(false);
 
-    // Save to Supabase in background
-    Promise.resolve(
-      supabase
+    // 3. Persist customer profile to Supabase (tce_customers)
+    try {
+      const { error: custErr } = await supabase
         .from("tce_customers")
-        .update({
-          name: editCustName,
-          address: editCustAddress,
-          birthday: birthdayIso,
-          address_label: editCustAddressLabel || null
-        })
-        .eq("phone", editingCustomer.phone)
-    )
-      .then(({ error }) => {
-        if (error) {
-          console.error("Supabase customer update error", error);
-          triggerToast("Saved locally, cloud update failed", "warning");
-        } else {
-          triggerToast("Customer profile updated successfully!", "success");
+        .upsert(updatedCmsCustomer, { onConflict: "phone" });
 
-          // Update customer details in all past orders in Supabase
-          const updatedCustObj = {
-            phone: editingCustomer.phone,
-            name: editCustName,
-            address: editCustAddress,
-            address_label: editCustAddressLabel || null
+      if (custErr) throw custErr;
+
+      // If phone number was changed, delete the old customer record
+      if (originalPhone !== newPhone) {
+        await supabase.from("tce_customers").delete().eq("phone", originalPhone);
+      }
+
+      // 4. Update orders in Supabase, carefully preserving payment_status, payment_method and bill metadata!
+      const { data: existingOrders, error: fetchErr } = await supabase
+        .from("tce_orders")
+        .select("id, customer")
+        .or(`customer->>phone.eq.${originalPhone},customer->>phone.eq.${newPhone}`);
+
+      if (!fetchErr && existingOrders && existingOrders.length > 0) {
+        for (const ord of existingOrders) {
+          const mergedCustomer = {
+            ...(ord.customer || {}),
+            name: updatedName,
+            address: updatedAddress,
+            phone: newPhone,
+            address_label: editCustAddressLabel || ord.customer?.address_label || null
           };
-
-          Promise.resolve(
-            supabase
-              .from("tce_orders")
-              .update({ customer: updatedCustObj })
-              .eq("customer->>phone", editingCustomer.phone)
-          )
-            .then(({ error: orderUpdateErr }) => {
-              if (orderUpdateErr) {
-                console.error("Supabase order customer info update error:", orderUpdateErr);
-              }
-            })
-            .catch((dbErr: any) => {
-              console.error("Error updating orders table for customer profile change:", dbErr);
-            });
+          await supabase
+            .from("tce_orders")
+            .update({ customer: mergedCustomer })
+            .eq("id", ord.id);
         }
-      })
-      .catch((e: any) => {
-        console.error("Network error updating customer:", e);
-        triggerToast("Saved locally, offline mode active", "warning");
-      });
+      }
+
+      triggerToast("Customer profile updated successfully!", "success");
+    } catch (err) {
+      console.error("Error updating customer profile:", err);
+      triggerToast("Profile saved locally (cloud sync pending)", "warning");
+    }
   };
 
   const handleConfirmDeleteCustomer = async (phone: string) => {
