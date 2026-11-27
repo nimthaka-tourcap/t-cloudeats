@@ -49,28 +49,39 @@ export default function LoginPage() {
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, [router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    setTimeout(() => {
-      if (email === "cashier@t-cloudeats.com" && password === "cashier@ti321") {
-        const lastUser = localStorage.getItem("t-cloud-eats-user");
-        if (lastUser !== email) {
-          localStorage.removeItem("t-cloud-eats-orders");
-          localStorage.removeItem("t-cloud-eats-cms");
-        }
-        localStorage.setItem("t-cloud-eats-user", email);
-        localStorage.setItem("t-cloud-eats-cache-time", Date.now().toString());
-        // Set secure auth cookie for server-side proxy guard (7 days)
-        document.cookie = `tce_auth=${encodeURIComponent(email)}; path=/; max-age=604800; SameSite=Lax`;
-        router.replace("/cashier");
-      } else {
-        setError("Invalid email or password.");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || "Invalid email or password.");
         setIsLoading(false);
+        return;
       }
-    }, 400);
+
+      const lastUser = localStorage.getItem("t-cloud-eats-user");
+      if (lastUser !== email) {
+        localStorage.removeItem("t-cloud-eats-orders");
+        localStorage.removeItem("t-cloud-eats-cms");
+      }
+      localStorage.setItem("t-cloud-eats-user", email);
+      localStorage.setItem("t-cloud-eats-cache-time", Date.now().toString());
+      document.cookie = `tce_auth=${encodeURIComponent(email)}; path=/; max-age=604800; SameSite=Lax`;
+      router.replace("/cashier");
+    } catch {
+      setError("Unable to authenticate. Please check connection.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -157,6 +168,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
+                autoComplete="username"
                 className="w-full h-11 px-3.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
                 required
               />
@@ -167,14 +179,10 @@ export default function LoginPage() {
                 <label className="font-medium text-slate-700">Password</label>
                 <button
                   type="button"
-                  onClick={() => {
-                    setEmail("cashier@t-cloudeats.com");
-                    setPassword("cashier@ti321");
-                    setError("");
-                  }}
+                  onClick={() => alert("Please contact the administrator to reset credentials.")}
                   className="text-sky-600 hover:text-sky-700 text-xs font-medium cursor-pointer"
                 >
-                  Fill credentials
+                  Forgot password?
                 </button>
               </div>
               <div className="relative flex items-center h-11 border border-slate-300 rounded-lg focus-within:border-slate-900 focus-within:ring-1 focus-within:ring-slate-900 transition bg-white">
@@ -183,6 +191,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
+                  autoComplete="current-password"
                   className="w-full h-full px-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none pr-10"
                   required
                 />
